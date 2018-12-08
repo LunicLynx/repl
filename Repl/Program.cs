@@ -31,9 +31,15 @@ namespace Repl
                 {
                     Print(tree.Root);
 
+                    var codeGenerator = new CodeGenerator();
+                    var x = codeGenerator.Generate(expression);
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    x.Print(Console.Out);
+                    Console.WriteLine();
+                    Console.ResetColor();
+
                     var evaluator = new Evaluator();
                     var result = evaluator.Evaluate(expression);
-
                     Console.ForegroundColor = ConsoleColor.Magenta;
                     Console.WriteLine(result);
                     Console.ResetColor();
