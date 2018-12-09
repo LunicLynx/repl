@@ -63,7 +63,7 @@ namespace XLang.Codegen
             mod.Dump();
 
             var filename = "entry.obj";
-            mod.EmitObj(filename);
+            mod.TryEmitObj(filename, out error);
             Cl.InvokeCl(filename);
             Cl.InvokeMain();
 

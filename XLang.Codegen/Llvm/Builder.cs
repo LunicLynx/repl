@@ -100,5 +100,21 @@ namespace XLang.Codegen.Llvm
         {
             return new Value(LLVM.BuildUIToFP(BuilderRef, val.ValueRef, destTy.TypeRef, name));
         }
+
+        public Value Alloca(XType type, string name = "")
+        {
+            return new Value(LLVM.BuildAlloca(BuilderRef, type.TypeRef, name));
+        }
+
+        public Value Store(Value val, Value ptr)
+        {
+
+            return new Value(LLVM.BuildStore(BuilderRef, val.ValueRef, ptr.ValueRef));
+        }
+
+        public Value Load(Value ptr, string name = "")
+        {
+            return new Value(LLVM.BuildLoad(BuilderRef, ptr.ValueRef, name));
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using XLang.Codegen;
 using XLang.Codegen.Llvm;
 
@@ -6,12 +7,32 @@ namespace Repl
 {
     public class CodeGenerator
     {
-        //XModule _module = new XModule("test");
+        private readonly Dictionary<VariableSymbol, Value> _variables;
+
+        public XModule Module { get; } = new XModule("test");
+        public BasicBlock BasicBlock { get; }
+        public Function Function { get; }
+
         private readonly Builder _builder = new Builder();
 
-        public Value Generate(BoundExpression expression)
+        public CodeGenerator(Dictionary<VariableSymbol, Value> variables)
         {
-            return GenerateExpression(expression);
+            _variables = variables;
+
+            var functionType = new FunctionType(XType.Int32);
+            Function = Module.AddFunction(functionType, "__anon_expr");
+
+            BasicBlock = Function.AppendBasicBlock();
+            _builder.PositionAtEnd(BasicBlock);
+        }
+
+        public void Generate(BoundExpression expression)
+        {
+            using (_builder)
+            {
+                var value = GenerateExpression(expression);
+                _builder.Ret(value);
+            }
         }
 
         private Value GenerateExpression(BoundExpression expression)
@@ -22,7 +43,35 @@ namespace Repl
                 return GenerateUnaryExpression(u);
             if (expression is BoundLiteralExpression l)
                 return GenerateLiteralExpression(l);
+            if (expression is BoundAssignmentExpression a)
+                return GenerateAssignmentExpression(a);
+            if (expression is BoundVariableExpression v)
+                return GenerateVariableExpression(v);
             return null;
+        }
+
+        private Value GenerateVariableExpression(BoundVariableExpression boundVariableExpression)
+        {
+            var variable = boundVariableExpression.Variable;
+            if (_variables.TryGetValue(variable, out var ptr))
+                return _builder.Load(ptr, variable.Name);
+            return null;
+        }
+
+        private Value GenerateAssignmentExpression(BoundAssignmentExpression boundAssignmentExpression)
+        {
+            var variable = boundAssignmentExpression.Variable;
+            if (!_variables.TryGetValue(variable, out var ptr))
+            {
+                ptr = _builder.Alloca(XType.Int32/*, variable.Name*/);
+                _variables[variable] = ptr;
+            }
+
+            var value = GenerateExpression(boundAssignmentExpression.Expression);
+
+            _builder.Store(value, ptr);
+
+            return value;
         }
 
         private Value GenerateBinaryExpression(BoundBinaryExpression boundBinaryExpression)

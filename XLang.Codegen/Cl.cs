@@ -17,9 +17,8 @@ namespace XLang.Codegen
 
             var includes = new[]
             {
-                "",
-                //Path.Combine(toolset, "include"),
-                //Path.Combine(windowskitsInclude, "ucrt"),
+                Path.Combine(toolset, "include"),
+                Path.Combine(windowskitsInclude, "ucrt"),
                 //Path.Combine(windowskits, "shared"),
                 //Path.Combine(windowskits, "um"),
                 //Path.Combine(windowskits, "winrt"),

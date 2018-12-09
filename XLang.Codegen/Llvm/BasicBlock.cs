@@ -1,4 +1,5 @@
-﻿using LLVMSharp;
+﻿using System.IO;
+using LLVMSharp;
 
 namespace XLang.Codegen.Llvm
 {
@@ -22,6 +23,12 @@ namespace XLang.Codegen.Llvm
         {
             var basicBlockRef = LLVM.AppendBasicBlock(function.ValueRef, name);
             return new BasicBlock(basicBlockRef);
+        }
+
+        public void Print(TextWriter writer)
+        {
+            var value = new Value(LLVM.BasicBlockAsValue(BasicBlockRef));
+            value.Print(writer);
         }
     }
 }

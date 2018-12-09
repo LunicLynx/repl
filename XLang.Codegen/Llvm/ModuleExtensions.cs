@@ -4,14 +4,14 @@ namespace XLang.Codegen.Llvm
 {
     public static class ModuleExtensions
     {
-        public static void EmitObj(this XModule mod, string filename)
+        public static bool TryEmitObj(this XModule mod, string filename, out string error)
         {
             var targetTriple = Statics.GetDefaultTargetTriple();
             mod.SetTarget(targetTriple);
 
-            if (!Statics.GetTargetFromTriple(targetTriple, out var target, out var error))
+            if (!Statics.GetTargetFromTriple(targetTriple, out var target, out error))
             {
-                Console.WriteLine($"Error getting target: {error}");
+                return false;
             }
 
             var targetMachine = new TargetMachine(target, targetTriple, "generic", "");
@@ -21,8 +21,9 @@ namespace XLang.Codegen.Llvm
 
             if (!targetMachine.EmitToFile(mod, filename, out error))
             {
-                Console.WriteLine($"Error emitting: {error}");
+                return false;
             }
+            return true;
         }
     }
 }

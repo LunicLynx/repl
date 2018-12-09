@@ -18,5 +18,14 @@ namespace XLang.Codegen.Llvm
             target = new Target(t);
             return true;
         }
+
+        public static void InitializeX86Target()
+        {
+            LLVM.InitializeX86TargetMC();
+            LLVM.InitializeX86Target();
+            LLVM.InitializeX86TargetInfo();
+            LLVM.InitializeX86AsmParser();
+            LLVM.InitializeX86AsmPrinter();
+        }
     }
 }

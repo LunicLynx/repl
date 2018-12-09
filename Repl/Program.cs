@@ -4,13 +4,28 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
+using XLang.Codegen;
+using XLang.Codegen.Llvm;
 
 namespace Repl
 {
+
+    /*
+     * Possbile syntax
+     *
+     * Not null shortcut
+     * something !? DoSomething();
+     *
+     */
     class Program
     {
         static void Main(string[] args)
         {
+            Statics.InitializeX86Target();
+
+            var variables = new Dictionary<VariableSymbol, object>();
+            var variablePtrs = new Dictionary<VariableSymbol, XLang.Codegen.Llvm.Value>();
+
             while (true)
             {
                 Console.Write("> ");
@@ -22,7 +37,7 @@ namespace Repl
                 }
 
                 var tree = SyntaxTree.Parse(input);
-                var binder = new Binder(tree);
+                var binder = new Binder(tree, variables);
                 var expression = binder.Bind();
 
                 var diagnostics = tree.Diagnostics.Concat(binder.Diagnostics).ToList();
@@ -31,18 +46,37 @@ namespace Repl
                 {
                     Print(tree.Root);
 
-                    var codeGenerator = new CodeGenerator();
-                    var x = codeGenerator.Generate(expression);
+
+                    var codeGenerator = new CodeGenerator(variablePtrs);
+                    codeGenerator.Generate(expression);
                     Console.ForegroundColor = ConsoleColor.DarkYellow;
-                    x.Print(Console.Out);
+                    //code.Print(Console.Out);
+                    //codeGenerator.Module.Print(Console.Out);
+                    codeGenerator.BasicBlock.Print(Console.Out);
                     Console.WriteLine();
                     Console.ResetColor();
 
-                    var evaluator = new Evaluator();
+                    var evaluator = new Evaluator(variables);
                     var result = evaluator.Evaluate(expression);
                     Console.ForegroundColor = ConsoleColor.Magenta;
                     Console.WriteLine(result);
                     Console.ResetColor();
+
+                    var objFilename = "entry.obj";
+                    if (codeGenerator.Module.TryEmitObj(objFilename, out var error))
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkCyan;
+                        Cl.InvokeCl(objFilename);
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Cl.InvokeMain();
+                        Console.ResetColor();
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine(error);
+                        Console.ResetColor();
+                    }
                 }
                 else
                 {
@@ -140,7 +174,7 @@ namespace Repl
 
             return position >= Tokens.Length
                 ? Tokens[Tokens.Length - 1]
-                : Tokens[_position];
+                : Tokens[position];
         }
 
         protected Token MatchToken(TokenKind kind)
@@ -154,6 +188,13 @@ namespace Repl
 
     public class Evaluator
     {
+        public Dictionary<VariableSymbol, object> Variables { get; }
+
+        public Evaluator(Dictionary<VariableSymbol, object> variables)
+        {
+            Variables = variables;
+        }
+
         public object Evaluate(BoundExpression expression)
         {
             return EvaluateExpression(expression);
@@ -167,8 +208,26 @@ namespace Repl
                 return EvaluateUnaryExpression(u);
             if (expression is BoundLiteralExpression l)
                 return EvaluateLiteralExpression(l);
-
+            if (expression is BoundAssignmentExpression a)
+                return EvaluateAssignmentExpression(a);
+            if (expression is BoundVariableExpression v)
+                return EvaluateVariableExpression(v);
             return 0;
+        }
+
+        private object EvaluateVariableExpression(BoundVariableExpression boundVariableExpression)
+        {
+            var value = Variables[boundVariableExpression.Variable];
+            return value;
+        }
+
+        private object EvaluateAssignmentExpression(BoundAssignmentExpression boundAssignmentExpression)
+        {
+            var value = EvaluateExpression(boundAssignmentExpression.Expression);
+
+            Variables[boundAssignmentExpression.Variable] = value;
+
+            return value;
         }
 
         private object EvaluateLiteralExpression(BoundLiteralExpression boundLiteralExpression)
@@ -205,13 +264,15 @@ namespace Repl
 
     public class Binder
     {
+        private readonly Dictionary<VariableSymbol, object> _variables;
+
         public SyntaxTree Tree { get; }
         public List<Diagnostic> Diagnostics { get; } = new List<Diagnostic>();
 
-        public Binder(SyntaxTree tree)
+        public Binder(SyntaxTree tree, Dictionary<VariableSymbol, object> variables)
         {
             Tree = tree;
-
+            _variables = variables;
         }
 
         public BoundExpression Bind()
@@ -227,7 +288,42 @@ namespace Repl
                 return BindUnaryExpression(u);
             if (expr is LiteralExpressionSyntax l)
                 return BindLiteralExpression(l);
+            if (expr is AssignmentExpressionSyntax a)
+                return BindAssignmentExpression(a);
+            if (expr is NameExpressionSyntax n)
+                return BindNameExpression(n);
             return null;
+        }
+
+        private BoundExpression BindNameExpression(NameExpressionSyntax nameExpressionSyntax)
+        {
+            var name = nameExpressionSyntax.IdentifierToken.Text;
+            var variable = _variables.Keys.FirstOrDefault(v => v.Name == name);
+
+            if (variable == null)
+            {
+                Diagnostics.ReportUndefinedName(nameExpressionSyntax.IdentifierToken.Span, name);
+                return new BoundLiteralExpression(0);
+            }
+
+            return new BoundVariableExpression(variable);
+        }
+
+        private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax assignmentExpressionSyntax)
+        {
+            var name = assignmentExpressionSyntax.IdentifierToken.Text;
+            var value = BindExpression(assignmentExpressionSyntax.Expression);
+
+            var oldVariable = _variables.Keys.FirstOrDefault(v => v.Name == name);
+            if (oldVariable != null)
+            {
+                _variables.Remove(oldVariable);
+            }
+
+            var variable = new VariableSymbol(name, value.Type);
+            _variables[variable] = null;
+
+            return new BoundAssignmentExpression(variable, value);
         }
 
         private BoundExpression BindLiteralExpression(LiteralExpressionSyntax literalExpressionSyntax)
@@ -283,6 +379,42 @@ namespace Repl
         public BoundLiteralExpression(object value)
         {
             Value = value;
+        }
+    }
+
+    public class VariableSymbol
+    {
+        public string Name { get; }
+        public Type Type { get; }
+
+        public VariableSymbol(string name, Type type)
+        {
+            Name = name;
+            Type = type;
+        }
+    }
+
+    public class BoundVariableExpression : BoundExpression
+    {
+        public VariableSymbol Variable { get; }
+        public override Type Type => Variable.Type;
+
+        public BoundVariableExpression(VariableSymbol variable)
+        {
+            Variable = variable;
+        }
+    }
+
+    public class BoundAssignmentExpression : BoundExpression
+    {
+        public VariableSymbol Variable { get; }
+        public BoundExpression Expression { get; }
+        public override Type Type => Expression.Type;
+
+        public BoundAssignmentExpression(VariableSymbol variable, BoundExpression expression)
+        {
+            Variable = variable;
+            Expression = expression;
         }
     }
 
@@ -428,7 +560,26 @@ namespace Repl
             return ParseExpression();
         }
 
-        public ExpressionSyntax ParseExpression(int parentPrecedence = 0)
+        public ExpressionSyntax ParseExpression()
+        {
+            return ParseAssignmentExpression();
+        }
+
+        public ExpressionSyntax ParseAssignmentExpression()
+        {
+            if (Peek(0).Kind == TokenKind.Identifier &&
+                Peek(1).Kind == TokenKind.Equals)
+            {
+                var identifierToken = MatchToken(TokenKind.Identifier);
+                var operatorToken = MatchToken(TokenKind.Equals);
+                var right = ParseAssignmentExpression();
+                return new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
+            }
+
+            return ParseBinaryExpression();
+        }
+
+        public ExpressionSyntax ParseBinaryExpression(int parentPrecedence = 0)
         {
             ExpressionSyntax left;
 
@@ -436,7 +587,7 @@ namespace Repl
             if (unaryOperatorPrecedence != 0 && unaryOperatorPrecedence >= parentPrecedence)
             {
                 var operatorToken = NextToken();
-                var operand = ParseExpression(unaryOperatorPrecedence);
+                var operand = ParseBinaryExpression(unaryOperatorPrecedence);
                 left = new UnaryExpressionSyntax(operatorToken, operand);
             }
             else
@@ -451,7 +602,7 @@ namespace Repl
                     break;
 
                 var operatorToken = NextToken();
-                var right = ParseExpression(precedence);
+                var right = ParseBinaryExpression(precedence);
                 left = new BinaryExpressionSyntax(left, operatorToken, right);
             }
 
@@ -462,7 +613,11 @@ namespace Repl
         {
             if (Current.Kind == TokenKind.Number)
             {
-                return ParseNumberToken();
+                return ParseNumberLiteralExpression();
+            }
+            else if (Current.Kind == TokenKind.Identifier)
+            {
+                return ParseNameExpression();
             }
 
             // diagnostic ?
@@ -472,7 +627,13 @@ namespace Repl
             return new LiteralExpressionSyntax(new Token(TokenKind.Number, new TextSpan(0, 0), "0"));
         }
 
-        public LiteralExpressionSyntax ParseNumberToken()
+        private ExpressionSyntax ParseNameExpression()
+        {
+            var token = MatchToken(TokenKind.Identifier);
+            return new NameExpressionSyntax(token);
+        }
+
+        public LiteralExpressionSyntax ParseNumberLiteralExpression()
         {
             var token = MatchToken(TokenKind.Number);
             return new LiteralExpressionSyntax(token);
@@ -585,6 +746,42 @@ namespace Repl
         }
     }
 
+    public class NameExpressionSyntax : ExpressionSyntax
+    {
+        public Token IdentifierToken { get; }
+
+        public NameExpressionSyntax(Token identifierToken)
+        {
+            IdentifierToken = identifierToken;
+        }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return IdentifierToken;
+        }
+    }
+
+    public class AssignmentExpressionSyntax : ExpressionSyntax
+    {
+        public Token IdentifierToken { get; }
+        public Token OperatorToken { get; }
+        public ExpressionSyntax Expression { get; }
+
+        public AssignmentExpressionSyntax(Token identifierToken, Token operatorToken, ExpressionSyntax expression)
+        {
+            IdentifierToken = identifierToken;
+            OperatorToken = operatorToken;
+            Expression = expression;
+        }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return IdentifierToken;
+            yield return OperatorToken;
+            yield return Expression;
+        }
+    }
+
     public class Diagnostic
     {
         public TextSpan Span { get; }
@@ -630,6 +827,12 @@ namespace Repl
         {
             self.Report(span, $"The number '{text}' is no a valid Number");
         }
+
+        public static void ReportUndefinedName(this ICollection<Diagnostic> self, TextSpan span, string name)
+        {
+            var message = $"Variable '{name}' doesn't exist.";
+            self.Report(span, message);
+        }
     }
 
     abstract class LexerBase
@@ -672,20 +875,8 @@ namespace Repl
             var c = Current();
             Next();
 
-            if (c == '\0')
-            {
-                start = Text.Length;
-                Position = Text.Length;
-            }
-            else if (c == '+')
-            {
-                kind = TokenKind.Plus;
-            }
-            else if (c == '*')
-            {
-                kind = TokenKind.Star;
-            }
-            else if (char.IsWhiteSpace(c))
+
+            if (char.IsWhiteSpace(c))
             {
                 while (char.IsWhiteSpace(Current()))
                     Next();
@@ -699,13 +890,49 @@ namespace Repl
 
                 kind = TokenKind.Number;
             }
-            else
+            else if (IsIdentifierStart(c))
             {
-                kind = TokenKind.Bad;
-                Diagnostics.ReportUnexpectedCharacter(TextSpan.FromBounds(start, Position), c);
+                while (IsIdentifierFollow(Current()))
+                    Next();
+
+                kind = TokenKind.Identifier;
+            }
+            else
+
+            {
+                switch (c)
+                {
+                    case '\0':
+                        start = Text.Length;
+                        Position = Text.Length;
+                        break;
+                    case '+':
+                        kind = TokenKind.Plus;
+                        break;
+                    case '*':
+                        kind = TokenKind.Star;
+                        break;
+                    case '=':
+                        kind = TokenKind.Equals;
+                        break;
+                    default:
+                        kind = TokenKind.Bad;
+                        Diagnostics.ReportUnexpectedCharacter(TextSpan.FromBounds(start, Position), c);
+                        break;
+                }
             }
 
             return new Token(kind, TextSpan.FromBounds(start, Position), Text.Substring(start, Position - start));
+        }
+
+        private bool IsIdentifierStart(char c)
+        {
+            return char.IsLetter(c) || c == '_';
+        }
+
+        private bool IsIdentifierFollow(char c)
+        {
+            return char.IsLetterOrDigit(c) || c == '_';
         }
     }
 
@@ -716,9 +943,11 @@ namespace Repl
 
         Plus,
         Star,
+        Equals,
 
         Number,
-        WhiteSpace
+        WhiteSpace,
+        Identifier
     }
 
     public class Token : SyntaxNode

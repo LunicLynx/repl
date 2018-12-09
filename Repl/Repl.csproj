@@ -10,4 +10,10 @@
     <ProjectReference Include="..\XLang.Codegen\XLang.Codegen.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="main.cpp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
