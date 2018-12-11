@@ -116,5 +116,24 @@ namespace XLang.Codegen.Llvm
         {
             return new Value(LLVM.BuildLoad(BuilderRef, ptr.ValueRef, name));
         }
+
+        public Value Sub(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildSub(BuilderRef, left.ValueRef, right.ValueRef, name));
+        }
+        public Value SDiv(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildSDiv(BuilderRef, left.ValueRef, right.ValueRef, name));
+        }
+
+        public Value UDiv(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildUDiv(BuilderRef, left.ValueRef, right.ValueRef, name));
+        }
+
+        public Value ICmpEq(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildICmp(BuilderRef, LLVMIntPredicate.LLVMIntEQ, left.ValueRef, right.ValueRef, name));
+        }
     }
 }

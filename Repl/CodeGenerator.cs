@@ -19,7 +19,6 @@ namespace Repl
         public Value Generate(BoundExpression expression)
         {
             return GenerateExpression(expression);
-            
         }
 
         private Value GenerateExpression(BoundExpression expression)
@@ -50,7 +49,8 @@ namespace Repl
             var variable = boundAssignmentExpression.Variable;
             if (!_variables.TryGetValue(variable, out var ptr))
             {
-                ptr = _builder.Alloca(XType.Int32, variable.Name);
+                var xType = GetXType(variable.Type);
+                ptr = _builder.Alloca(xType, variable.Name);
                 _variables[variable] = ptr;
             }
 
@@ -59,6 +59,13 @@ namespace Repl
             _builder.Store(value, ptr);
 
             return value;
+        }
+
+        private XType GetXType(Type type)
+        {
+            if (type == typeof(bool))
+                return XType.Int1;
+            return XType.Int32;
         }
 
         private Value GenerateBinaryExpression(BoundBinaryExpression boundBinaryExpression)
@@ -70,8 +77,14 @@ namespace Repl
             {
                 case BoundBinaryOperatorKind.Addition:
                     return _builder.Add(left, right);
+                case BoundBinaryOperatorKind.Subtraction:
+                    return _builder.Sub(left, right);
                 case BoundBinaryOperatorKind.Multiplication:
                     return _builder.Mul(left, right);
+                case BoundBinaryOperatorKind.Division:
+                    return _builder.SDiv(left, right);
+                case BoundBinaryOperatorKind.Equals:
+                    return _builder.ICmpEq(left, right);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -83,9 +96,13 @@ namespace Repl
             return operand;
         }
 
-        private Value GenerateLiteralExpression(BoundLiteralExpression boundLiteralExpression)
+        private Value GenerateLiteralExpression(BoundLiteralExpression literal)
         {
-            return Const.Int32((int)boundLiteralExpression.Value);
+            var type = literal.Type;
+            var value = literal.Value;
+            if (type == typeof(bool))
+                return Const.Int1((bool)value);
+            return Const.Int32((int)value);
         }
     }
 }

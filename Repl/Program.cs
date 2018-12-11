@@ -154,7 +154,11 @@ namespace Repl
         {
             switch (kind)
             {
-                case TokenKind.Plus: return 3;
+                case TokenKind.Plus:
+                case TokenKind.Minus:
+                case TokenKind.Bang:
+                    return 6;
+
                 default: return 0;
             }
         }
@@ -163,8 +167,19 @@ namespace Repl
         {
             switch (kind)
             {
-                case TokenKind.Plus: return 1;
-                case TokenKind.Star: return 2;
+                case TokenKind.EqualsEquals:
+                case TokenKind.BangEquals:
+                    return 1;
+                case TokenKind.PipePipe:
+                    return 2;
+                case TokenKind.AmpersandAmpersand:
+                    return 3;
+                case TokenKind.Plus:
+                case TokenKind.Minus:
+                    return 4;
+                case TokenKind.Star:
+                case TokenKind.Slash:
+                    return 5;
                 default: return 0;
             }
         }
@@ -346,9 +361,21 @@ namespace Repl
 
         private BoundExpression BindLiteralExpression(LiteralExpressionSyntax literalExpressionSyntax)
         {
-            var token = literalExpressionSyntax.NumberToken;
-            if (!int.TryParse(token.Text, out var value))
-                Diagnostics.ReportInvalidNumber(token.Span, token.Text);
+            var token = literalExpressionSyntax.LiteralToken;
+            object value = null;
+
+            switch (token.Kind)
+            {
+                case TokenKind.TrueKeyword:
+                case TokenKind.FalseKeyword:
+                    value = token.Kind == TokenKind.TrueKeyword;
+                    break;
+                case TokenKind.Number:
+                    if (!int.TryParse(token.Text, out var number))
+                        Diagnostics.ReportInvalidNumber(token.Span, token.Text);
+                    value = number;
+                    break;
+            }
 
             return new BoundLiteralExpression(value);
         }
@@ -489,7 +516,16 @@ namespace Repl
 
         private static readonly BoundBinaryOperator[] Operators = {
             new BoundBinaryOperator(TokenKind.Plus, BoundBinaryOperatorKind.Addition, typeof(int)),
+            new BoundBinaryOperator(TokenKind.Minus, BoundBinaryOperatorKind.Subtraction, typeof(int)),
             new BoundBinaryOperator(TokenKind.Star, BoundBinaryOperatorKind.Multiplication, typeof(int)),
+            new BoundBinaryOperator(TokenKind.Slash, BoundBinaryOperatorKind.Division, typeof(int)),
+
+            new BoundBinaryOperator(TokenKind.AmpersandAmpersand, BoundBinaryOperatorKind.LogicalAnd, typeof(bool)),
+            new BoundBinaryOperator(TokenKind.PipePipe, BoundBinaryOperatorKind.LogicalOr, typeof(bool)),
+            new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equals, typeof(int),typeof(bool)),
+            new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equals, typeof(bool)),
+            new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, typeof(int), typeof(bool)),
+            new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, typeof(int)),
         };
 
         public static BoundBinaryOperator Bind(TokenKind operatorTokenKind, Type leftType, Type rightType)
@@ -508,12 +544,20 @@ namespace Repl
     public enum BoundBinaryOperatorKind
     {
         Addition,
-        Multiplication
+        Multiplication,
+        Subtraction,
+        Division,
+        LogicalAnd,
+        LogicalOr,
+        Equals,
+        NotEquals
     }
 
     public enum BoundUnaryOperatorKind
     {
-        Identity
+        Identity,
+        Negation,
+        LogicalNot
     }
 
     public class BoundUnaryOperator
@@ -538,7 +582,9 @@ namespace Repl
         }
 
         private static readonly BoundUnaryOperator[] Operators = {
-            new BoundUnaryOperator(TokenKind.Plus, BoundUnaryOperatorKind.Identity, typeof(int), typeof(int))
+            new BoundUnaryOperator(TokenKind.Plus, BoundUnaryOperatorKind.Identity, typeof(int)),
+            new BoundUnaryOperator(TokenKind.Minus, BoundUnaryOperatorKind.Negation, typeof(int)),
+            new BoundUnaryOperator(TokenKind.Bang, BoundUnaryOperatorKind.LogicalNot, typeof(bool))
         };
 
         public static BoundUnaryOperator Bind(TokenKind operatorTokenKind, Type operandType)
@@ -629,11 +675,18 @@ namespace Repl
 
         public ExpressionSyntax ParsePrimaryExpression()
         {
+            if (Current.Kind == TokenKind.TrueKeyword ||
+                Current.Kind == TokenKind.FalseKeyword)
+            {
+                return ParseBooleanLiteralExpression(Current.Kind);
+            }
+
             if (Current.Kind == TokenKind.Number)
             {
                 return ParseNumberLiteralExpression();
             }
-            else if (Current.Kind == TokenKind.Identifier)
+
+            if (Current.Kind == TokenKind.Identifier)
             {
                 return ParseNameExpression();
             }
@@ -643,6 +696,12 @@ namespace Repl
 
             // generate token
             return new LiteralExpressionSyntax(new Token(TokenKind.Number, new TextSpan(0, 0), "0"));
+        }
+
+        private ExpressionSyntax ParseBooleanLiteralExpression(TokenKind kind)
+        {
+            var token = MatchToken(kind);
+            return new LiteralExpressionSyntax(token);
         }
 
         private ExpressionSyntax ParseNameExpression()
@@ -751,16 +810,16 @@ namespace Repl
 
     public class LiteralExpressionSyntax : ExpressionSyntax
     {
-        public Token NumberToken { get; }
+        public Token LiteralToken { get; }
 
-        public LiteralExpressionSyntax(Token numberToken)
+        public LiteralExpressionSyntax(Token literalToken)
         {
-            NumberToken = numberToken;
+            LiteralToken = literalToken;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return NumberToken;
+            yield return LiteralToken;
         }
     }
 
@@ -866,12 +925,10 @@ namespace Repl
             Text = text;
         }
 
-        protected char Current()
-        {
-            return Position >= Text.Length
+        protected char Current
+            => Position >= Text.Length
                 ? '\0'
                 : Text[Position];
-        }
 
         protected void Next()
         {
@@ -883,6 +940,12 @@ namespace Repl
 
     class Lexer : LexerBase
     {
+        private static readonly Dictionary<string, TokenKind> KeywordKinds = new Dictionary<string, TokenKind>
+        {
+            {"true", TokenKind.TrueKeyword},
+            {"false", TokenKind.FalseKeyword}
+        };
+
         public Lexer(string text) : base(text) { }
 
         public override Token Lex()
@@ -890,33 +953,35 @@ namespace Repl
             var start = Position;
             var kind = TokenKind.Eof;
 
-            var c = Current();
+            var c = Current;
             Next();
-
 
             if (char.IsWhiteSpace(c))
             {
-                while (char.IsWhiteSpace(Current()))
+                while (char.IsWhiteSpace(Current))
                     Next();
 
                 kind = TokenKind.WhiteSpace;
             }
             else if (char.IsDigit(c))
             {
-                while (char.IsDigit(Current()))
+                while (char.IsDigit(Current))
                     Next();
 
                 kind = TokenKind.Number;
             }
             else if (IsIdentifierStart(c))
             {
-                while (IsIdentifierFollow(Current()))
+                while (IsIdentifierFollow(Current))
                     Next();
 
-                kind = TokenKind.Identifier;
+                var text = Text.Substring(start, Position - start);
+
+                kind = KeywordKinds.TryGetValue(text, out var k)
+                    ? k
+                    : TokenKind.Identifier;
             }
             else
-
             {
                 switch (c)
                 {
@@ -927,11 +992,36 @@ namespace Repl
                     case '+':
                         kind = TokenKind.Plus;
                         break;
+                    case '-':
+                        kind = TokenKind.Minus;
+                        break;
                     case '*':
                         kind = TokenKind.Star;
                         break;
+                    case '/':
+                        kind = TokenKind.Slash;
+                        break;
+                    case '=' when Current == '=':
+                        Next();
+                        kind = TokenKind.EqualsEquals;
+                        break;
                     case '=':
                         kind = TokenKind.Equals;
+                        break;
+                    case '!' when Current == '=':
+                        Next();
+                        kind = TokenKind.BangEquals;
+                        break;
+                    case '!':
+                        kind = TokenKind.Bang;
+                        break;
+                    case '&' when Current == '&':
+                        Next();
+                        kind = TokenKind.AmpersandAmpersand;
+                        break;
+                    case '|' when Current == '|':
+                        Next();
+                        kind = TokenKind.PipePipe;
                         break;
                     default:
                         kind = TokenKind.Bad;
@@ -963,9 +1053,20 @@ namespace Repl
         Star,
         Equals,
 
+        EqualsEquals,
+        BangEquals,
+        Bang,
+        Minus,
+        Slash,
+
         Number,
         WhiteSpace,
-        Identifier
+        Identifier,
+
+        AmpersandAmpersand,
+        PipePipe,
+        TrueKeyword,
+        FalseKeyword
     }
 
     public class Token : SyntaxNode
