@@ -28,5 +28,17 @@ namespace XLang.Codegen.Llvm
             var s = Marshal.PtrToStringAnsi(LLVM.PrintValueToString(ValueRef));
             writer.Write(s);
         }
+
+        public void EraseFromParent()
+        {
+            // TODO should only be on Instr ?
+            LLVM.InstructionEraseFromParent(ValueRef);
+        }
+
+        public void RemoveFromParent()
+        {
+            // TODO should only be on Instr ?
+            LLVM.InstructionEraseFromParent(ValueRef);
+        }
     }
 }

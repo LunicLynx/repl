@@ -8,31 +8,18 @@ namespace Repl
     public class CodeGenerator
     {
         private readonly Dictionary<VariableSymbol, Value> _variables;
+        private readonly Builder _builder;
 
-        public XModule Module { get; } = new XModule("test");
-        public BasicBlock BasicBlock { get; }
-        public Function Function { get; }
-
-        private readonly Builder _builder = new Builder();
-
-        public CodeGenerator(Dictionary<VariableSymbol, Value> variables)
+        public CodeGenerator(Builder builder, Dictionary<VariableSymbol, Value> variables)
         {
+            _builder = builder;
             _variables = variables;
-
-            var functionType = new FunctionType(XType.Int32);
-            Function = Module.AddFunction(functionType, "__anon_expr");
-
-            BasicBlock = Function.AppendBasicBlock();
-            _builder.PositionAtEnd(BasicBlock);
         }
 
-        public void Generate(BoundExpression expression)
+        public Value Generate(BoundExpression expression)
         {
-            using (_builder)
-            {
-                var value = GenerateExpression(expression);
-                _builder.Ret(value);
-            }
+            return GenerateExpression(expression);
+            
         }
 
         private Value GenerateExpression(BoundExpression expression)
@@ -63,7 +50,7 @@ namespace Repl
             var variable = boundAssignmentExpression.Variable;
             if (!_variables.TryGetValue(variable, out var ptr))
             {
-                ptr = _builder.Alloca(XType.Int32/*, variable.Name*/);
+                ptr = _builder.Alloca(XType.Int32, variable.Name);
                 _variables[variable] = ptr;
             }
 

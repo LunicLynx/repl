@@ -24,74 +24,92 @@ namespace Repl
             Statics.InitializeX86Target();
 
             var variables = new Dictionary<VariableSymbol, object>();
-            var variablePtrs = new Dictionary<VariableSymbol, XLang.Codegen.Llvm.Value>();
+            var variablePtrs = new Dictionary<VariableSymbol, Value>();
 
-            while (true)
+            XModule module = new XModule("test");
+            var functionType = new FunctionType(XType.Int32);
+            var function = module.AddFunction(functionType, "__anon_expr");
+            var basicBlock = function.AppendBasicBlock();
+            using (var builder = new Builder())
             {
-                Console.Write("> ");
-                var input = Console.ReadLine();
+                builder.PositionAtEnd(basicBlock);
 
-                if (string.IsNullOrWhiteSpace(input))
+                while (true)
                 {
-                    break;
-                }
+                    Console.Write("> ");
+                    var input = Console.ReadLine();
 
-                var tree = SyntaxTree.Parse(input);
-                var binder = new Binder(tree, variables);
-                var expression = binder.Bind();
-
-                var diagnostics = tree.Diagnostics.Concat(binder.Diagnostics).ToList();
-
-                if (!diagnostics.Any())
-                {
-                    Print(tree.Root);
-
-
-                    var codeGenerator = new CodeGenerator(variablePtrs);
-                    codeGenerator.Generate(expression);
-                    Console.ForegroundColor = ConsoleColor.DarkYellow;
-                    //code.Print(Console.Out);
-                    //codeGenerator.Module.Print(Console.Out);
-                    codeGenerator.BasicBlock.Print(Console.Out);
-                    Console.WriteLine();
-                    Console.ResetColor();
-
-                    var evaluator = new Evaluator(variables);
-                    var result = evaluator.Evaluate(expression);
-                    Console.ForegroundColor = ConsoleColor.Magenta;
-                    Console.WriteLine(result);
-                    Console.ResetColor();
-
-                    var objFilename = "entry.obj";
-                    if (codeGenerator.Module.TryEmitObj(objFilename, out var error))
+                    if (string.IsNullOrWhiteSpace(input))
                     {
-                        Console.ForegroundColor = ConsoleColor.DarkCyan;
-                        Cl.InvokeCl(objFilename);
-                        Console.ForegroundColor = ConsoleColor.Cyan;
-                        Cl.InvokeMain();
+                        break;
+                    }
+
+                    var tree = SyntaxTree.Parse(input);
+                    var binder = new Binder(tree, variables);
+                    var expression = binder.Bind();
+
+                    var diagnostics = tree.Diagnostics.Concat(binder.Diagnostics).ToList();
+
+                    if (!diagnostics.Any())
+                    {
+                        Print(tree.Root);
+
+                        //var keys = variablePtrs.Keys.ToArray();
+                        //foreach (var key in keys)
+                        //    if (!variables.ContainsKey(key))
+                        //        variablePtrs.Remove(key);
+
+                        var codeGenerator = new CodeGenerator(builder, variablePtrs);
+                        var value = codeGenerator.Generate(expression);
+
+                        var v = builder.Ret(value);
+
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        //code.Print(Console.Out);
+                        //codeGenerator.Module.Print(Console.Out);
+                        basicBlock.Print(Console.Out);
+                        Console.WriteLine();
                         Console.ResetColor();
+
+                        var evaluator = new Evaluator(variables);
+                        var result = evaluator.Evaluate(expression);
+                        Console.ForegroundColor = ConsoleColor.Magenta;
+                        Console.WriteLine(result);
+                        Console.ResetColor();
+
+                        var objFilename = "entry.obj";
+                        if (module.TryEmitObj(objFilename, out var error))
+                        {
+                            Console.ForegroundColor = ConsoleColor.DarkCyan;
+                            Cl.InvokeCl(objFilename);
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Cl.InvokeMain();
+                            Console.ResetColor();
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine(error);
+                            Console.ResetColor();
+                        }
+
+                        v.RemoveFromParent();
                     }
                     else
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine(error);
-                        Console.ResetColor();
-                    }
-                }
-                else
-                {
-                    foreach (var diagnostic in diagnostics)
-                    {
-                        var prefix = input.Substring(0, diagnostic.Span.Start);
-                        var error = input.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
-                        var suffix = input.Substring(diagnostic.Span.Start + diagnostic.Span.Length);
+                        foreach (var diagnostic in diagnostics)
+                        {
+                            var prefix = input.Substring(0, diagnostic.Span.Start);
+                            var error = input.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
+                            var suffix = input.Substring(diagnostic.Span.Start + diagnostic.Span.Length);
 
-                        Console.Write("    " + prefix);
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Write(error);
-                        Console.ResetColor();
-                        Console.WriteLine(suffix);
-                        Console.WriteLine(diagnostic.Message);
+                            Console.Write("    " + prefix);
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Write(error);
+                            Console.ResetColor();
+                            Console.WriteLine(suffix);
+                            Console.WriteLine(diagnostic.Message);
+                        }
                     }
                 }
             }
