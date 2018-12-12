@@ -275,6 +275,8 @@ namespace Repl
             switch (boundUnaryExpression.Operator.Kind)
             {
                 case BoundUnaryOperatorKind.Identity: return (int)operand;
+                case BoundUnaryOperatorKind.Negation: return -(int)operand;
+                case BoundUnaryOperatorKind.LogicalNot: return !(bool)operand;
             }
 
             return 0;
@@ -288,7 +290,13 @@ namespace Repl
             switch (boundBinaryExpression.Operator.Kind)
             {
                 case BoundBinaryOperatorKind.Addition: return (int)left + (int)right;
+                case BoundBinaryOperatorKind.Subtraction: return (int)left - (int)right;
                 case BoundBinaryOperatorKind.Multiplication: return (int)left * (int)right;
+                case BoundBinaryOperatorKind.Division: return (int)left / (int)right;
+                case BoundBinaryOperatorKind.LogicalAnd: return (bool)left && (bool)right;
+                case BoundBinaryOperatorKind.LogicalOr: return (bool)left || (bool)right;
+                case BoundBinaryOperatorKind.Equals: return left == right;
+                case BoundBinaryOperatorKind.NotEquals: return left != right;
             }
 
             return 0;
@@ -522,10 +530,11 @@ namespace Repl
 
             new BoundBinaryOperator(TokenKind.AmpersandAmpersand, BoundBinaryOperatorKind.LogicalAnd, typeof(bool)),
             new BoundBinaryOperator(TokenKind.PipePipe, BoundBinaryOperatorKind.LogicalOr, typeof(bool)),
+
             new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equals, typeof(int),typeof(bool)),
             new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equals, typeof(bool)),
             new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, typeof(int), typeof(bool)),
-            new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, typeof(int)),
+            new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, typeof(bool)),
         };
 
         public static BoundBinaryOperator Bind(TokenKind operatorTokenKind, Type leftType, Type rightType)

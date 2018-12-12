@@ -85,6 +85,12 @@ namespace Repl
                     return _builder.SDiv(left, right);
                 case BoundBinaryOperatorKind.Equals:
                     return _builder.ICmpEq(left, right);
+                case BoundBinaryOperatorKind.NotEquals:
+                    return _builder.ICmpNe(left, right);
+                case BoundBinaryOperatorKind.LogicalAnd:
+                    return _builder.And(left, right);
+                case BoundBinaryOperatorKind.LogicalOr:
+                    return _builder.Or(left, right);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -93,7 +99,18 @@ namespace Repl
         private Value GenerateUnaryExpression(BoundUnaryExpression boundUnaryExpression)
         {
             var operand = GenerateExpression(boundUnaryExpression.Operand);
-            return operand;
+            switch (boundUnaryExpression.Operator.Kind)
+            {
+                case BoundUnaryOperatorKind.Identity:
+                    return operand;
+                case BoundUnaryOperatorKind.Negation:
+                    return _builder.Neg(operand);
+                case BoundUnaryOperatorKind.LogicalNot:
+                    return _builder.Not(operand);
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
         }
 
         private Value GenerateLiteralExpression(BoundLiteralExpression literal)
