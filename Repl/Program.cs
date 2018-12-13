@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -63,7 +64,7 @@ namespace Repl
 
                 if (showTree)
                 {
-                    Print(syntaxTree.Root);
+                    Print(syntaxTree.Root.Expression);
                 }
 
                 if (!result.Diagnostics.Any())
@@ -391,7 +392,14 @@ namespace Repl
                 return BindAssignmentExpression(a);
             if (expr is NameExpressionSyntax n)
                 return BindNameExpression(n);
+            if (expr is ParenthesizedExpressionSyntax p)
+                return BindParenthesizedExpression(p);
             return null;
+        }
+
+        private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax parenthesizedExpressionSyntax)
+        {
+            return BindExpression(parenthesizedExpressionSyntax.Expression);
         }
 
         private BoundExpression BindNameExpression(NameExpressionSyntax nameExpressionSyntax)
@@ -747,6 +755,11 @@ namespace Repl
 
         public ExpressionSyntax ParsePrimaryExpression()
         {
+            if (Current.Kind == TokenKind.OpenParenthesis)
+            {
+                return ParseParenthesizedExpression();
+            }
+
             if (Current.Kind == TokenKind.TrueKeyword ||
                 Current.Kind == TokenKind.FalseKeyword)
             {
@@ -770,6 +783,14 @@ namespace Repl
             return new LiteralExpressionSyntax(new Token(TokenKind.Number, new TextSpan(0, 0), "0"));
         }
 
+        private ExpressionSyntax ParseParenthesizedExpression()
+        {
+            var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
+            var expression = ParseExpression();
+            var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
+            return new ParenthesizedExpressionSyntax(openParenthesisToken, expression, closeParenthesisToken);
+        }
+
         private ExpressionSyntax ParseBooleanLiteralExpression(TokenKind kind)
         {
             var token = MatchToken(kind);
@@ -786,6 +807,27 @@ namespace Repl
         {
             var token = MatchToken(TokenKind.Number);
             return new LiteralExpressionSyntax(token);
+        }
+    }
+
+    public class ParenthesizedExpressionSyntax : ExpressionSyntax
+    {
+        public Token OpenParenthesisToken { get; }
+        public ExpressionSyntax Expression { get; }
+        public Token CloseParenthesisToken { get; }
+
+        public ParenthesizedExpressionSyntax(Token openParenthesisToken, ExpressionSyntax expression, Token closeParenthesisToken)
+        {
+            OpenParenthesisToken = openParenthesisToken;
+            Expression = expression;
+            CloseParenthesisToken = closeParenthesisToken;
+        }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return OpenParenthesisToken;
+            yield return Expression;
+            yield return CloseParenthesisToken;
         }
     }
 
@@ -1271,6 +1313,12 @@ namespace Repl
                     case '/':
                         kind = TokenKind.Slash;
                         break;
+                    case '(':
+                        kind = TokenKind.OpenParenthesis;
+                        break;
+                    case ')':
+                        kind = TokenKind.CloseParenthesis;
+                        break;
                     case '=' when Current == '=':
                         Next();
                         kind = TokenKind.EqualsEquals;
@@ -1328,6 +1376,9 @@ namespace Repl
         Bang,
         Minus,
         Slash,
+        OpenParenthesis,
+        CloseParenthesis,
+
 
         Number,
         WhiteSpace,
