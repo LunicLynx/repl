@@ -24,7 +24,9 @@ namespace Repl
 
             while (true)
             {
-                Console.Write(textBuilder.Length == 0 ? "> " : "| ");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write(textBuilder.Length == 0 ? "» " : "· ");
+                Console.ResetColor();
 
                 var input = Console.ReadLine();
                 var isBlank = string.IsNullOrWhiteSpace(input);
