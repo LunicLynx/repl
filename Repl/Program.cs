@@ -50,6 +50,12 @@ namespace Repl
                         Console.Clear();
                         continue;
                     }
+
+                    if (input == "#reset")
+                    {
+                        previous = null;
+                        continue;
+                    }
                 }
 
                 textBuilder.AppendLine(input);

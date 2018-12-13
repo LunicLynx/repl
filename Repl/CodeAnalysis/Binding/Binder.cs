@@ -93,14 +93,7 @@ namespace Repl.CodeAnalysis.Binding
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax assignmentExpressionSyntax)
         {
             var name = assignmentExpressionSyntax.IdentifierToken.Text;
-
-            var count = Diagnostics.Count();
-
             var value = BindExpression(assignmentExpressionSyntax.Expression);
-
-            // if diagnostics changed we cant declare the variable
-            if (Diagnostics.Count() != count)
-                return new BoundLiteralExpression(0);
 
             var variable = new VariableSymbol(name, value.Type);
             if (!_scope.TryDeclare(variable))
