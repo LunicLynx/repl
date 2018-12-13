@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using XLang.Codegen;
+using Repl.CodeAnalysis.Binding;
 using XLang.Codegen.Llvm;
 
-namespace Repl
+namespace Repl.CodeAnalysis.CodeGen
 {
     public class CodeGenerator
     {
