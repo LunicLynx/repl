@@ -11,123 +11,80 @@ using XLang.Codegen.Llvm;
 
 namespace Repl
 {
-
-    /*
-     * Possbile syntax
-     *
-     * Not null shortcut
-     * something !? DoSomething();
-     *
-     */
     class Program
     {
         static void Main(string[] args)
         {
-            //string x = "";
-            //string y = null;
+            var showTree = true;
 
-            //var s = x ?? throw new InvalidOperationException();
-
-            //var s1 = x?    .GetType(); 
-
-            //             v   
-            //           e o e
-            //var type = x ? y; // .GetType();
-            //           e o e o e       
-            //var type = x ? y : z; // .GetType();
-
-            Statics.InitializeX86Target();
+            var compiler = new Compiler();
 
             var variables = new Dictionary<VariableSymbol, object>();
-            var variablePtrs = new Dictionary<VariableSymbol, Value>();
 
-            XModule module = new XModule("test");
-            var functionType = new FunctionType(XType.Int32);
-            var function = module.AddFunction(functionType, "__anon_expr");
-            var basicBlock = function.AppendBasicBlock();
-            using (var builder = new Builder())
+            while (true)
             {
-                builder.PositionAtEnd(basicBlock);
+                Console.Write("> ");
+                var input = Console.ReadLine();
 
-                while (true)
+                if (string.IsNullOrWhiteSpace(input))
                 {
-                    Console.Write("> ");
-                    var input = Console.ReadLine();
+                    break;
+                }
 
-                    if (string.IsNullOrWhiteSpace(input))
+                var syntaxTree = SyntaxTree.Parse(input);
+
+                var compilation = new Compilation(syntaxTree);
+                var result = compilation.Evaluate(variables);
+
+                if (showTree)
+                {
+                    Print(syntaxTree.Root);
+                }
+
+                if (!result.Diagnostics.Any())
+                {
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                    Console.WriteLine(result.Value);
+                    Console.ResetColor();
+
+                    compiler.CompileAndRun(syntaxTree, variables);
+                }
+                else
+                {
+                    var text = syntaxTree.Text;
+
+                    foreach (var diagnostic in result.Diagnostics)
                     {
-                        break;
-                    }
+                        var lineIndex = text.GetLineIndex(diagnostic.Span.Start);
+                        var lineNumber = lineIndex + 1;
+                        var character = diagnostic.Span.Start - text.Lines[lineIndex].Start + 1;
 
-                    var tree = SyntaxTree.Parse(input);
-                    var binder = new Binder(variables);
-                    var expression = binder.BindExpression(tree.Root.Expression);
-
-                    var diagnostics = tree.Diagnostics.Concat(binder.Diagnostics).ToList();
-
-                    if (!diagnostics.Any())
-                    {
-                        Print(tree.Root);
-
-                        //var keys = variablePtrs.Keys.ToArray();
-                        //foreach (var key in keys)
-                        //    if (!variables.ContainsKey(key))
-                        //        variablePtrs.Remove(key);
-
-                        var codeGenerator = new CodeGenerator(builder, variablePtrs);
-                        var value = codeGenerator.Generate(expression);
-
-                        var v = builder.Ret(value);
-
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        //code.Print(Console.Out);
-                        //codeGenerator.Module.Print(Console.Out);
-                        basicBlock.Print(Console.Out);
                         Console.WriteLine();
+
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine(diagnostic.Message);
                         Console.ResetColor();
 
-                        var evaluator = new Evaluator(expression, variables);
-                        var result = evaluator.Evaluate();
-                        Console.ForegroundColor = ConsoleColor.Magenta;
-                        Console.WriteLine(result);
+                        var prefix = input.Substring(0, diagnostic.Span.Start);
+                        var error = input.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
+                        var suffix = input.Substring(diagnostic.Span.Start + diagnostic.Span.Length);
+
+                        Console.Write("    ");
+                        Console.Write(prefix);
+
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Write(error);
                         Console.ResetColor();
 
-                        var objFilename = "entry.obj";
-                        if (module.TryEmitObj(objFilename, out var error))
-                        {
-                            Console.ForegroundColor = ConsoleColor.DarkCyan;
-                            Cl.InvokeCl(objFilename);
-                            Console.ForegroundColor = ConsoleColor.Cyan;
-                            Cl.InvokeMain();
-                            Console.ResetColor();
-                        }
-                        else
-                        {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine(error);
-                            Console.ResetColor();
-                        }
+                        Console.Write(suffix);
 
-                        v.RemoveFromParent();
+                        Console.WriteLine();
                     }
-                    else
-                    {
-                        foreach (var diagnostic in diagnostics)
-                        {
-                            var prefix = input.Substring(0, diagnostic.Span.Start);
-                            var error = input.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
-                            var suffix = input.Substring(diagnostic.Span.Start + diagnostic.Span.Length);
 
-                            Console.Write("    " + prefix);
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.Write(error);
-                            Console.ResetColor();
-                            Console.WriteLine(suffix);
-                            Console.WriteLine(diagnostic.Message);
-                        }
-                    }
+                    Console.WriteLine();
                 }
             }
+
         }
 
         private static void Print(SyntaxNode node, string indent = "", bool isLast = true)
@@ -160,6 +117,65 @@ namespace Repl
 
             foreach (var child in node.GetChildren())
                 Print(child, indent, child == lastChild);
+        }
+    }
+
+    class Compiler
+    {
+        private readonly BasicBlock _basicBlock;
+        private readonly Dictionary<VariableSymbol, Value> _variablePtrs;
+        private readonly XModule _module;
+
+        public Compiler()
+        {
+            _variablePtrs = new Dictionary<VariableSymbol, Value>();
+
+            Statics.InitializeX86Target();
+            _module = new XModule("test");
+            var functionType = new FunctionType(XType.Int32);
+            var function = _module.AddFunction(functionType, "__anon_expr");
+            _basicBlock = function.AppendBasicBlock();
+        }
+
+        public void CompileAndRun(SyntaxTree syntaxTree, Dictionary<VariableSymbol, object> variables)
+        {
+            var binder = new Binder(variables);
+            var expression = binder.BindExpression(syntaxTree.Root.Expression);
+
+            Value v;
+            using (var builder = new Builder())
+            {
+                builder.PositionAtEnd(_basicBlock);
+
+                var codeGenerator = new CodeGenerator(builder, _variablePtrs);
+                var value = codeGenerator.Generate(expression);
+
+                v = builder.Ret(value);
+
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                _basicBlock.Print(Console.Out);
+                Console.WriteLine();
+                Console.ResetColor();
+
+                var objFilename = "entry.obj";
+                if (_module.TryEmitObj(objFilename, out var error))
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                    Cl.InvokeCl(objFilename);
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Cl.InvokeMain();
+                    Console.ResetColor();
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(error);
+                    Console.ResetColor();
+                }
+
+                v.RemoveFromParent();
+
+            }
         }
     }
 
