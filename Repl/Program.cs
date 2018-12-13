@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
 using LLVMSharp;
 using XLang.Codegen;
 using XLang.Codegen.Llvm;
@@ -16,22 +17,46 @@ namespace Repl
         static void Main(string[] args)
         {
             var showTree = true;
-
             var compiler = new Compiler();
-
             var variables = new Dictionary<VariableSymbol, object>();
+            var textBuilder = new StringBuilder();
 
             while (true)
             {
-                Console.Write("> ");
-                var input = Console.ReadLine();
+                if (textBuilder.Length == 0)
+                    Console.Write("> ");
+                else
+                    Console.Write("| ");
 
-                if (string.IsNullOrWhiteSpace(input))
+                var input = Console.ReadLine();
+                var isBlank = string.IsNullOrWhiteSpace(input);
+
+                if (textBuilder.Length == 0)
                 {
-                    break;
+                    if (isBlank)
+                        break;
+
+                    if (input == "#showTree")
+                    {
+                        showTree = !showTree;
+                        Console.WriteLine(showTree ? "Showing parse trees." : "Not showing parse trees");
+                        continue;
+                    }
+
+                    if (input == "#cls")
+                    {
+                        Console.Clear();
+                        continue;
+                    }
                 }
 
-                var syntaxTree = SyntaxTree.Parse(input);
+                textBuilder.AppendLine(input);
+                var text = textBuilder.ToString();
+
+                var syntaxTree = SyntaxTree.Parse(text);
+
+                if (!isBlank && syntaxTree.Diagnostics.Any())
+                    continue;
 
                 var compilation = new Compilation(syntaxTree);
                 var result = compilation.Evaluate(variables);
@@ -51,23 +76,28 @@ namespace Repl
                 }
                 else
                 {
-                    var text = syntaxTree.Text;
+                    var text1 = syntaxTree.Text;
 
                     foreach (var diagnostic in result.Diagnostics)
                     {
-                        var lineIndex = text.GetLineIndex(diagnostic.Span.Start);
+                        var lineIndex = text1.GetLineIndex(diagnostic.Span.Start);
+                        var line = text1.Lines[lineIndex];
                         var lineNumber = lineIndex + 1;
-                        var character = diagnostic.Span.Start - text.Lines[lineIndex].Start + 1;
+                        var character = diagnostic.Span.Start - line.Start + 1;
 
                         Console.WriteLine();
 
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine(diagnostic.Message);
+                        Console.Write($"({lineNumber}, {character}): ");
+                        Console.WriteLine(diagnostic);
                         Console.ResetColor();
 
-                        var prefix = input.Substring(0, diagnostic.Span.Start);
-                        var error = input.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
-                        var suffix = input.Substring(diagnostic.Span.Start + diagnostic.Span.Length);
+                        var prefixSpan = TextSpan.FromBounds(line.Start, diagnostic.Span.Start);
+                        var suffixSpan = TextSpan.FromBounds(diagnostic.Span.End, line.End);
+
+                        var prefix = text1.ToString(prefixSpan);
+                        var error = text1.ToString(diagnostic.Span);
+                        var suffix = text1.ToString(suffixSpan);
 
                         Console.Write("    ");
                         Console.Write(prefix);
@@ -83,6 +113,8 @@ namespace Repl
 
                     Console.WriteLine();
                 }
+
+                textBuilder.Clear();
             }
 
         }
@@ -774,7 +806,7 @@ namespace Repl
         public int GetLineIndex(int position)
         {
             var lower = 0;
-            var upper = _text.Length - 1;
+            var upper = Lines.Length - 1;
 
             while (lower <= upper)
             {
@@ -814,7 +846,7 @@ namespace Repl
                 }
                 else
                 {
-                    AddLine(sourceText, position, lineStart, lineBreakWidth);
+                    AddLine(result, sourceText, position, lineStart, lineBreakWidth);
 
                     position += lineBreakWidth;
                     lineStart = position;
@@ -822,16 +854,17 @@ namespace Repl
             }
 
             if (position >= lineStart)
-                AddLine(sourceText, position, lineStart, 0);
+                AddLine(result, sourceText, position, lineStart, 0);
 
             return result.ToImmutable();
         }
 
-        private static void AddLine(SourceText sourceText, int position, int lineStart, int lineBreakWidth)
+        private static void AddLine(ImmutableArray<TextLine>.Builder result, SourceText sourceText, int position, int lineStart, int lineBreakWidth)
         {
             var lineLength = position - lineStart;
             var lineLengthIncludingLineBreak = lineLength + lineBreakWidth;
             var line = new TextLine(sourceText, lineStart, lineLength, lineLengthIncludingLineBreak);
+            result.Add(line);
         }
 
         private static int GetLineBreakWidth(string text, int position)
@@ -1104,6 +1137,8 @@ namespace Repl
             Span = span;
             Message = message;
         }
+
+        public override string ToString() => Message;
     }
 
     public static class DiagnosticCollectionExtensions
@@ -1327,6 +1362,8 @@ namespace Repl
     {
         public int Start { get; }
         public int Length { get; }
+
+        public int End => Start + Length;
 
         public TextSpan(int start, int length)
         {
