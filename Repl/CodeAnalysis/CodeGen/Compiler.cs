@@ -26,8 +26,7 @@ namespace Repl.CodeAnalysis.CodeGen
 
         public void CompileAndRun(SyntaxTree syntaxTree, Dictionary<VariableSymbol, object> variables)
         {
-            var binder = new Binder(variables);
-            var expression = binder.BindExpression(syntaxTree.Root.Expression);
+            var globalScope = Binder.BindGlobalScope(syntaxTree.Root);
 
             Value v;
             using (var builder = new Builder())
@@ -35,7 +34,7 @@ namespace Repl.CodeAnalysis.CodeGen
                 builder.PositionAtEnd(_basicBlock);
 
                 var codeGenerator = new CodeGenerator(builder, _variablePtrs);
-                var value = codeGenerator.Generate(expression);
+                var value = codeGenerator.Generate(globalScope.Expression);
 
                 v = builder.Ret(value);
 

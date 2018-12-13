@@ -5,7 +5,7 @@ namespace Repl.CodeAnalysis.Syntax
 {
     abstract class LexerBase
     {
-        public List<Diagnostic> Diagnostics { get; } = new List<Diagnostic>();
+        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
         protected int Position = 0;
 

@@ -1,18 +1,30 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Net;
 using Repl.CodeAnalysis.Syntax;
 
 namespace Repl.CodeAnalysis.Binding
 {
     public class Binder
     {
-        private readonly Dictionary<VariableSymbol, object> _variables;
+        private readonly BoundScope _scope;
 
-        public List<Diagnostic> Diagnostics { get; } = new List<Diagnostic>();
+        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
-        public Binder(Dictionary<VariableSymbol, object> variables)
+        public Binder(BoundScope parent)
         {
-            _variables = variables;
+            _scope = new BoundScope(parent);
+        }
+
+        public static BoundGlobalScope BindGlobalScope(CompilationUnitSyntax syntax)
+        {
+            var binder = new Binder(null);
+            var expression = binder.BindExpression(syntax.Expression);
+            var diagnostics = binder.Diagnostics.ToImmutableArray();
+            var variables = binder._scope.GetDeclaredVariables();
+            return new BoundGlobalScope(null, diagnostics, variables, expression);
         }
 
         public BoundExpression BindExpression(ExpressionSyntax expr)
@@ -40,9 +52,8 @@ namespace Repl.CodeAnalysis.Binding
         private BoundExpression BindNameExpression(NameExpressionSyntax nameExpressionSyntax)
         {
             var name = nameExpressionSyntax.IdentifierToken.Text;
-            var variable = _variables.Keys.FirstOrDefault(v => v.Name == name);
 
-            if (variable == null)
+            if (!_scope.TryLookup(name, out var variable))
             {
                 Diagnostics.ReportUndefinedName(nameExpressionSyntax.IdentifierToken.Span, name);
                 return new BoundLiteralExpression(0);
@@ -55,22 +66,19 @@ namespace Repl.CodeAnalysis.Binding
         {
             var name = assignmentExpressionSyntax.IdentifierToken.Text;
 
-            var count = Diagnostics.Count;
+            var count = Diagnostics.Count();
 
             var value = BindExpression(assignmentExpressionSyntax.Expression);
 
             // if diagnostics changed we cant declare the variable
-            if (Diagnostics.Count != count)
+            if (Diagnostics.Count() != count)
                 return new BoundLiteralExpression(0);
 
-            var oldVariable = _variables.Keys.FirstOrDefault(v => v.Name == name);
-            if (oldVariable != null)
-            {
-                _variables.Remove(oldVariable);
-            }
-
             var variable = new VariableSymbol(name, value.Type);
-            _variables[variable] = null;
+            if (!_scope.TryDeclare(variable))
+            {
+                Diagnostics.ReportVariableAlreadyDeclared(assignmentExpressionSyntax.IdentifierToken.Span, name);
+            }
 
             return new BoundAssignmentExpression(variable, value);
         }

@@ -17,14 +17,13 @@ namespace Repl.CodeAnalysis
 
         public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
         {
-            var binder = new Binder(variables);
-            var boundExpression = binder.BindExpression(SyntaxTree.Root.Expression);
+            var globalScope = Binder.BindGlobalScope(SyntaxTree.Root);
 
-            var diagnostics = SyntaxTree.Diagnostics.Concat(binder.Diagnostics).ToImmutableArray();
+            var diagnostics = SyntaxTree.Diagnostics.Concat(globalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics, null);
 
-            var evaluator = new Evaluator(boundExpression, variables);
+            var evaluator = new Evaluator(globalScope.Expression, variables);
             var value = evaluator.Evaluate();
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
         }

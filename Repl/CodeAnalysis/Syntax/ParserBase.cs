@@ -8,7 +8,7 @@ namespace Repl.CodeAnalysis.Syntax
         protected Token[] Tokens;
 
         private int _position = 0;
-        public List<Diagnostic> Diagnostics { get; } = new List<Diagnostic>();
+        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
         protected Token NextToken()
         {
