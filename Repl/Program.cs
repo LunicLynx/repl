@@ -22,6 +22,7 @@ namespace Repl
             var compiler = new Compiler();
             var variables = new Dictionary<VariableSymbol, object>();
             var textBuilder = new StringBuilder();
+            Compilation previous = null;
 
             while (true)
             {
@@ -59,7 +60,9 @@ namespace Repl
                 if (!isBlank && syntaxTree.Diagnostics.Any())
                     continue;
 
-                var compilation = new Compilation(syntaxTree);
+                var compilation = previous == null
+                        ? new Compilation(syntaxTree)
+                        : previous.ContinueWith(syntaxTree);
                 var result = compilation.Evaluate(variables);
 
                 if (showTree)
@@ -73,7 +76,9 @@ namespace Repl
                     Console.WriteLine(result.Value);
                     Console.ResetColor();
 
-                    compiler.CompileAndRun(syntaxTree, variables);
+                    compiler.CompileAndRun(compilation, variables);
+
+                    previous = compilation;
                 }
                 else
                 {

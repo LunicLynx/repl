@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Headers;
 using Repl.CodeAnalysis.Syntax;
 
 namespace Repl.CodeAnalysis.Binding
@@ -18,13 +19,40 @@ namespace Repl.CodeAnalysis.Binding
             _scope = new BoundScope(parent);
         }
 
-        public static BoundGlobalScope BindGlobalScope(CompilationUnitSyntax syntax)
+        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax syntax)
         {
-            var binder = new Binder(null);
+            var parent = CreateParentScopes(previous);
+            var binder = new Binder(parent);
             var expression = binder.BindExpression(syntax.Expression);
             var diagnostics = binder.Diagnostics.ToImmutableArray();
             var variables = binder._scope.GetDeclaredVariables();
-            return new BoundGlobalScope(null, diagnostics, variables, expression);
+            return new BoundGlobalScope(previous, diagnostics, variables, expression);
+        }
+
+        private static BoundScope CreateParentScopes(BoundGlobalScope previous)
+        {
+            var stack = new Stack<BoundGlobalScope>();
+            while (previous != null)
+            {
+                stack.Push(previous);
+                previous = previous.Previous;
+            }
+
+            BoundScope parent = null;
+
+            while (stack.Count > 0)
+            {
+                previous = stack.Pop();
+                var scope = new BoundScope(parent);
+                foreach (var v in previous.Variables)
+                {
+                    scope.TryDeclare(v);
+                }
+
+                parent = scope;
+            }
+
+            return parent;
         }
 
         public BoundExpression BindExpression(ExpressionSyntax expr)

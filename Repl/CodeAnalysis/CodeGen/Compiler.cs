@@ -24,9 +24,9 @@ namespace Repl.CodeAnalysis.CodeGen
             _basicBlock = function.AppendBasicBlock();
         }
 
-        public void CompileAndRun(SyntaxTree syntaxTree, Dictionary<VariableSymbol, object> variables)
+        public void CompileAndRun(Compilation compilation, Dictionary<VariableSymbol, object> variables)
         {
-            var globalScope = Binder.BindGlobalScope(syntaxTree.Root);
+            var globalScope = compilation.GlobalScope;
 
             Value v;
             using (var builder = new Builder())
