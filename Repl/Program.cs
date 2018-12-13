@@ -21,6 +21,19 @@ namespace Repl
     {
         static void Main(string[] args)
         {
+            //string x = "";
+            //string y = null;
+
+            //var s = x ?? throw new InvalidOperationException();
+
+            //var s1 = x?    .GetType(); 
+
+            //             v   
+            //           e o e
+            //var type = x ? y; // .GetType();
+            //           e o e o e       
+            //var type = x ? y : z; // .GetType();
+
             Statics.InitializeX86Target();
 
             var variables = new Dictionary<VariableSymbol, object>();
