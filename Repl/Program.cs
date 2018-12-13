@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
+using LLVMSharp;
 using XLang.Codegen;
 using XLang.Codegen.Llvm;
 
@@ -58,8 +60,8 @@ namespace Repl
                     }
 
                     var tree = SyntaxTree.Parse(input);
-                    var binder = new Binder(tree, variables);
-                    var expression = binder.Bind();
+                    var binder = new Binder(variables);
+                    var expression = binder.BindExpression(tree.Root.Expression);
 
                     var diagnostics = tree.Diagnostics.Concat(binder.Diagnostics).ToList();
 
@@ -84,8 +86,8 @@ namespace Repl
                         Console.WriteLine();
                         Console.ResetColor();
 
-                        var evaluator = new Evaluator(variables);
-                        var result = evaluator.Evaluate(expression);
+                        var evaluator = new Evaluator(expression, variables);
+                        var result = evaluator.Evaluate();
                         Console.ForegroundColor = ConsoleColor.Magenta;
                         Console.WriteLine(result);
                         Console.ResetColor();
@@ -234,16 +236,18 @@ namespace Repl
 
     public class Evaluator
     {
+        public BoundExpression Expression { get; }
         public Dictionary<VariableSymbol, object> Variables { get; }
 
-        public Evaluator(Dictionary<VariableSymbol, object> variables)
+        public Evaluator(BoundExpression expression, Dictionary<VariableSymbol, object> variables)
         {
+            Expression = expression;
             Variables = variables;
         }
 
-        public object Evaluate(BoundExpression expression)
+        public object Evaluate()
         {
-            return EvaluateExpression(expression);
+            return EvaluateExpression(Expression);
         }
 
         private object EvaluateExpression(BoundExpression expression)
@@ -320,21 +324,14 @@ namespace Repl
     {
         private readonly Dictionary<VariableSymbol, object> _variables;
 
-        public SyntaxTree Tree { get; }
         public List<Diagnostic> Diagnostics { get; } = new List<Diagnostic>();
 
-        public Binder(SyntaxTree tree, Dictionary<VariableSymbol, object> variables)
+        public Binder(Dictionary<VariableSymbol, object> variables)
         {
-            Tree = tree;
             _variables = variables;
         }
 
-        public BoundExpression Bind()
-        {
-            return BindExpression(Tree.Root);
-        }
-
-        private BoundExpression BindExpression(ExpressionSyntax expr)
+        public BoundExpression BindExpression(ExpressionSyntax expr)
         {
             if (expr is BinaryExpressionSyntax b)
                 return BindBinaryExpression(b);
@@ -623,8 +620,11 @@ namespace Repl
 
     public class Parser : ParserBase
     {
-        public Parser(string text)
+        public SourceText Text { get; }
+
+        public Parser(SourceText text)
         {
+            Text = text;
             var tokens = new List<Token>();
             var lexer = new Lexer(text);
 
@@ -641,9 +641,11 @@ namespace Repl
             Tokens = tokens.ToArray();
         }
 
-        public ExpressionSyntax Parse()
+        public CompilationUnitSyntax ParseCompilationUnit()
         {
-            return ParseExpression();
+            var expr = ParseExpression();
+            var endOfFileToken = MatchToken(TokenKind.Eof);
+            return new CompilationUnitSyntax(expr, endOfFileToken);
         }
 
         public ExpressionSyntax ParseExpression()
@@ -739,40 +741,217 @@ namespace Repl
         }
     }
 
-    public class SyntaxTree
+    public class SourceText
     {
-        public ExpressionSyntax Root { get; }
-        public Diagnostic[] Diagnostics { get; }
+        private readonly string _text;
 
-        public SyntaxTree(ExpressionSyntax root, IEnumerable<Diagnostic> diagnostics)
+
+
+        private SourceText(string text)
         {
-            Root = root;
-            Diagnostics = diagnostics.ToArray();
+            _text = text;
+            Lines = ParseLines(this, _text);
         }
 
-        public static IEnumerable<Token> ParseTokens(string input)
+        public ImmutableArray<TextLine> Lines { get; }
+
+        public int GetLineIndex(int position)
         {
-            var tokens = new List<Token>();
-            var lexer = new Lexer(input);
+            var lower = 0;
+            var upper = _text.Length - 1;
+
+            while (lower <= upper)
+            {
+                var index = lower + (upper - lower) / 2;
+                var start = Lines[index].Start;
+
+                if (position == start)
+                    return index;
+
+                if (start > position)
+                {
+                    upper = index - 1;
+                }
+                else
+                {
+                    lower = index + 1;
+                }
+            }
+
+            return lower - 1;
+        }
+
+        private static ImmutableArray<TextLine> ParseLines(SourceText sourceText, string text)
+        {
+            var result = ImmutableArray.CreateBuilder<TextLine>();
+
+            var position = 0;
+            var lineStart = 0;
+
+            while (position < text.Length)
+            {
+                var lineBreakWidth = GetLineBreakWidth(text, position);
+
+                if (lineBreakWidth == 0)
+                {
+                    position++;
+                }
+                else
+                {
+                    AddLine(sourceText, position, lineStart, lineBreakWidth);
+
+                    position += lineBreakWidth;
+                    lineStart = position;
+                }
+            }
+
+            if (position >= lineStart)
+                AddLine(sourceText, position, lineStart, 0);
+
+            return result.ToImmutable();
+        }
+
+        private static void AddLine(SourceText sourceText, int position, int lineStart, int lineBreakWidth)
+        {
+            var lineLength = position - lineStart;
+            var lineLengthIncludingLineBreak = lineLength + lineBreakWidth;
+            var line = new TextLine(sourceText, lineStart, lineLength, lineLengthIncludingLineBreak);
+        }
+
+        private static int GetLineBreakWidth(string text, int position)
+        {
+            var c = text[position];
+            var l = position + 1 >= text.Length ? '\0' : text[position + 1];
+
+            if (c == '\r' && l == '\n')
+                return 2;
+
+            if (c == '\r' || c == '\n')
+                return 1;
+
+            return 0;
+        }
+
+        public static SourceText From(string text)
+        {
+            return new SourceText(text);
+        }
+
+
+
+        public override string ToString() => _text;
+
+        public string ToString(int start, int length) => _text.Substring(start, length);
+        public string ToString(TextSpan span) => ToString(span.Start, span.Length);
+
+        public int Length => _text.Length;
+
+        public char this[int index] => _text[index];
+    }
+
+    public class TextLine
+    {
+        public SourceText Text { get; }
+        public int Start { get; }
+        public int Length { get; }
+        public int End => Start + Length;
+        public int LengthIncludingLineBreak { get; }
+        public TextSpan Span => new TextSpan(Start, Length);
+        public TextSpan SpanIncludingLineBreak => new TextSpan(Start, LengthIncludingLineBreak);
+
+
+        public TextLine(SourceText text, int start, int length, int lengthIncludingLineBreak)
+        {
+            Text = text;
+            Start = start;
+            Length = length;
+            LengthIncludingLineBreak = lengthIncludingLineBreak;
+        }
+
+        public override string ToString() => Text.ToString(Span);
+    }
+
+    public class Compilation
+    {
+        public SyntaxTree SyntaxTree { get; }
+
+        public Compilation(SyntaxTree syntaxTree)
+        {
+            SyntaxTree = syntaxTree;
+        }
+
+        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
+        {
+            var binder = new Binder(variables);
+            var boundExpression = binder.BindExpression(SyntaxTree.Root.Expression);
+
+            var diagnostics = SyntaxTree.Diagnostics.Concat(binder.Diagnostics).ToImmutableArray();
+            if (diagnostics.Any())
+                return new EvaluationResult(diagnostics, null);
+
+            var evaluator = new Evaluator(boundExpression, variables);
+            var value = evaluator.Evaluate();
+            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+        }
+    }
+
+    public class EvaluationResult
+    {
+        public ImmutableArray<Diagnostic> Diagnostics { get; }
+        public object Value { get; }
+
+        public EvaluationResult(ImmutableArray<Diagnostic> diagnostics, object value)
+        {
+            Diagnostics = diagnostics;
+            Value = value;
+        }
+    }
+
+    public class SyntaxTree
+    {
+        public SourceText Text { get; }
+        public CompilationUnitSyntax Root { get; }
+        public ImmutableArray<Diagnostic> Diagnostics { get; }
+
+        private SyntaxTree(SourceText text)
+        {
+            var parser = new Parser(text);
+            var root = parser.ParseCompilationUnit();
+            var diagnostics = parser.Diagnostics.ToImmutableArray();
+
+            Diagnostics = diagnostics;
+            Text = text;
+            Root = root;
+        }
+
+        public static SyntaxTree Parse(string text)
+        {
+            var sourceText = SourceText.From(text);
+            return Parse(sourceText);
+        }
+
+        public static SyntaxTree Parse(SourceText text)
+        {
+            return new SyntaxTree(text);
+        }
+
+        public static IEnumerable<Token> ParseTokens(string text)
+        {
+            var sourceText = SourceText.From(text);
+            return ParseTokens(sourceText);
+        }
+
+        public static IEnumerable<Token> ParseTokens(SourceText text)
+        {
+            var lexer = new Lexer(text);
             while (true)
             {
                 var token = lexer.Lex();
-                tokens.Add(token);
                 if (token.Kind == TokenKind.Eof)
                     break;
+
+                yield return token;
             }
-
-            return tokens;
-        }
-
-        public static SyntaxTree Parse(string input)
-        {
-            var parser = new Parser(input);
-            var expressionSyntax = parser.Parse();
-
-            var diagnostics = parser.Diagnostics;
-
-            return new SyntaxTree(expressionSyntax, diagnostics);
         }
     }
 
@@ -782,6 +961,24 @@ namespace Repl
         public virtual IEnumerable<SyntaxNode> GetChildren()
         {
             return Array.Empty<SyntaxNode>();
+        }
+    }
+
+    public class CompilationUnitSyntax : SyntaxNode
+    {
+        public ExpressionSyntax Expression { get; }
+        public Token EndOfFileToken { get; }
+
+        public CompilationUnitSyntax(ExpressionSyntax expression, Token endOfFileToken)
+        {
+            Expression = expression;
+            EndOfFileToken = endOfFileToken;
+        }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return Expression;
+            yield return EndOfFileToken;
         }
     }
 
@@ -940,9 +1137,9 @@ namespace Repl
 
         protected int Position = 0;
 
-        protected readonly string Text;
+        protected readonly SourceText Text;
 
-        protected LexerBase(string text)
+        protected LexerBase(SourceText text)
         {
             Text = text;
         }
@@ -968,7 +1165,7 @@ namespace Repl
             {"false", TokenKind.FalseKeyword}
         };
 
-        public Lexer(string text) : base(text) { }
+        public Lexer(SourceText text) : base(text) { }
 
         public override Token Lex()
         {
@@ -997,7 +1194,7 @@ namespace Repl
                 while (IsIdentifierFollow(Current))
                     Next();
 
-                var text = Text.Substring(start, Position - start);
+                var text = Text.ToString(start, Position - start);
 
                 kind = KeywordKinds.TryGetValue(text, out var k)
                     ? k
@@ -1052,7 +1249,7 @@ namespace Repl
                 }
             }
 
-            return new Token(kind, TextSpan.FromBounds(start, Position), Text.Substring(start, Position - start));
+            return new Token(kind, TextSpan.FromBounds(start, Position), Text.ToString(start, Position - start));
         }
 
         private bool IsIdentifierStart(char c)
