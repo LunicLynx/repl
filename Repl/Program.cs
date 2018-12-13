@@ -24,10 +24,7 @@ namespace Repl
 
             while (true)
             {
-                if (textBuilder.Length == 0)
-                    Console.Write("> ");
-                else
-                    Console.Write("| ");
+                Console.Write(textBuilder.Length == 0 ? "> " : "| ");
 
                 var input = Console.ReadLine();
                 var isBlank = string.IsNullOrWhiteSpace(input);
@@ -419,7 +416,14 @@ namespace Repl
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax assignmentExpressionSyntax)
         {
             var name = assignmentExpressionSyntax.IdentifierToken.Text;
+
+            var count = Diagnostics.Count;
+
             var value = BindExpression(assignmentExpressionSyntax.Expression);
+
+            // if diagnostics changed we cant declare the variable
+            if (Diagnostics.Count != count)
+                return new BoundLiteralExpression(0);
 
             var oldVariable = _variables.Keys.FirstOrDefault(v => v.Name == name);
             if (oldVariable != null)
