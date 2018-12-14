@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Repl.CodeAnalysis.Text;
+﻿using Repl.CodeAnalysis.Text;
 
 namespace Repl.CodeAnalysis.Syntax
 {

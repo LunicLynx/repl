@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices;
 using System.Text;
-using LLVMSharp;
 using Repl.CodeAnalysis;
 using Repl.CodeAnalysis.CodeGen;
 using Repl.CodeAnalysis.Syntax;
@@ -14,11 +9,12 @@ using Repl.CodeAnalysis.Text;
 
 namespace Repl
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            var showTree = true;
+            var showTree = false;
+            var compile = true;
             var compiler = new Compiler();
             var variables = new Dictionary<VariableSymbol, object>();
             var textBuilder = new StringBuilder();
@@ -56,6 +52,13 @@ namespace Repl
                         previous = null;
                         continue;
                     }
+
+                    if (input == "#emit")
+                    {
+                        compile = !compile;
+                        Console.WriteLine(showTree ? "Emit binary." : "Not emitting binary.");
+                        continue;
+                    }
                 }
 
                 textBuilder.AppendLine(input);
@@ -82,6 +85,7 @@ namespace Repl
                     Console.WriteLine(result.Value);
                     Console.ResetColor();
 
+                    // TODO if (compile) - if activated we would need to re-emit the whole module
                     compiler.CompileAndRun(compilation, variables);
 
                     previous = compilation;

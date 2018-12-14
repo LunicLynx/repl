@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Net;
-using System.Net.Http.Headers;
 using Repl.CodeAnalysis.Syntax;
 
 namespace Repl.CodeAnalysis.Binding
 {
     public class Binder
     {
-        private readonly BoundScope _scope;
+        private BoundScope _scope;
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
@@ -61,21 +58,43 @@ namespace Repl.CodeAnalysis.Binding
             {
                 case BlockStatementSyntax b:
                     return BindBlockStatement(b);
+                case VariableDeclarationSyntax v:
+                    return BindVariableDeclaration(v);
                 case ExpressionStatementSyntax e:
                     return BindExpressionStatement(e);
                 default:
-                    return null;
+                    throw new Exception($"Unexpected syntax {stmt.GetType()}");
             }
+        }
+
+        private BoundStatement BindVariableDeclaration(VariableDeclarationSyntax syntax)
+        {
+            var name = syntax.Identifier.Text;
+            var isReadOnly = syntax.Keyword.Kind == TokenKind.LetKeyword;
+            var initializer = BindExpression(syntax.Initializer);
+            var variable = new VariableSymbol(name, isReadOnly, initializer.Type);
+
+            if (!_scope.TryDeclare(variable))
+            {
+                Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
+            }
+
+            return new BoundVariableDeclaration(variable, initializer);
         }
 
         private BoundStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
             var statements = ImmutableArray.CreateBuilder<BoundStatement>();
+            _scope = new BoundScope(_scope);
+
             foreach (var statementSyntax in syntax.Statements)
             {
                 var statement = BindStatement(statementSyntax);
                 statements.Add(statement);
             }
+
+            _scope = _scope.Parent;
+
             return new BoundBlockStatement(statements.ToImmutable());
         }
 
@@ -131,8 +150,14 @@ namespace Repl.CodeAnalysis.Binding
 
             if (!_scope.TryLookup(name, out var variable))
             {
-                variable = new VariableSymbol(name, value.Type);
-                _scope.TryDeclare(variable);
+                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
+                return value;
+            }
+
+            if (variable.IsReadOnly)
+            {
+                Diagnostics.ReportCannotAssign(syntax.EqualsToken.Span, name);
+                return value;
             }
 
             if (value.Type != variable.Type)

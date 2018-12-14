@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Repl.CodeAnalysis.Binding;
-using Repl.CodeAnalysis.Syntax;
 using XLang.Codegen;
 using XLang.Codegen.Llvm;
 

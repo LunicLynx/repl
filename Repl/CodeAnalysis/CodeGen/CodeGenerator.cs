@@ -32,12 +32,29 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundBlockStatement b:
                     GenerateBlockStatement(b);
                     return;
+                case BoundVariableDeclaration v:
+                    GenerateVariableDeclaration(v);
+                    return;
                 case BoundExpressionStatement e:
                     GenerateExpressionStatement(e);
                     return;
                 default:
                     throw new Exception($"Unexpected node {statement.GetType()}");
             }
+        }
+
+        private void GenerateVariableDeclaration(BoundVariableDeclaration node)
+        {
+            var value = GenerateExpression(node.Initializer);
+            var variable = node.Variable;
+            if (!_variables.TryGetValue(variable, out var ptr))
+            {
+                var xType = GetXType(variable.Type);
+                ptr = _builder.Alloca(xType, variable.Name);
+                _variables[variable] = ptr;
+            }
+            _builder.Store(value, ptr);
+            _lastValue = value;
         }
 
         private void GenerateExpressionStatement(BoundExpressionStatement boundExpressionStatement)
@@ -84,14 +101,9 @@ namespace Repl.CodeAnalysis.CodeGen
         {
             var variable = boundAssignmentExpression.Variable;
             if (!_variables.TryGetValue(variable, out var ptr))
-            {
-                var xType = GetXType(variable.Type);
-                ptr = _builder.Alloca(xType, variable.Name);
-                _variables[variable] = ptr;
-            }
+                throw new Exception("variable does not exist");
 
             var value = GenerateExpression(boundAssignmentExpression.Expression);
-
             _builder.Store(value, ptr);
 
             return value;

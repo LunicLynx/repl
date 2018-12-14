@@ -27,5 +27,7 @@
         PipePipe,
         TrueKeyword,
         FalseKeyword,
+        LetKeyword,
+        VarKeyword
     }
 }

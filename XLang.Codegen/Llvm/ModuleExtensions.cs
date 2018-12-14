@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace XLang.Codegen.Llvm
+﻿namespace XLang.Codegen.Llvm
 {
     public static class ModuleExtensions
     {

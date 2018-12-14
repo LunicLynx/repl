@@ -36,11 +36,29 @@ namespace Repl.CodeAnalysis.Syntax
 
         public StatementSyntax ParseStatement()
         {
-            if (Current.Kind == TokenKind.OpenBrace)
+            switch (Current.Kind)
             {
-                return ParseBlockStatement();
+                case TokenKind.OpenBrace:
+                    return ParseBlockStatement();
+                case TokenKind.LetKeyword:
+                case TokenKind.VarKeyword:
+                    return ParseVariableDeclaration();
+                default:
+                    return ParseExpressionStatement();
             }
-            return ParseExpressionStatement();
+        }
+
+        private StatementSyntax ParseVariableDeclaration()
+        {
+            var expected = Current.Kind == TokenKind.LetKeyword
+                ? TokenKind.LetKeyword
+                : TokenKind.VarKeyword;
+
+            var keyword = MatchToken(expected);
+            var identifier = MatchToken(TokenKind.Identifier);
+            var equalsToken = MatchToken(TokenKind.Equals);
+            var initializer = ParseExpression();
+            return new VariableDeclarationSyntax(keyword, identifier, equalsToken, initializer);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement()

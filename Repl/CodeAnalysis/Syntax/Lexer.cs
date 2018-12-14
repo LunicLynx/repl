@@ -8,7 +8,9 @@ namespace Repl.CodeAnalysis.Syntax
         private static readonly Dictionary<string, TokenKind> KeywordKinds = new Dictionary<string, TokenKind>
         {
             {"true", TokenKind.TrueKeyword},
-            {"false", TokenKind.FalseKeyword}
+            {"false", TokenKind.FalseKeyword},
+            {"let", TokenKind.LetKeyword},
+            {"var", TokenKind.VarKeyword},
         };
 
         public Lexer(SourceText text) : base(text) { }

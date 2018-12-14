@@ -48,11 +48,19 @@ namespace Repl.CodeAnalysis
             {
                 case BoundBlockStatement b:
                     EvaluateBlockStatement(b); return;
+                case BoundVariableDeclaration v:
+                    EvaluateVariableDeclaration(v);return;
                 case BoundExpressionStatement e:
                     EvaluateExpressionStatement(e); return;
                 default:
                     throw new Exception($"Unexpected node {statement.GetType()}");
             }
+        }
+        private void EvaluateVariableDeclaration(BoundVariableDeclaration node)
+        {
+            var value = EvaluateExpression(node.Initializer);
+            _variables[node.Variable] = value;
+            _lastValue = value;
         }
 
         private void EvaluateExpressionStatement(BoundExpressionStatement boundExpressionStatement)
@@ -77,9 +85,7 @@ namespace Repl.CodeAnalysis
         private object EvaluateAssignmentExpression(BoundAssignmentExpression boundAssignmentExpression)
         {
             var value = EvaluateExpression(boundAssignmentExpression.Expression);
-
             _variables[boundAssignmentExpression.Variable] = value;
-
             return value;
         }
 
