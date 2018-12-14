@@ -33,5 +33,7 @@
         FalseKeyword,
         LetKeyword,
         VarKeyword,
+        IfKeyword,
+        ElseKeyword
     }
 }

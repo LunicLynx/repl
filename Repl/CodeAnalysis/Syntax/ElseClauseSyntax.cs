@@ -1,0 +1,22 @@
+﻿using System.Collections.Generic;
+
+namespace Repl.CodeAnalysis.Syntax
+{
+    public class ElseClauseSyntax : SyntaxNode
+    {
+        public Token ElseKeyword { get; }
+        public StatementSyntax ElseStatement { get; }
+
+        public ElseClauseSyntax(Token elseKeyword, StatementSyntax elseStatement)
+        {
+            ElseKeyword = elseKeyword;
+            ElseStatement = elseStatement;
+        }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return ElseKeyword;
+            yield return ElseStatement;
+        }
+    }
+}

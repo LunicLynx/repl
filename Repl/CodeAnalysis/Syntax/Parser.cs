@@ -43,9 +43,35 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.LetKeyword:
                 case TokenKind.VarKeyword:
                     return ParseVariableDeclaration();
+                case TokenKind.IfKeyword:
+                    return ParseIfStatement();
                 default:
                     return ParseExpressionStatement();
             }
+        }
+
+        private IfStatementSyntax ParseIfStatement()
+        {
+            var ifKeyword = MatchToken(TokenKind.IfKeyword);
+            var expression = ParseExpression();
+            var thenBlock = ParseBlockStatement();
+
+            var elseClause = ParseElseClause();
+
+            return new IfStatementSyntax(ifKeyword, expression, thenBlock, elseClause);
+        }
+
+        private ElseClauseSyntax ParseElseClause()
+        {
+            if (Current.Kind != TokenKind.ElseKeyword)
+                return null;
+
+            var elseKeyword = MatchToken(TokenKind.ElseKeyword);
+            var elseIfStatement = Current.Kind == TokenKind.IfKeyword
+                ? (StatementSyntax)ParseIfStatement()
+                : ParseBlockStatement();
+
+            return new ElseClauseSyntax(elseKeyword, elseIfStatement);
         }
 
         private StatementSyntax ParseVariableDeclaration()

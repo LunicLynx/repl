@@ -8,7 +8,7 @@ namespace Repl.CodeAnalysis
 {
     public class DiagnosticBag : IEnumerable<Diagnostic>
     {
-        readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
+        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         public IEnumerator<Diagnostic> GetEnumerator()
         {

@@ -38,9 +38,17 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundExpressionStatement e:
                     GenerateExpressionStatement(e);
                     return;
+                case BoundIfStatement i:
+                    GenerateIfStatement(i);
+                    return;
                 default:
                     throw new Exception($"Unexpected node {statement.GetType()}");
             }
+        }
+
+        private void GenerateIfStatement(BoundIfStatement node)
+        {
+
         }
 
         private void GenerateVariableDeclaration(BoundVariableDeclaration node)

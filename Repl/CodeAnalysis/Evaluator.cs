@@ -52,10 +52,26 @@ namespace Repl.CodeAnalysis
                     EvaluateVariableDeclaration(v); return;
                 case BoundExpressionStatement e:
                     EvaluateExpressionStatement(e); return;
+                case BoundIfStatement i:
+                    EvaluateIfStatement(i); return;
                 default:
                     throw new Exception($"Unexpected node {statement.GetType()}");
             }
         }
+
+        private void EvaluateIfStatement(BoundIfStatement node)
+        {
+            var condition = (bool)EvaluateExpression(node.Condition);
+            if (condition)
+            {
+                EvaluateBlockStatement(node.ThenBlock);
+            }
+            else
+            {
+                EvaluateStatement(node.ElseStatement);
+            }
+        }
+
         private void EvaluateVariableDeclaration(BoundVariableDeclaration node)
         {
             var value = EvaluateExpression(node.Initializer);

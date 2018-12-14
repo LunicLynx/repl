@@ -11,6 +11,8 @@ namespace Repl.CodeAnalysis.Syntax
             {"false", TokenKind.FalseKeyword},
             {"let", TokenKind.LetKeyword},
             {"var", TokenKind.VarKeyword},
+            {"if", TokenKind.IfKeyword},
+            {"else", TokenKind.ElseKeyword},
         };
 
         public Lexer(SourceText text) : base(text) { }

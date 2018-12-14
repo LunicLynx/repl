@@ -62,9 +62,22 @@ namespace Repl.CodeAnalysis.Binding
                     return BindVariableDeclaration(v);
                 case ExpressionStatementSyntax e:
                     return BindExpressionStatement(e);
+                case IfStatementSyntax i:
+                    return BindIfStatement(i);
                 default:
                     throw new Exception($"Unexpected syntax {stmt.GetType()}");
             }
+        }
+
+        private BoundStatement BindIfStatement(IfStatementSyntax syntax)
+        {
+            var condition = BindExpression(syntax.Condition, typeof(bool));
+
+            var thenBlock = BindBlockStatement(syntax.ThenBlock);
+
+            // Example for ?: operator -> if null its null of the right expression.type
+            var elseStatement = syntax.ElseClause == null ? null : BindStatement(syntax.ElseClause.ElseStatement);
+            return new BoundIfStatement(condition, thenBlock, elseStatement);
         }
 
         private BoundStatement BindVariableDeclaration(VariableDeclarationSyntax syntax)
@@ -82,7 +95,7 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundVariableDeclaration(variable, initializer);
         }
 
-        private BoundStatement BindBlockStatement(BlockStatementSyntax syntax)
+        private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
             var statements = ImmutableArray.CreateBuilder<BoundStatement>();
             _scope = new BoundScope(_scope);
@@ -102,6 +115,14 @@ namespace Repl.CodeAnalysis.Binding
         {
             var expression = BindExpression(syntax.Expression);
             return new BoundExpressionStatement(expression);
+        }
+
+        private BoundExpression BindExpression(ExpressionSyntax syntax, Type targetType)
+        {
+            var expression = BindExpression(syntax);
+            if (expression.Type != targetType)
+                Diagnostics.ReportCannotConvert(syntax.Span, expression.Type, targetType);
+            return expression;
         }
 
         private BoundExpression BindExpression(ExpressionSyntax expr)
