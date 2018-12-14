@@ -5,7 +5,7 @@ namespace Repl.CodeAnalysis.Syntax
     public class Token : SyntaxNode
     {
         public TokenKind Kind { get; }
-        public TextSpan Span { get; }
+        public override TextSpan Span { get; }
         public string Text { get; }
 
         public Token(TokenKind kind, TextSpan span, string text)

@@ -19,12 +19,12 @@
         {
             switch (kind)
             {
+                case TokenKind.PipePipe:
+                    return 1;
+                case TokenKind.AmpersandAmpersand:
+                    return 2;
                 case TokenKind.EqualsEquals:
                 case TokenKind.BangEquals:
-                    return 1;
-                case TokenKind.PipePipe:
-                    return 2;
-                case TokenKind.AmpersandAmpersand:
                     return 3;
                 case TokenKind.Plus:
                 case TokenKind.Minus:

@@ -58,9 +58,9 @@ namespace Repl.CodeAnalysis
             Report(span, message);
         }
 
-        public void ReportVariableAlreadyDeclared(TextSpan span, string name)
+        public void ReportCannotConvert(TextSpan span, Type from, Type to)
         {
-            var message = $"Variable '{name}' already declared.";
+            var message = $"Cannot convert type '{from}' to '{to}'.";
             Report(span, message);
         }
     }

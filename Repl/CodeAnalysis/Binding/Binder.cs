@@ -95,10 +95,16 @@ namespace Repl.CodeAnalysis.Binding
             var name = assignmentExpressionSyntax.IdentifierToken.Text;
             var value = BindExpression(assignmentExpressionSyntax.Expression);
 
-            var variable = new VariableSymbol(name, value.Type);
-            if (!_scope.TryDeclare(variable))
+            if (!_scope.TryLookup(name, out var variable))
             {
-                Diagnostics.ReportVariableAlreadyDeclared(assignmentExpressionSyntax.IdentifierToken.Span, name);
+                variable = new VariableSymbol(name, value.Type);
+                _scope.TryDeclare(variable);
+            }
+
+            if (value.Type != variable.Type)
+            {
+                Diagnostics.ReportCannotConvert(assignmentExpressionSyntax.Expression.Span, value.Type, variable.Type);
+                return value;
             }
 
             return new BoundAssignmentExpression(variable, value);
