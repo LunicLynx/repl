@@ -2,7 +2,7 @@
 {
     public enum TokenKind
     {
-        Eof,
+        EndOfFile,
         Bad,
 
         Plus,
@@ -16,7 +16,8 @@
         Slash,
         OpenParenthesis,
         CloseParenthesis,
-
+        OpenBrace,
+        CloseBrace,
 
         Number,
         WhiteSpace,
@@ -25,6 +26,6 @@
         AmpersandAmpersand,
         PipePipe,
         TrueKeyword,
-        FalseKeyword
+        FalseKeyword,
     }
 }

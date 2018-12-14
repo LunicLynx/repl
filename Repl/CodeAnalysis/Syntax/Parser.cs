@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using Repl.CodeAnalysis.Text;
 
 namespace Repl.CodeAnalysis.Syntax
@@ -21,16 +22,49 @@ namespace Repl.CodeAnalysis.Syntax
                 if (token.Kind != TokenKind.WhiteSpace && token.Kind != TokenKind.Bad)
                     tokens.Add(token);
 
-            } while (token.Kind != TokenKind.Eof);
+            } while (token.Kind != TokenKind.EndOfFile);
 
             Tokens = tokens.ToArray();
         }
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
-            var expr = ParseExpression();
-            var endOfFileToken = MatchToken(TokenKind.Eof);
-            return new CompilationUnitSyntax(expr, endOfFileToken);
+            var statement = ParseStatement();
+            var endOfFileToken = MatchToken(TokenKind.EndOfFile);
+            return new CompilationUnitSyntax(statement, endOfFileToken);
+        }
+
+        public StatementSyntax ParseStatement()
+        {
+            if (Current.Kind == TokenKind.OpenBrace)
+            {
+                return ParseBlockStatement();
+            }
+            return ParseExpressionStatement();
+        }
+
+        private ExpressionStatementSyntax ParseExpressionStatement()
+        {
+            var expression = ParseExpression();
+            return new ExpressionStatementSyntax(expression);
+        }
+
+        private BlockStatementSyntax ParseBlockStatement()
+        {
+            var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
+
+            var openBraceToken = MatchToken(TokenKind.OpenBrace);
+
+            while (Current.Kind != TokenKind.EndOfFile &&
+                   Current.Kind != TokenKind.CloseBrace)
+            {
+                var statement = ParseStatement();
+                statements.Add(statement);
+            }
+
+            var closeBraceToken = MatchToken(TokenKind.CloseBrace);
+
+            return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
         }
 
         public ExpressionSyntax ParseExpression()
@@ -84,32 +118,20 @@ namespace Repl.CodeAnalysis.Syntax
 
         public ExpressionSyntax ParsePrimaryExpression()
         {
-            if (Current.Kind == TokenKind.OpenParenthesis)
+            switch (Current.Kind)
             {
-                return ParseParenthesizedExpression();
+                case TokenKind.OpenParenthesis:
+                    return ParseParenthesizedExpression();
+                case TokenKind.TrueKeyword:
+                case TokenKind.FalseKeyword:
+                    return ParseBooleanLiteralExpression(Current.Kind);
+                case TokenKind.Number:
+                    return ParseNumberLiteralExpression();
+
+                case TokenKind.Identifier:
+                default:
+                    return ParseNameExpression();
             }
-
-            if (Current.Kind == TokenKind.TrueKeyword ||
-                Current.Kind == TokenKind.FalseKeyword)
-            {
-                return ParseBooleanLiteralExpression(Current.Kind);
-            }
-
-            if (Current.Kind == TokenKind.Number)
-            {
-                return ParseNumberLiteralExpression();
-            }
-
-            if (Current.Kind == TokenKind.Identifier)
-            {
-                return ParseNameExpression();
-            }
-
-            // diagnostic ?
-            Diagnostics.ReportUnexpectedToken(Current);
-
-            // generate token
-            return new LiteralExpressionSyntax(new Token(TokenKind.Number, new TextSpan(0, 0), "0"));
         }
 
         private ExpressionSyntax ParseParenthesizedExpression()

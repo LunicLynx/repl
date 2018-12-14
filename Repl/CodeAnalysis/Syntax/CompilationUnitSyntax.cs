@@ -4,18 +4,18 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class CompilationUnitSyntax : SyntaxNode
     {
-        public ExpressionSyntax Expression { get; }
+        public StatementSyntax Statement { get; }
         public Token EndOfFileToken { get; }
 
-        public CompilationUnitSyntax(ExpressionSyntax expression, Token endOfFileToken)
+        public CompilationUnitSyntax(StatementSyntax statement, Token endOfFileToken)
         {
-            Expression = expression;
+            Statement = statement;
             EndOfFileToken = endOfFileToken;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Expression;
+            yield return Statement;
             yield return EndOfFileToken;
         }
     }

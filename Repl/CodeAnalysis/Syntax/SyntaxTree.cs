@@ -44,7 +44,7 @@ namespace Repl.CodeAnalysis.Syntax
             while (true)
             {
                 var token = lexer.Lex();
-                if (token.Kind == TokenKind.Eof)
+                if (token.Kind == TokenKind.EndOfFile)
                     break;
 
                 yield return token;

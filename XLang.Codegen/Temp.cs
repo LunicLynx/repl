@@ -14,7 +14,7 @@ namespace XLang.Codegen
             using (var builder = mainlang.OpenBody())
             {
                 var str = builder.GlobalString("hello world\r\0", ".str");
-                var index = Const.Int64(0);
+                var index = Value.Int64(0);
                 var cast210 = builder.GEP(str, new[] { index, index }, "cast210");
                 var puts = mod.GetFunction("puts");
                 builder.Call(puts, new[] { cast210 }, "");

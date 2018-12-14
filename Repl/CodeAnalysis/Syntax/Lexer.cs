@@ -16,7 +16,7 @@ namespace Repl.CodeAnalysis.Syntax
         public override Token Lex()
         {
             var start = Position;
-            var kind = TokenKind.Eof;
+            var kind = TokenKind.EndOfFile;
 
             var c = Current;
             Next();
@@ -71,6 +71,12 @@ namespace Repl.CodeAnalysis.Syntax
                         break;
                     case ')':
                         kind = TokenKind.CloseParenthesis;
+                        break;
+                    case '{':
+                        kind = TokenKind.OpenBrace;
+                        break;
+                    case '}':
+                        kind = TokenKind.CloseBrace;
                         break;
                     case '=' when Current == '=':
                         Next();

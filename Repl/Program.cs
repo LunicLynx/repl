@@ -73,7 +73,7 @@ namespace Repl
 
                 if (showTree)
                 {
-                    Print(syntaxTree.Root.Expression);
+                    Print(syntaxTree.Root.Statement);
                 }
 
                 if (!result.Diagnostics.Any())

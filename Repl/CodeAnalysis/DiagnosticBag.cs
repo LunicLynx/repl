@@ -30,21 +30,19 @@ namespace Repl.CodeAnalysis
             Report(span, $"Unexpected character '{c}'.");
         }
 
-        public void ReportUnexpectedToken(Token token)
+        public void ReportUnexpectedToken(TextSpan span, TokenKind actual, TokenKind expected)
         {
-            Report(token.Span, $"Unexpected token '{token.Kind}'");
+            Report(span, $"Unexpected token '{actual}', expected '{expected}'.");
         }
 
-        public void ReportUndefinedUnaryOperator(Token operatorToken,
-            Type type)
+        public void ReportUndefinedUnaryOperator(TextSpan span, string operatorText, Type type)
         {
-            Report(operatorToken.Span, $"Unary operator '{operatorToken.Text}' is not defined for type '{type}'.");
+            Report(span, $"Unary operator '{operatorText}' is not defined for type '{type}'.");
         }
 
-        public void ReportUndefinedBinaryOperator(Token operatorToken,
-            Type leftType, Type rightType)
+        public void ReportUndefinedBinaryOperator(TextSpan span, string operatorText, Type leftType, Type rightType)
         {
-            Report(operatorToken.Span, $"Binary operator '{operatorToken.Text}' is not defined for types '{leftType}' and '{rightType}'.");
+            Report(span, $"Binary operator '{operatorText}' is not defined for types '{leftType}' and '{rightType}'.");
         }
 
         public void ReportInvalidNumber(TextSpan span, string text)

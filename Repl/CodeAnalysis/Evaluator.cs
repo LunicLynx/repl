@@ -1,42 +1,76 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Repl.CodeAnalysis.Binding;
 
 namespace Repl.CodeAnalysis
 {
     public class Evaluator
     {
-        public BoundExpression Expression { get; }
-        public Dictionary<VariableSymbol, object> Variables { get; }
+        private readonly BoundStatement _root;
+        private readonly Dictionary<VariableSymbol, object> _variables;
 
-        public Evaluator(BoundExpression expression, Dictionary<VariableSymbol, object> variables)
+        public Evaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
         {
-            Expression = expression;
-            Variables = variables;
+            _root = root;
+            _variables = variables;
         }
 
         public object Evaluate()
         {
-            return EvaluateExpression(Expression);
+            EvaluateStatement(_root);
+            return _lastValue;
         }
 
         private object EvaluateExpression(BoundExpression expression)
         {
-            if (expression is BoundBinaryExpression b)
-                return EvaluateBinaryExpression(b);
-            if (expression is BoundUnaryExpression u)
-                return EvaluateUnaryExpression(u);
-            if (expression is BoundLiteralExpression l)
-                return EvaluateLiteralExpression(l);
-            if (expression is BoundAssignmentExpression a)
-                return EvaluateAssignmentExpression(a);
-            if (expression is BoundVariableExpression v)
-                return EvaluateVariableExpression(v);
-            return 0;
+            switch (expression)
+            {
+                case BoundBinaryExpression b:
+                    return EvaluateBinaryExpression(b);
+                case BoundUnaryExpression u:
+                    return EvaluateUnaryExpression(u);
+                case BoundLiteralExpression l:
+                    return EvaluateLiteralExpression(l);
+                case BoundAssignmentExpression a:
+                    return EvaluateAssignmentExpression(a);
+                case BoundVariableExpression v:
+                    return EvaluateVariableExpression(v);
+                default:
+                    throw new Exception($"Unexpected node {expression.GetType()}");
+            }
+        }
+
+        private object _lastValue;
+
+        private void EvaluateStatement(BoundStatement statement)
+        {
+            switch (statement)
+            {
+                case BoundBlockStatement b:
+                    EvaluateBlockStatement(b); return;
+                case BoundExpressionStatement e:
+                    EvaluateExpressionStatement(e); return;
+                default:
+                    throw new Exception($"Unexpected node {statement.GetType()}");
+            }
+        }
+
+        private void EvaluateExpressionStatement(BoundExpressionStatement boundExpressionStatement)
+        {
+            _lastValue = EvaluateExpression(boundExpressionStatement.Expression);
+        }
+
+        private void EvaluateBlockStatement(BoundBlockStatement boundBlockStatement)
+        {
+            foreach (var statement in boundBlockStatement.Statements)
+            {
+                EvaluateStatement(statement);
+            }
         }
 
         private object EvaluateVariableExpression(BoundVariableExpression boundVariableExpression)
         {
-            var value = Variables[boundVariableExpression.Variable];
+            var value = _variables[boundVariableExpression.Variable];
             return value;
         }
 
@@ -44,7 +78,7 @@ namespace Repl.CodeAnalysis
         {
             var value = EvaluateExpression(boundAssignmentExpression.Expression);
 
-            Variables[boundAssignmentExpression.Variable] = value;
+            _variables[boundAssignmentExpression.Variable] = value;
 
             return value;
         }

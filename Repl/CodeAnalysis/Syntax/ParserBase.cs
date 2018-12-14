@@ -33,6 +33,7 @@ namespace Repl.CodeAnalysis.Syntax
             if (Current.Kind == kind)
                 return NextToken();
 
+            Diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
             return new Token(kind, new TextSpan(0, 0), "");
         }
     }

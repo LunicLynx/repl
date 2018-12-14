@@ -16,24 +16,60 @@ namespace Repl.CodeAnalysis.CodeGen
             _variables = variables;
         }
 
-        public Value Generate(BoundExpression expression)
+        private Value _lastValue;
+
+        public Value Generate(BoundStatement statement)
         {
-            return GenerateExpression(expression);
+            _lastValue = Value.Int32(0);
+            GenerateStatement(statement);
+            return _lastValue;
+        }
+
+        private void GenerateStatement(BoundStatement statement)
+        {
+            switch (statement)
+            {
+                case BoundBlockStatement b:
+                    GenerateBlockStatement(b);
+                    return;
+                case BoundExpressionStatement e:
+                    GenerateExpressionStatement(e);
+                    return;
+                default:
+                    throw new Exception($"Unexpected node {statement.GetType()}");
+            }
+        }
+
+        private void GenerateExpressionStatement(BoundExpressionStatement boundExpressionStatement)
+        {
+            _lastValue = GenerateExpression(boundExpressionStatement.Expression);
+        }
+
+        private void GenerateBlockStatement(BoundBlockStatement boundBlockStatement)
+        {
+            foreach (var statement in boundBlockStatement.Statements)
+            {
+                GenerateStatement(statement);
+            }
         }
 
         private Value GenerateExpression(BoundExpression expression)
         {
-            if (expression is BoundBinaryExpression b)
-                return GenerateBinaryExpression(b);
-            if (expression is BoundUnaryExpression u)
-                return GenerateUnaryExpression(u);
-            if (expression is BoundLiteralExpression l)
-                return GenerateLiteralExpression(l);
-            if (expression is BoundAssignmentExpression a)
-                return GenerateAssignmentExpression(a);
-            if (expression is BoundVariableExpression v)
-                return GenerateVariableExpression(v);
-            return null;
+            switch (expression)
+            {
+                case BoundBinaryExpression b:
+                    return GenerateBinaryExpression(b);
+                case BoundUnaryExpression u:
+                    return GenerateUnaryExpression(u);
+                case BoundLiteralExpression l:
+                    return GenerateLiteralExpression(l);
+                case BoundAssignmentExpression a:
+                    return GenerateAssignmentExpression(a);
+                case BoundVariableExpression v:
+                    return GenerateVariableExpression(v);
+                default:
+                    throw new Exception($"Unexpected node {expression.GetType()}");
+            }
         }
 
         private Value GenerateVariableExpression(BoundVariableExpression boundVariableExpression)
@@ -118,8 +154,8 @@ namespace Repl.CodeAnalysis.CodeGen
             var type = literal.Type;
             var value = literal.Value;
             if (type == typeof(bool))
-                return Const.Int1((bool)value);
-            return Const.Int32((int)value);
+                return Value.Int1((bool)value);
+            return Value.Int32((int)value);
         }
     }
 }
