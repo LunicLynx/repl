@@ -139,6 +139,14 @@ namespace Repl.CodeAnalysis.CodeGen
                     return _builder.And(left, right);
                 case BoundBinaryOperatorKind.LogicalOr:
                     return _builder.Or(left, right);
+                case BoundBinaryOperatorKind.LessThan:
+                    return _builder.ICmpSlt(left, right);
+                case BoundBinaryOperatorKind.LessOrEquals:
+                    return _builder.ICmpSle(left, right);
+                case BoundBinaryOperatorKind.GreaterThan:
+                    return _builder.ICmpSgt(left, right);
+                case BoundBinaryOperatorKind.GreaterOrEquals:
+                    return _builder.ICmpSge(left, right);
                 default:
                     throw new ArgumentOutOfRangeException();
             }

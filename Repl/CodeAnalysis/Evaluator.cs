@@ -49,7 +49,7 @@ namespace Repl.CodeAnalysis
                 case BoundBlockStatement b:
                     EvaluateBlockStatement(b); return;
                 case BoundVariableDeclaration v:
-                    EvaluateVariableDeclaration(v);return;
+                    EvaluateVariableDeclaration(v); return;
                 case BoundExpressionStatement e:
                     EvaluateExpressionStatement(e); return;
                 default:
@@ -103,9 +103,8 @@ namespace Repl.CodeAnalysis
                 case BoundUnaryOperatorKind.Identity: return (int)operand;
                 case BoundUnaryOperatorKind.Negation: return -(int)operand;
                 case BoundUnaryOperatorKind.LogicalNot: return !(bool)operand;
+                default: throw new Exception("Operator not implemented");
             }
-
-            return 0;
         }
 
         private object EvaluateBinaryExpression(BoundBinaryExpression boundBinaryExpression)
@@ -123,9 +122,13 @@ namespace Repl.CodeAnalysis
                 case BoundBinaryOperatorKind.LogicalOr: return (bool)left || (bool)right;
                 case BoundBinaryOperatorKind.Equals: return left == right;
                 case BoundBinaryOperatorKind.NotEquals: return left != right;
-            }
+                case BoundBinaryOperatorKind.LessThan: return (int)left < (int)right;
+                case BoundBinaryOperatorKind.LessOrEquals: return (int)left <= (int)right;
+                case BoundBinaryOperatorKind.GreaterThan: return (int)left > (int)right;
+                case BoundBinaryOperatorKind.GreaterOrEquals: return (int)left >= (int)right;
+                default: throw new Exception("Operator not implemented");
 
-            return 0;
+            }
         }
     }
 }

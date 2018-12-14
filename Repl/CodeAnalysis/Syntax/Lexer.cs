@@ -87,6 +87,20 @@ namespace Repl.CodeAnalysis.Syntax
                     case '=':
                         kind = TokenKind.Equals;
                         break;
+                    case '<' when Current == '=':
+                        Next();
+                        kind = TokenKind.LessEquals;
+                        break;
+                    case '<':
+                        kind = TokenKind.Less;
+                        break;
+                    case '>' when Current == '=':
+                        Next();
+                        kind = TokenKind.GreaterEquals;
+                        break;
+                    case '>':
+                        kind = TokenKind.Greater;
+                        break;
                     case '!' when Current == '=':
                         Next();
                         kind = TokenKind.BangEquals;

@@ -39,6 +39,12 @@ namespace Repl.CodeAnalysis.Binding
             new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equals, typeof(bool)),
             new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, typeof(int), typeof(bool)),
             new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, typeof(bool)),
+
+            new BoundBinaryOperator(TokenKind.Less, BoundBinaryOperatorKind.LessThan, typeof(int), typeof(bool)),
+            new BoundBinaryOperator(TokenKind.LessEquals, BoundBinaryOperatorKind.LessOrEquals, typeof(int), typeof(bool)),
+            new BoundBinaryOperator(TokenKind.Greater, BoundBinaryOperatorKind.GreaterThan, typeof(int), typeof(bool)),
+            new BoundBinaryOperator(TokenKind.GreaterEquals, BoundBinaryOperatorKind.GreaterOrEquals, typeof(int), typeof(bool)),
+
         };
 
         public static BoundBinaryOperator Bind(TokenKind operatorTokenKind, Type leftType, Type rightType)

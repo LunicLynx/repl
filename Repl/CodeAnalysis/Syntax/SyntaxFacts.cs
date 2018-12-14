@@ -9,7 +9,7 @@
                 case TokenKind.Plus:
                 case TokenKind.Minus:
                 case TokenKind.Bang:
-                    return 6;
+                    return 7;
 
                 default: return 0;
             }
@@ -26,12 +26,17 @@
                 case TokenKind.EqualsEquals:
                 case TokenKind.BangEquals:
                     return 3;
+                case TokenKind.Less:
+                case TokenKind.LessEquals:
+                case TokenKind.Greater:
+                case TokenKind.GreaterEquals:
+                    return 4;
                 case TokenKind.Plus:
                 case TokenKind.Minus:
-                    return 4;
+                    return 5;
                 case TokenKind.Star:
                 case TokenKind.Slash:
-                    return 5;
+                    return 6;
                 default: return 0;
             }
         }

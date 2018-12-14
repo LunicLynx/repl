@@ -160,5 +160,29 @@ namespace XLang.Codegen.Llvm
         {
             return new Value(LLVM.BuildNot(BuilderRef, value.ValueRef, name));
         }
+
+        public Value ICmpSlt(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildICmp(BuilderRef, LLVMIntPredicate.LLVMIntSLT, left.ValueRef, right.ValueRef,
+                name));
+        }
+
+        public Value ICmpSle(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildICmp(BuilderRef, LLVMIntPredicate.LLVMIntSLE, left.ValueRef, right.ValueRef,
+                name));
+        }
+
+        public Value ICmpSgt(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildICmp(BuilderRef, LLVMIntPredicate.LLVMIntSGT, left.ValueRef, right.ValueRef,
+                name));
+        }
+
+        public Value ICmpSge(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildICmp(BuilderRef, LLVMIntPredicate.LLVMIntSGE, left.ValueRef, right.ValueRef,
+                name));
+        }
     }
 }

@@ -9,6 +9,10 @@
         Star,
         Equals,
 
+        LessEquals,
+        Less,
+        GreaterEquals,
+        Greater,
         EqualsEquals,
         BangEquals,
         Bang,
@@ -28,6 +32,6 @@
         TrueKeyword,
         FalseKeyword,
         LetKeyword,
-        VarKeyword
+        VarKeyword,
     }
 }
