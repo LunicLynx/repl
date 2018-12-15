@@ -5,11 +5,12 @@ using XLang.Codegen.Llvm;
 
 namespace Repl.CodeAnalysis.CodeGen
 {
-    class Compiler
+    internal class Compiler
     {
-        private readonly BasicBlock _basicBlock;
+        private BasicBlock _basicBlock;
         private readonly Dictionary<VariableSymbol, Value> _variablePtrs;
         private readonly XModule _module;
+        private readonly Function _function;
 
         public Compiler()
         {
@@ -18,8 +19,8 @@ namespace Repl.CodeAnalysis.CodeGen
             Statics.InitializeX86Target();
             _module = new XModule("test");
             var functionType = new FunctionType(XType.Int32);
-            var function = _module.AddFunction(functionType, "__anon_expr");
-            _basicBlock = function.AppendBasicBlock();
+            _function = _module.AddFunction(functionType, "__anon_expr");
+            _basicBlock = _function.AppendBasicBlock();
         }
 
         public void CompileAndRun(Compilation compilation, Dictionary<VariableSymbol, object> variables)
@@ -33,11 +34,14 @@ namespace Repl.CodeAnalysis.CodeGen
 
                 var codeGenerator = new CodeGenerator(builder, _variablePtrs);
                 var value = codeGenerator.Generate(globalScope.Statement);
+                _basicBlock = builder.GetInsertBlock();
 
                 v = builder.Ret(value);
 
+                //Function.ViewCfg();
+
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
-                _basicBlock.Print(Console.Out);
+                _function.Print(Console.Out);
                 Console.WriteLine();
                 Console.ResetColor();
 

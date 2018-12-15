@@ -40,7 +40,7 @@ namespace Repl.CodeAnalysis
             }
         }
 
-        private object _lastValue;
+        private object _lastValue = 0;
 
         private void EvaluateStatement(BoundStatement statement)
         {
@@ -66,7 +66,7 @@ namespace Repl.CodeAnalysis
             {
                 EvaluateBlockStatement(node.ThenBlock);
             }
-            else
+            else if(node.ElseStatement != null)
             {
                 EvaluateStatement(node.ElseStatement);
             }

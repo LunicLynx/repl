@@ -51,5 +51,15 @@ namespace XLang.Codegen.Llvm
         {
             LLVM.DeleteFunction(ValueRef);
         }
+
+        public void ViewCfg()
+        {
+            LLVM.ViewFunctionCFG(ValueRef);
+        }
+
+        public void ViewCfgOnly()
+        {
+            LLVM.ViewFunctionCFGOnly(ValueRef);
+        }
     }
 }

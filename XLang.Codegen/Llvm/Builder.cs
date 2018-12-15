@@ -184,5 +184,26 @@ namespace XLang.Codegen.Llvm
             return new Value(LLVM.BuildICmp(BuilderRef, LLVMIntPredicate.LLVMIntSGE, left.ValueRef, right.ValueRef,
                 name));
         }
+
+        public Value CondBr(Value cond, BasicBlock then, BasicBlock @else)
+        {
+            return new Value(LLVM.BuildCondBr(BuilderRef, cond.ValueRef, then.BasicBlockRef, @else.BasicBlockRef));
+        }
+
+        public BasicBlock GetInsertBlock()
+        {
+            var basicBlockRef = LLVM.GetInsertBlock(BuilderRef);
+            return new BasicBlock(basicBlockRef);
+        }
+
+        public Value Br(BasicBlock end)
+        {
+            return new Value(LLVM.BuildBr(BuilderRef, end.BasicBlockRef));
+        }
+
+        public Phi Phi(XType type, string name = "")
+        {
+            return new Phi(LLVM.BuildPhi(BuilderRef, type.TypeRef, name));
+        }
     }
 }

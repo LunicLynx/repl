@@ -76,6 +76,7 @@ namespace Repl.CodeAnalysis.Binding
             var thenBlock = BindBlockStatement(syntax.ThenBlock);
 
             // Example for ?: operator -> if null its null of the right expression.type
+            // var elseStatement = syntax.ElseClause ?: BindStatement(syntax.ElseClause.ElseStatement);
             var elseStatement = syntax.ElseClause == null ? null : BindStatement(syntax.ElseClause.ElseStatement);
             return new BoundIfStatement(condition, thenBlock, elseStatement);
         }

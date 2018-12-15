@@ -16,7 +16,7 @@ namespace Repl.CodeAnalysis.CodeGen
             _variables = variables;
         }
 
-        private Value _lastValue;
+        private Value _lastValue = Value.Int32(0);
 
         public Value Generate(BoundStatement statement)
         {
@@ -48,7 +48,49 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private void GenerateIfStatement(BoundIfStatement node)
         {
+            var function = _builder.GetInsertBlock().GetParent();
 
+            var then = function.AppendBasicBlock();
+            var @else = function.AppendBasicBlock();
+            var end = function.AppendBasicBlock();
+
+            var prevValue = _lastValue;
+
+            var cond = GenerateExpression(node.Condition);
+
+            _builder.CondBr(cond, then, @else);
+
+            // emit then 
+            _builder.PositionAtEnd(then);
+            _lastValue = prevValue;
+            GenerateBlockStatement(node.ThenBlock);
+            var thenValue = _lastValue;
+            _builder.Br(end);
+            then = _builder.GetInsertBlock();
+
+            // emit else 
+            @else.MoveAfter(then);
+            _builder.PositionAtEnd(@else);
+
+            _lastValue = prevValue;
+            if (node.ElseStatement != null)
+            {
+                GenerateStatement(node.ElseStatement);
+            }
+            var elseValue = _lastValue;
+
+            _builder.Br(end);
+            @else = _builder.GetInsertBlock();
+
+            // end
+            end.MoveAfter(@else);
+            _builder.PositionAtEnd(end);
+            var phi = _builder.Phi(XType.Int32);
+
+            phi.AddIncoming(thenValue, then);
+            phi.AddIncoming(elseValue, @else);
+
+            _lastValue = phi;
         }
 
         private void GenerateVariableDeclaration(BoundVariableDeclaration node)
