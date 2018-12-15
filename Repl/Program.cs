@@ -14,7 +14,7 @@ namespace Repl
         private static void Main(string[] args)
         {
             var showTree = false;
-            var compile = true;
+            var compile = false;
             var compiler = new Compiler();
             var variables = new Dictionary<VariableSymbol, object>();
             var textBuilder = new StringBuilder();
@@ -86,6 +86,7 @@ namespace Repl
                     Console.ResetColor();
 
                     // TODO if (compile) - if activated we would need to re-emit the whole module
+                    if(compile)
                     compiler.CompileAndRun(compilation, variables);
 
                     previous = compilation;

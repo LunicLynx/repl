@@ -41,6 +41,7 @@ namespace Repl.CodeAnalysis
         }
 
         private object _lastValue = 0;
+        private ActionKind _action;
 
         private void EvaluateStatement(BoundStatement statement)
         {
@@ -50,13 +51,75 @@ namespace Repl.CodeAnalysis
                     EvaluateBlockStatement(b); return;
                 case BoundVariableDeclaration v:
                     EvaluateVariableDeclaration(v); return;
-                case BoundExpressionStatement e:
-                    EvaluateExpressionStatement(e); return;
                 case BoundIfStatement i:
                     EvaluateIfStatement(i); return;
+                case BoundLoopStatement l:
+                    EvaluateLoopStatement(l); return;
+                case BoundWhileStatement w:
+                    EvaluateWhileStatement(w); return;
+                case BoundContinueStatement c:
+                    EvaluateContinueStatement(c); return;
+                case BoundBreakStatement b:
+                    EvaluateBreakStatement(b); return;
+                case BoundExpressionStatement e:
+                    EvaluateExpressionStatement(e); return;
                 default:
                     throw new Exception($"Unexpected node {statement.GetType()}");
             }
+        }
+
+        private void EvaluateBreakStatement(BoundBreakStatement boundBreakStatement)
+        {
+            _action = ActionKind.Break;
+        }
+
+        private void EvaluateContinueStatement(BoundContinueStatement node)
+        {
+            _action = ActionKind.Continue;
+        }
+
+        private void EvaluateWhileStatement(BoundWhileStatement node)
+        {
+            do
+            {
+                _action = ActionKind.None;
+
+                while (_action == ActionKind.None)
+                {
+                    var condition = (bool)EvaluateExpression(node.Condition);
+                    if (!condition) break;
+                    EvaluateBlockStatement(node.Block);
+                }
+            } while (_action == ActionKind.Continue);
+
+
+            if (_action == ActionKind.Break)
+                _action = ActionKind.None;
+        }
+
+        private enum ActionKind
+        {
+            None,
+            Continue,
+            Break,
+            Return
+        }
+
+        private void EvaluateLoopStatement(BoundLoopStatement node)
+        {
+            do
+            {
+                _action = ActionKind.None;
+
+                while (_action == ActionKind.None)
+                {
+                    EvaluateBlockStatement(node.Block);
+                }
+            } while (_action == ActionKind.Continue);
+
+
+            if (_action == ActionKind.Break)
+                _action = ActionKind.None;
         }
 
         private void EvaluateIfStatement(BoundIfStatement node)
@@ -66,7 +129,7 @@ namespace Repl.CodeAnalysis
             {
                 EvaluateBlockStatement(node.ThenBlock);
             }
-            else if(node.ElseStatement != null)
+            else if (node.ElseStatement != null)
             {
                 EvaluateStatement(node.ElseStatement);
             }
@@ -89,6 +152,8 @@ namespace Repl.CodeAnalysis
             foreach (var statement in boundBlockStatement.Statements)
             {
                 EvaluateStatement(statement);
+                if (_action != ActionKind.None)
+                    break;
             }
         }
 

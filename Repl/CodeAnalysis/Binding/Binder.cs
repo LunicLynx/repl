@@ -60,13 +60,44 @@ namespace Repl.CodeAnalysis.Binding
                     return BindBlockStatement(b);
                 case VariableDeclarationSyntax v:
                     return BindVariableDeclaration(v);
-                case ExpressionStatementSyntax e:
-                    return BindExpressionStatement(e);
                 case IfStatementSyntax i:
                     return BindIfStatement(i);
+                case LoopStatementSyntax l:
+                    return BindLoopStatement(l);
+                case WhileStatementSyntax w:
+                    return BindWhileStatement(w);
+                case BreakStatementSyntax b:
+                    return BindBreakStatement(b);
+                case ContinueStatementSyntax c:
+                    return BindContinueStatement(c);
+                case ExpressionStatementSyntax e:
+                    return BindExpressionStatement(e);
                 default:
                     throw new Exception($"Unexpected syntax {stmt.GetType()}");
             }
+        }
+
+        private BoundStatement BindContinueStatement(ContinueStatementSyntax syntax)
+        {
+            return new BoundContinueStatement();
+        }
+
+        private BoundStatement BindBreakStatement(BreakStatementSyntax syntax)
+        {
+            return new BoundBreakStatement();
+        }
+
+        private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
+        {
+            var condition = BindExpression(syntax.Condition, typeof(bool));
+            var block = BindBlockStatement(syntax.Block);
+            return new BoundWhileStatement(condition, block);
+        }
+
+        private BoundStatement BindLoopStatement(LoopStatementSyntax syntax)
+        {
+            var block = BindBlockStatement(syntax.Block);
+            return new BoundLoopStatement(block);
         }
 
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)

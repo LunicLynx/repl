@@ -45,9 +45,51 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseVariableDeclaration();
                 case TokenKind.IfKeyword:
                     return ParseIfStatement();
+                case TokenKind.LoopKeyword:
+                    return ParseLoopStatement();
+                case TokenKind.WhileKeyword:
+                    return ParseWhileStatement();
+                case TokenKind.ForKeyword:
+                    return ParseForStatement();
+                case TokenKind.BreakKeyword:
+                    return ParseBreakStatement();
+                case TokenKind.ContinueKeyword:
+                    return ParseContinueStatement();
                 default:
                     return ParseExpressionStatement();
             }
+        }
+
+        private StatementSyntax ParseContinueStatement()
+        {
+            var continueKeyword = MatchToken(TokenKind.ContinueKeyword);
+            return new ContinueStatementSyntax(continueKeyword);
+        }
+
+        private StatementSyntax ParseBreakStatement()
+        {
+            var breakKeyword = MatchToken(TokenKind.BreakKeyword);
+            return new BreakStatementSyntax(breakKeyword);
+        }
+
+        private StatementSyntax ParseForStatement()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        private StatementSyntax ParseWhileStatement()
+        {
+            var whileKeyword = MatchToken(TokenKind.WhileKeyword);
+            var condition = ParseExpression();
+            var block = ParseBlockStatement();
+            return new WhileStatementSyntax(whileKeyword, condition, block);
+        }
+
+        private StatementSyntax ParseLoopStatement()
+        {
+            var loopKeyword = MatchToken(TokenKind.LoopKeyword);
+            var loopBlock = ParseBlockStatement();
+            return new LoopStatementSyntax(loopKeyword, loopBlock);
         }
 
         private IfStatementSyntax ParseIfStatement()

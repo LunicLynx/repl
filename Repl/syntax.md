@@ -1,5 +1,26 @@
 ﻿
 
+# have a concept to break the outer loop
+loop name {
+	break;
+	continue;
+	break name;
+	continue name;
+}
+
+for let item in items name {
+    break;
+	continue;
+    break name;
+    continue name;
+}
+
+while true name {
+    break;
+	continue;
+    break name;
+    continue name;
+}
 
 
 x = int?

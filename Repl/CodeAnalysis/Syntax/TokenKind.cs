@@ -4,11 +4,11 @@
     {
         EndOfFile,
         Bad,
+        WhiteSpace,
 
         Plus,
         Star,
         Equals,
-
         LessEquals,
         Less,
         GreaterEquals,
@@ -18,22 +18,27 @@
         Bang,
         Minus,
         Slash,
+        AmpersandAmpersand,
+        PipePipe,
+
         OpenParenthesis,
         CloseParenthesis,
         OpenBrace,
         CloseBrace,
 
         Number,
-        WhiteSpace,
         Identifier,
 
-        AmpersandAmpersand,
-        PipePipe,
         TrueKeyword,
         FalseKeyword,
         LetKeyword,
         VarKeyword,
         IfKeyword,
-        ElseKeyword
+        ElseKeyword,
+        WhileKeyword,
+        LoopKeyword,
+        ForKeyword,
+        BreakKeyword,
+        ContinueKeyword
     }
 }

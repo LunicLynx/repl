@@ -3,7 +3,7 @@ using Repl.CodeAnalysis.Text;
 
 namespace Repl.CodeAnalysis.Syntax
 {
-    class Lexer : LexerBase
+    internal class Lexer : LexerBase
     {
         private static readonly Dictionary<string, TokenKind> KeywordKinds = new Dictionary<string, TokenKind>
         {
@@ -13,6 +13,11 @@ namespace Repl.CodeAnalysis.Syntax
             {"var", TokenKind.VarKeyword},
             {"if", TokenKind.IfKeyword},
             {"else", TokenKind.ElseKeyword},
+            {"while", TokenKind.WhileKeyword},
+            {"loop", TokenKind.LoopKeyword},
+            {"for", TokenKind.ForKeyword},
+            {"break", TokenKind.BreakKeyword},
+            {"continue", TokenKind.ContinueKeyword},
         };
 
         public Lexer(SourceText text) : base(text) { }
