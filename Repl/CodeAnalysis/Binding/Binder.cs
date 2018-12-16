@@ -186,6 +186,11 @@ namespace Repl.CodeAnalysis.Binding
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
             var name = syntax.IdentifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+            {
+                // Token was inserted by parser
+                return new BoundLiteralExpression(0);
+            }
 
             if (!_scope.TryLookup(name, out var variable))
             {

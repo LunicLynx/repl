@@ -141,11 +141,18 @@ namespace Repl.CodeAnalysis.Syntax
 
             var openBraceToken = MatchToken(TokenKind.OpenBrace);
 
+            var startToken = Current;
             while (Current.Kind != TokenKind.EndOfFile &&
                    Current.Kind != TokenKind.CloseBrace)
             {
                 var statement = ParseStatement();
                 statements.Add(statement);
+
+                // Make sure we consume tokens
+                if (Current == startToken)
+                    NextToken();
+
+                startToken = Current;
             }
 
             var closeBraceToken = MatchToken(TokenKind.CloseBrace);
