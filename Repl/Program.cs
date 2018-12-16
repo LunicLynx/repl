@@ -46,7 +46,7 @@ namespace Repl
                     if (input == "#showProgram")
                     {
                         showProgram = !showProgram;
-                        Console.WriteLine(showTree ? "Showing bound trees." : "Not showing bound trees.");
+                        Console.WriteLine(showProgram ? "Showing bound trees." : "Not showing bound trees.");
                         continue;
                     }
 
