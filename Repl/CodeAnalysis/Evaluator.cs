@@ -61,6 +61,8 @@ namespace Repl.CodeAnalysis
                     EvaluateContinueStatement(c); return;
                 case BoundBreakStatement b:
                     EvaluateBreakStatement(b); return;
+                case BoundForStatement f:
+                    EvaluateForStatement(f); return;
                 case BoundExpressionStatement e:
                     EvaluateExpressionStatement(e); return;
                 default:
@@ -68,7 +70,31 @@ namespace Repl.CodeAnalysis
             }
         }
 
-        private void EvaluateBreakStatement(BoundBreakStatement boundBreakStatement)
+        private void EvaluateForStatement(BoundForStatement node)
+        {
+            var lowerBound = (int)EvaluateExpression(node.LowerBound);
+            var upperBound = (int)EvaluateExpression(node.UpperBound);
+            do
+            {
+                _action = ActionKind.None;
+
+                while (_action == ActionKind.None)
+                {
+                    if (lowerBound > upperBound) break;
+
+                    _variables[node.Variable] = lowerBound;
+                    EvaluateBlockStatement(node.Body);
+
+                    lowerBound++;
+                }
+            } while (_action == ActionKind.Continue);
+
+
+            if (_action == ActionKind.Break)
+                _action = ActionKind.None;
+        }
+
+        private void EvaluateBreakStatement(BoundBreakStatement node)
         {
             _action = ActionKind.Break;
         }
@@ -88,7 +114,7 @@ namespace Repl.CodeAnalysis
                 {
                     var condition = (bool)EvaluateExpression(node.Condition);
                     if (!condition) break;
-                    EvaluateBlockStatement(node.Block);
+                    EvaluateBlockStatement(node.Body);
                 }
             } while (_action == ActionKind.Continue);
 
@@ -113,7 +139,7 @@ namespace Repl.CodeAnalysis
 
                 while (_action == ActionKind.None)
                 {
-                    EvaluateBlockStatement(node.Block);
+                    EvaluateBlockStatement(node.Body);
                 }
             } while (_action == ActionKind.Continue);
 
@@ -200,6 +226,7 @@ namespace Repl.CodeAnalysis
                 case BoundBinaryOperatorKind.Subtraction: return (int)left - (int)right;
                 case BoundBinaryOperatorKind.Multiplication: return (int)left * (int)right;
                 case BoundBinaryOperatorKind.Division: return (int)left / (int)right;
+                case BoundBinaryOperatorKind.Modulo: return (int)left % (int)right;
                 case BoundBinaryOperatorKind.LogicalAnd: return (bool)left && (bool)right;
                 case BoundBinaryOperatorKind.LogicalOr: return (bool)left || (bool)right;
                 case BoundBinaryOperatorKind.Equals: return left == right;

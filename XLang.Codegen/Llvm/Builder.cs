@@ -126,6 +126,16 @@ namespace XLang.Codegen.Llvm
             return new Value(LLVM.BuildSDiv(BuilderRef, left.ValueRef, right.ValueRef, name));
         }
 
+        public Value SRem(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildSRem(BuilderRef, left.ValueRef, right.ValueRef, name));
+        }
+
+        public Value URem(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildURem(BuilderRef, left.ValueRef, right.ValueRef, name));
+        }
+
         public Value UDiv(Value left, Value right, string name = "")
         {
             return new Value(LLVM.BuildUDiv(BuilderRef, left.ValueRef, right.ValueRef, name));

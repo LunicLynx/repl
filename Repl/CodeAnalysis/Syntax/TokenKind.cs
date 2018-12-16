@@ -20,6 +20,11 @@
         Slash,
         AmpersandAmpersand,
         PipePipe,
+        Ampersand,
+        Pipe,
+        Tilde,
+        Hat,
+        Percent,
 
         OpenParenthesis,
         CloseParenthesis,
@@ -40,10 +45,6 @@
         ForKeyword,
         BreakKeyword,
         ContinueKeyword,
-        Ampersand,
-        Pipe,
-        Tilde,
-        Hat,
-        Percent
+        ToKeyword
     }
 }

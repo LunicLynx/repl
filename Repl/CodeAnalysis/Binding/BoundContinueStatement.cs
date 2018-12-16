@@ -2,7 +2,7 @@
 
 namespace Repl.CodeAnalysis.Binding
 {
-    internal class BoundContinueStatement : BoundStatement
+    public class BoundContinueStatement : BoundStatement
     {
         public override IEnumerable<BoundNode> GetChildren()
         {

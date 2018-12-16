@@ -74,22 +74,29 @@ namespace Repl.CodeAnalysis.Syntax
 
         private StatementSyntax ParseForStatement()
         {
-            throw new System.NotImplementedException();
+            var forKeyword = MatchToken(TokenKind.ForKeyword);
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            var equalsToken = MatchToken(TokenKind.Equals);
+            var lowerBound = ParseExpression();
+            var toKeyword = MatchToken(TokenKind.ToKeyword);
+            var upperBound = ParseExpression();
+            var body = ParseBlockStatement();
+            return new ForStatementSyntax(forKeyword, identifierToken, equalsToken, lowerBound, toKeyword, upperBound, body);
         }
 
         private StatementSyntax ParseWhileStatement()
         {
             var whileKeyword = MatchToken(TokenKind.WhileKeyword);
             var condition = ParseExpression();
-            var block = ParseBlockStatement();
-            return new WhileStatementSyntax(whileKeyword, condition, block);
+            var body = ParseBlockStatement();
+            return new WhileStatementSyntax(whileKeyword, condition, body);
         }
 
         private StatementSyntax ParseLoopStatement()
         {
             var loopKeyword = MatchToken(TokenKind.LoopKeyword);
-            var loopBlock = ParseBlockStatement();
-            return new LoopStatementSyntax(loopKeyword, loopBlock);
+            var body = ParseBlockStatement();
+            return new LoopStatementSyntax(loopKeyword, body);
         }
 
         private IfStatementSyntax ParseIfStatement()
@@ -251,6 +258,39 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var token = MatchToken(TokenKind.Number);
             return new LiteralExpressionSyntax(token);
+        }
+    }
+
+    internal class ForStatementSyntax : StatementSyntax
+    {
+        public Token ForKeyword { get; }
+        public Token IdentifierToken { get; }
+        public Token EqualsToken { get; }
+        public ExpressionSyntax LowerBound { get; }
+        public Token ToKeyword { get; }
+        public ExpressionSyntax UpperBound { get; }
+        public BlockStatementSyntax Body { get; }
+
+        public ForStatementSyntax(Token forKeyword, Token identifierToken, Token equalsToken, ExpressionSyntax lowerBound, Token toKeyword, ExpressionSyntax upperBound, BlockStatementSyntax body)
+        {
+            ForKeyword = forKeyword;
+            IdentifierToken = identifierToken;
+            EqualsToken = equalsToken;
+            LowerBound = lowerBound;
+            ToKeyword = toKeyword;
+            UpperBound = upperBound;
+            Body = body;
+        }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return ForKeyword;
+            yield return IdentifierToken;
+            yield return EqualsToken;
+            yield return LowerBound;
+            yield return ToKeyword;
+            yield return UpperBound;
+            yield return Body;
         }
     }
 }

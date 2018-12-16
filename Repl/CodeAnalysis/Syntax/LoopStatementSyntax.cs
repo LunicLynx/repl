@@ -5,18 +5,18 @@ namespace Repl.CodeAnalysis.Syntax
     internal class LoopStatementSyntax : StatementSyntax
     {
         public Token LoopKeyword { get; }
-        public BlockStatementSyntax Block { get; }
+        public BlockStatementSyntax Body { get; }
 
-        public LoopStatementSyntax(Token loopKeyword, BlockStatementSyntax block)
+        public LoopStatementSyntax(Token loopKeyword, BlockStatementSyntax body)
         {
             LoopKeyword = loopKeyword;
-            Block = block;
+            Body = body;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return LoopKeyword;
-            yield return Block;
+            yield return Body;
         }
     }
 }

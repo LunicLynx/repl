@@ -31,6 +31,7 @@ namespace Repl.CodeAnalysis.Binding
             new BoundBinaryOperator(TokenKind.Minus, BoundBinaryOperatorKind.Subtraction, typeof(int)),
             new BoundBinaryOperator(TokenKind.Star, BoundBinaryOperatorKind.Multiplication, typeof(int)),
             new BoundBinaryOperator(TokenKind.Slash, BoundBinaryOperatorKind.Division, typeof(int)),
+            new BoundBinaryOperator(TokenKind.Percent, BoundBinaryOperatorKind.Modulo, typeof(int)),
 
             new BoundBinaryOperator(TokenKind.AmpersandAmpersand, BoundBinaryOperatorKind.LogicalAnd, typeof(bool)),
             new BoundBinaryOperator(TokenKind.PipePipe, BoundBinaryOperatorKind.LogicalOr, typeof(bool)),

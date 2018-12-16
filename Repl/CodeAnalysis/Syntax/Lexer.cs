@@ -16,6 +16,7 @@ namespace Repl.CodeAnalysis.Syntax
             {"while", TokenKind.WhileKeyword},
             {"loop", TokenKind.LoopKeyword},
             {"for", TokenKind.ForKeyword},
+            {"to", TokenKind.ToKeyword},
             {"break", TokenKind.BreakKeyword},
             {"continue", TokenKind.ContinueKeyword},
         };

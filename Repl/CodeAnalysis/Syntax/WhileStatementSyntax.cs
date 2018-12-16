@@ -6,20 +6,20 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token WhileKeyword { get; }
         public ExpressionSyntax Condition { get; }
-        public BlockStatementSyntax Block { get; }
+        public BlockStatementSyntax Body { get; }
 
-        public WhileStatementSyntax(Token whileKeyword, ExpressionSyntax condition, BlockStatementSyntax block)
+        public WhileStatementSyntax(Token whileKeyword, ExpressionSyntax condition, BlockStatementSyntax body)
         {
             WhileKeyword = whileKeyword;
             Condition = condition;
-            Block = block;
+            Body = body;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return WhileKeyword;
             yield return Condition;
-            yield return Block;
+            yield return Body;
         }
     }
 }

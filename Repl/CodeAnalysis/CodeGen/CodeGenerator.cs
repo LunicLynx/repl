@@ -41,9 +41,44 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundIfStatement i:
                     GenerateIfStatement(i);
                     return;
+                case BoundWhileStatement w:
+                    GenerateWhileStatement(w);
+                    return;
+                case BoundLoopStatement l:
+                    GenerateLoopStatement(l);
+                    return;
+                case BoundForStatement f:
+                    GenerateForStatement(f);
+                    return;
+                case BoundBreakStatement b:
+                    GenerateBreakStatement(b);
+                    return;
+                case BoundContinueStatement c:
+                    GenerateContinueStatement(c);
+                    return;
                 default:
                     throw new Exception($"Unexpected node {statement.GetType()}");
             }
+        }
+
+        private void GenerateContinueStatement(BoundContinueStatement node)
+        {
+        }
+
+        private void GenerateBreakStatement(BoundBreakStatement node)
+        {
+        }
+
+        private void GenerateForStatement(BoundForStatement node)
+        {
+        }
+
+        private void GenerateLoopStatement(BoundLoopStatement node)
+        {
+        }
+
+        private void GenerateWhileStatement(BoundWhileStatement node)
+        {
         }
 
         private void GenerateIfStatement(BoundIfStatement node)
@@ -181,6 +216,8 @@ namespace Repl.CodeAnalysis.CodeGen
                     return _builder.Mul(left, right);
                 case BoundBinaryOperatorKind.Division:
                     return _builder.SDiv(left, right);
+                case BoundBinaryOperatorKind.Modulo:
+                    return _builder.SRem(left, right);
                 case BoundBinaryOperatorKind.Equals:
                     return _builder.ICmpEq(left, right);
                 case BoundBinaryOperatorKind.NotEquals:

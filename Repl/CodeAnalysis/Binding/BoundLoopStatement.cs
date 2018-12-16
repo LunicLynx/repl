@@ -2,18 +2,18 @@
 
 namespace Repl.CodeAnalysis.Binding
 {
-    internal class BoundLoopStatement : BoundStatement
+    public class BoundLoopStatement : BoundStatement
     {
-        public BoundBlockStatement Block { get; }
+        public BoundBlockStatement Body { get; }
 
-        public BoundLoopStatement(BoundBlockStatement block)
+        public BoundLoopStatement(BoundBlockStatement body)
         {
-            Block = block;
+            Body = body;
         }
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            yield return Block;
+            yield return Body;
         }
     }
 }

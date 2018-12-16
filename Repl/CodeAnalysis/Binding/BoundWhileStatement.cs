@@ -2,21 +2,21 @@
 
 namespace Repl.CodeAnalysis.Binding
 {
-    internal class BoundWhileStatement : BoundStatement
+    public class BoundWhileStatement : BoundStatement
     {
         public BoundExpression Condition { get; }
-        public BoundBlockStatement Block { get; }
+        public BoundBlockStatement Body { get; }
 
-        public BoundWhileStatement(BoundExpression condition, BoundBlockStatement block)
+        public BoundWhileStatement(BoundExpression condition, BoundBlockStatement body)
         {
             Condition = condition;
-            Block = block;
+            Body = body;
         }
 
         public override IEnumerable<BoundNode> GetChildren()
         {
             yield return Condition;
-            yield return Block;
+            yield return Body;
         }
     }
 }
