@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using Repl.CodeAnalysis.Binding;
+using Repl.CodeAnalysis.Lowering;
 using Repl.CodeAnalysis.Syntax;
 
 namespace Repl.CodeAnalysis
@@ -48,14 +49,21 @@ namespace Repl.CodeAnalysis
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics, null);
 
-            var evaluator = new Evaluator(GlobalScope.Statement, variables);
+            var statement = GetStatement();
+            var evaluator = new Evaluator(statement, variables);
             var value = evaluator.Evaluate();
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
         }
 
+        private BoundStatement GetStatement()
+        {
+            var statement = Lowerer.Lower(GlobalScope.Statement);
+            return statement;
+        }
+
         public void Print(Action<BoundNode> print)
         {
-            print(_globalScope.Statement);
+            print(GetStatement());
         }
     }
 }
