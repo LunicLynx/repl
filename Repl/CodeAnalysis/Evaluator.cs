@@ -184,6 +184,7 @@ namespace Repl.CodeAnalysis
                 case BoundUnaryOperatorKind.Identity: return (int)operand;
                 case BoundUnaryOperatorKind.Negation: return -(int)operand;
                 case BoundUnaryOperatorKind.LogicalNot: return !(bool)operand;
+                case BoundUnaryOperatorKind.BitwiseComplement: return ~(int)operand;
                 default: throw new Exception("Operator not implemented");
             }
         }
@@ -207,6 +208,12 @@ namespace Repl.CodeAnalysis
                 case BoundBinaryOperatorKind.LessOrEquals: return (int)left <= (int)right;
                 case BoundBinaryOperatorKind.GreaterThan: return (int)left > (int)right;
                 case BoundBinaryOperatorKind.GreaterOrEquals: return (int)left >= (int)right;
+                case BoundBinaryOperatorKind.BitwiseAnd when left is bool l && right is bool r: return l & r;
+                case BoundBinaryOperatorKind.BitwiseAnd when left is int l && right is int r: return l & r;
+                case BoundBinaryOperatorKind.BitwiseOr when left is bool l && right is bool r: return l | r;
+                case BoundBinaryOperatorKind.BitwiseOr when left is int l && right is int r: return l | r;
+                case BoundBinaryOperatorKind.BitwiseXor when left is bool l && right is bool r: return l ^ r;
+                case BoundBinaryOperatorKind.BitwiseXor when left is int l && right is int r: return l ^ r;
                 default: throw new Exception("Operator not implemented");
 
             }

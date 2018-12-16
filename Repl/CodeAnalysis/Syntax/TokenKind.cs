@@ -39,6 +39,11 @@
         LoopKeyword,
         ForKeyword,
         BreakKeyword,
-        ContinueKeyword
+        ContinueKeyword,
+        Ampersand,
+        Pipe,
+        Tilde,
+        Hat,
+        Percent
     }
 }

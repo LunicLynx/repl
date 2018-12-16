@@ -11,10 +11,7 @@ namespace Repl.CodeAnalysis.Binding
         public Type ResultType { get; }
 
         public BoundUnaryOperator(TokenKind tokenKind, BoundUnaryOperatorKind kind, Type type)
-            : this(tokenKind, kind, type, type)
-        {
-
-        }
+            : this(tokenKind, kind, type, type) { }
 
         public BoundUnaryOperator(TokenKind tokenKind, BoundUnaryOperatorKind kind, Type operandType, Type resultType)
         {
@@ -27,7 +24,8 @@ namespace Repl.CodeAnalysis.Binding
         private static readonly BoundUnaryOperator[] Operators = {
             new BoundUnaryOperator(TokenKind.Plus, BoundUnaryOperatorKind.Identity, typeof(int)),
             new BoundUnaryOperator(TokenKind.Minus, BoundUnaryOperatorKind.Negation, typeof(int)),
-            new BoundUnaryOperator(TokenKind.Bang, BoundUnaryOperatorKind.LogicalNot, typeof(bool))
+            new BoundUnaryOperator(TokenKind.Bang, BoundUnaryOperatorKind.LogicalNot, typeof(bool)),
+            new BoundUnaryOperator(TokenKind.Tilde, BoundUnaryOperatorKind.BitwiseComplement, typeof(int))
         };
 
         public static BoundUnaryOperator Bind(TokenKind operatorTokenKind, Type operandType)

@@ -35,6 +35,13 @@ namespace Repl.CodeAnalysis.Binding
             new BoundBinaryOperator(TokenKind.AmpersandAmpersand, BoundBinaryOperatorKind.LogicalAnd, typeof(bool)),
             new BoundBinaryOperator(TokenKind.PipePipe, BoundBinaryOperatorKind.LogicalOr, typeof(bool)),
 
+            new BoundBinaryOperator(TokenKind.Ampersand, BoundBinaryOperatorKind.BitwiseAnd, typeof(bool)),
+            new BoundBinaryOperator(TokenKind.Ampersand, BoundBinaryOperatorKind.BitwiseAnd, typeof(int)),
+            new BoundBinaryOperator(TokenKind.Pipe, BoundBinaryOperatorKind.BitwiseOr, typeof(bool)),
+            new BoundBinaryOperator(TokenKind.Pipe, BoundBinaryOperatorKind.BitwiseOr, typeof(int)),
+            new BoundBinaryOperator(TokenKind.Hat, BoundBinaryOperatorKind.BitwiseXor, typeof(bool)),
+            new BoundBinaryOperator(TokenKind.Hat, BoundBinaryOperatorKind.BitwiseXor, typeof(int)),
+
             new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equals, typeof(int),typeof(bool)),
             new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equals, typeof(bool)),
             new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, typeof(int), typeof(bool)),
@@ -44,7 +51,6 @@ namespace Repl.CodeAnalysis.Binding
             new BoundBinaryOperator(TokenKind.LessEquals, BoundBinaryOperatorKind.LessOrEquals, typeof(int), typeof(bool)),
             new BoundBinaryOperator(TokenKind.Greater, BoundBinaryOperatorKind.GreaterThan, typeof(int), typeof(bool)),
             new BoundBinaryOperator(TokenKind.GreaterEquals, BoundBinaryOperatorKind.GreaterOrEquals, typeof(int), typeof(bool)),
-
         };
 
         public static BoundBinaryOperator Bind(TokenKind operatorTokenKind, Type leftType, Type rightType)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Repl.CodeAnalysis.Binding
 {
@@ -10,6 +11,11 @@ namespace Repl.CodeAnalysis.Binding
         public BoundVariableExpression(VariableSymbol variable)
         {
             Variable = variable;
+        }
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield break;
         }
     }
 }

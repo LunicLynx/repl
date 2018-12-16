@@ -4,6 +4,7 @@
     {
         Identity,
         Negation,
-        LogicalNot
+        LogicalNot,
+        BitwiseComplement
     }
 }

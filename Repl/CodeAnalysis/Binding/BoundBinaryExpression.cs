@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Repl.CodeAnalysis.Binding
 {
@@ -14,6 +15,12 @@ namespace Repl.CodeAnalysis.Binding
             Left = left;
             Operator = @operator;
             Right = right;
+        }
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield return Left;
+            yield return Right;
         }
     }
 }

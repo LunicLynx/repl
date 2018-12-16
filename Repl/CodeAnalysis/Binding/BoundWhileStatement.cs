@@ -1,4 +1,6 @@
-﻿namespace Repl.CodeAnalysis.Binding
+﻿using System.Collections.Generic;
+
+namespace Repl.CodeAnalysis.Binding
 {
     internal class BoundWhileStatement : BoundStatement
     {
@@ -9,6 +11,12 @@
         {
             Condition = condition;
             Block = block;
+        }
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield return Condition;
+            yield return Block;
         }
     }
 }

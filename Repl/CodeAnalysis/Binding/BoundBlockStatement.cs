@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Binding
 {
@@ -9,6 +10,14 @@ namespace Repl.CodeAnalysis.Binding
         public BoundBlockStatement(ImmutableArray<BoundStatement> statements)
         {
             Statements = statements;
+        }
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            foreach (var statement in Statements)
+            {
+                yield return statement;
+            }
         }
     }
 }

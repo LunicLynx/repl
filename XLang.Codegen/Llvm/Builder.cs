@@ -205,5 +205,10 @@ namespace XLang.Codegen.Llvm
         {
             return new Phi(LLVM.BuildPhi(BuilderRef, type.TypeRef, name));
         }
+
+        public Value Xor(Value left, Value right, string name = "")
+        {
+            return new Value(LLVM.BuildXor(BuilderRef, left.ValueRef, right.ValueRef, name));
+        }
     }
 }

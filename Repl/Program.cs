@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Repl.CodeAnalysis;
+using Repl.CodeAnalysis.Binding;
 using Repl.CodeAnalysis.CodeGen;
 using Repl.CodeAnalysis.Syntax;
 using Repl.CodeAnalysis.Text;
@@ -14,7 +15,8 @@ namespace Repl
         private static void Main(string[] args)
         {
             var showTree = false;
-            var compile = false;
+            var showProgram = true;
+            var compile = true;
             var compiler = new Compiler();
             var variables = new Dictionary<VariableSymbol, object>();
             var textBuilder = new StringBuilder();
@@ -37,7 +39,14 @@ namespace Repl
                     if (input == "#showTree")
                     {
                         showTree = !showTree;
-                        Console.WriteLine(showTree ? "Showing parse trees." : "Not showing parse trees");
+                        Console.WriteLine(showTree ? "Showing parse trees." : "Not showing parse trees.");
+                        continue;
+                    }
+
+                    if (input == "#showProgram")
+                    {
+                        showProgram = !showProgram;
+                        Console.WriteLine(showTree ? "Showing bound trees." : "Not showing bound trees.");
                         continue;
                     }
 
@@ -79,6 +88,11 @@ namespace Repl
                     Print(syntaxTree.Root.Statement);
                 }
 
+                if (showProgram)
+                {
+                    compilation.Print(Print);
+                }
+
                 if (!result.Diagnostics.Any())
                 {
                     Console.ForegroundColor = ConsoleColor.Magenta;
@@ -86,8 +100,8 @@ namespace Repl
                     Console.ResetColor();
 
                     // TODO if (compile) - if activated we would need to re-emit the whole module
-                    if(compile)
-                    compiler.CompileAndRun(compilation, variables);
+                    if (compile)
+                        compiler.CompileAndRun(compilation, variables);
 
                     previous = compilation;
                 }
@@ -166,6 +180,102 @@ namespace Repl
 
             foreach (var child in node.GetChildren())
                 Print(child, indent, child == lastChild);
+        }
+
+        private static void Print(BoundNode node)
+        {
+            Print(node, "", true);
+        }
+
+        private static void Print(BoundNode node, string indent, bool isLast)
+        {
+            var marker = isLast ? "└──" : "├──";
+
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+
+            Console.Write(indent);
+            Console.Write(marker);
+
+            Console.ForegroundColor = GetColor(node);
+            Console.Write(GetText(node));
+            var firstProperty = true;
+            foreach (var p in GetProperties(node))
+            {
+                if (firstProperty)
+                {
+                    firstProperty = false;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write(",");
+                }
+                Console.Write(" ");
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write(p.name);
+
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" = ");
+
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.Write(p.value);
+            }
+
+            Console.ResetColor();
+
+            Console.WriteLine();
+
+            indent += isLast ? "   " : "│  ";
+
+            var lastChild = node.GetChildren().LastOrDefault();
+
+            foreach (var child in node.GetChildren())
+                Print(child, indent, child == lastChild);
+        }
+
+
+
+        private static IEnumerable<(string name, object value)> GetProperties(BoundNode node)
+        {
+            var type = node.GetType();
+            var properties = type.GetProperties(System.Reflection.BindingFlags.Public |
+                                                System.Reflection.BindingFlags.Instance);
+            foreach (var property in properties)
+            {
+                if (property.Name == nameof(BoundBinaryExpression.Operator) ||
+                    property.Name == nameof(BoundUnaryExpression.Operator))
+                    continue;
+
+                var propertyType = property.PropertyType;
+                if (typeof(BoundNode).IsAssignableFrom(propertyType) ||
+                    typeof(IEnumerable<BoundNode>).IsAssignableFrom(propertyType))
+                    continue;
+
+                var value = property.GetValue(node, null);
+                if (value != null)
+                    yield return (property.Name, value);
+            }
+        }
+
+        private static ConsoleColor GetColor(BoundNode node)
+        {
+            switch (node)
+            {
+                case BoundExpression _: return ConsoleColor.Blue;
+                case BoundStatement _: return ConsoleColor.Cyan;
+                default: return ConsoleColor.Yellow;
+            }
+        }
+
+        private static string GetText(BoundNode node)
+        {
+            switch (node)
+            {
+                case BoundBinaryExpression b: return b.Operator.Kind + "Expression";
+                case BoundUnaryExpression u: return u.Operator.Kind + "Expression";
+                default: return node.GetType().Name;
+            }
         }
     }
 }

@@ -186,8 +186,10 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundBinaryOperatorKind.NotEquals:
                     return _builder.ICmpNe(left, right);
                 case BoundBinaryOperatorKind.LogicalAnd:
+                case BoundBinaryOperatorKind.BitwiseAnd:
                     return _builder.And(left, right);
                 case BoundBinaryOperatorKind.LogicalOr:
+                case BoundBinaryOperatorKind.BitwiseOr:
                     return _builder.Or(left, right);
                 case BoundBinaryOperatorKind.LessThan:
                     return _builder.ICmpSlt(left, right);
@@ -197,6 +199,8 @@ namespace Repl.CodeAnalysis.CodeGen
                     return _builder.ICmpSgt(left, right);
                 case BoundBinaryOperatorKind.GreaterOrEquals:
                     return _builder.ICmpSge(left, right);
+                case BoundBinaryOperatorKind.BitwiseXor:
+                    return _builder.Xor(left, right);
                 default:
                     throw new ArgumentOutOfRangeException();
             }

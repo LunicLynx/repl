@@ -87,6 +87,15 @@ namespace Repl.CodeAnalysis.Syntax
                     case '}':
                         kind = TokenKind.CloseBrace;
                         break;
+                    case '~':
+                        kind = TokenKind.Tilde;
+                        break;
+                    case '^':
+                        kind = TokenKind.Hat;
+                        break;
+                    case '%':
+                        kind = TokenKind.Percent;
+                        break;
                     case '=' when Current == '=':
                         Next();
                         kind = TokenKind.EqualsEquals;
@@ -119,9 +128,15 @@ namespace Repl.CodeAnalysis.Syntax
                         Next();
                         kind = TokenKind.AmpersandAmpersand;
                         break;
+                    case '&':
+                        kind = TokenKind.Ampersand;
+                        break;
                     case '|' when Current == '|':
                         Next();
                         kind = TokenKind.PipePipe;
+                        break;
+                    case '|':
+                        kind = TokenKind.Pipe;
                         break;
                     default:
                         kind = TokenKind.Bad;

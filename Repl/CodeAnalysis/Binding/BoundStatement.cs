@@ -1,6 +1,6 @@
 ﻿namespace Repl.CodeAnalysis.Binding
 {
-    public abstract class BoundStatement
+    public abstract class BoundStatement : BoundNode
     {
 
     }
