@@ -45,8 +45,7 @@ namespace Repl.CodeAnalysis
                         break;
                     case BoundConditionalGotoStatement c:
                         var condition = (bool)EvaluateExpression(c.Condition);
-                        if (condition && !c.JumpIfFalse ||
-                            !condition && c.JumpIfFalse)
+                        if (condition == c.JumpIfTrue)
                             index = labelToIndex[c.Label];
                         else
                             index++;

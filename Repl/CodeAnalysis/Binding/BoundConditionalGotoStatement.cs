@@ -6,13 +6,13 @@ namespace Repl.CodeAnalysis.Binding
     {
         public LabelSymbol Label { get; }
         public BoundExpression Condition { get; }
-        public bool JumpIfFalse { get; }
+        public bool JumpIfTrue { get; }
 
-        public BoundConditionalGotoStatement(LabelSymbol label, BoundExpression condition, bool jumpIfFalse = false)
+        public BoundConditionalGotoStatement(LabelSymbol label, BoundExpression condition, bool jumpIfTrue = true)
         {
             Label = label;
             Condition = condition;
-            JumpIfFalse = jumpIfFalse;
+            JumpIfTrue = jumpIfTrue;
         }
 
         public override IEnumerable<BoundNode> GetChildren()
