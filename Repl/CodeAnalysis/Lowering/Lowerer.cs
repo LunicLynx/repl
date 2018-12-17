@@ -41,9 +41,9 @@ namespace Repl.CodeAnalysis.Lowering
             return new BoundBlockStatement(builder.ToImmutable());
         }
 
-        private static LabelSymbol GenerateLabel()
+        private static LabelSymbol GenerateLabel(string prefix)
         {
-            return new LabelSymbol($"Label{++_labelId}");
+            return new LabelSymbol($"{prefix}-L{++_labelId}");
         }
 
         private LabelSymbol _continueLabel;
@@ -61,9 +61,9 @@ namespace Repl.CodeAnalysis.Lowering
 
         protected override BoundStatement RewriteLoopStatement(BoundLoopStatement node)
         {
-            var continueLabel = GenerateLabel();
+            var continueLabel = GenerateLabel("continue");
             // checkLabel
-            var endLabel = GenerateLabel();
+            var endLabel = GenerateLabel("end");
 
             // gotoCheck
             var continueLabelStatement = new BoundLabelStatement(continueLabel);
@@ -98,9 +98,9 @@ namespace Repl.CodeAnalysis.Lowering
         {
             // TODO Lower into loop statement
             // can be done by inverting the check as break eg. gotoEnd;
-            var continueLabel = GenerateLabel();
-            var checkLabel = GenerateLabel();
-            var endLabel = GenerateLabel();
+            var continueLabel = GenerateLabel("continue");
+            var checkLabel = GenerateLabel("check");
+            var endLabel = GenerateLabel("end");
 
             var gotoCheck = new BoundGotoStatement(checkLabel);
             var continueLabelStatement = new BoundLabelStatement(continueLabel);
@@ -134,7 +134,7 @@ namespace Repl.CodeAnalysis.Lowering
         {
             if (node.ElseStatement == null)
             {
-                var endLabel = GenerateLabel();
+                var endLabel = GenerateLabel("end");
 
                 var gotoFalse = new BoundConditionalGotoStatement(endLabel, node.Condition, true);
                 var endLabelStatement = new BoundLabelStatement(endLabel);
@@ -148,8 +148,8 @@ namespace Repl.CodeAnalysis.Lowering
             }
             else
             {
-                var elseLabel = GenerateLabel();
-                var endLabel = GenerateLabel();
+                var elseLabel = GenerateLabel("else");
+                var endLabel = GenerateLabel("end");
 
                 var gotoFalse = new BoundConditionalGotoStatement(elseLabel, node.Condition, true);
                 var gotoEndStatement = new BoundGotoStatement(endLabel);
