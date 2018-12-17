@@ -81,7 +81,6 @@ namespace Repl
                 var compilation = previous == null
                         ? new Compilation(syntaxTree)
                         : previous.ContinueWith(syntaxTree);
-                var result = compilation.Evaluate(variables);
 
                 if (showTree)
                 {
@@ -92,6 +91,8 @@ namespace Repl
                 {
                     compilation.Print(Print);
                 }
+
+                var result = compilation.Evaluate(variables);
 
                 if (!result.Diagnostics.Any())
                 {
@@ -220,10 +221,7 @@ namespace Repl
 
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
 
-                if (p.value is VariableSymbol v)
-                    Console.Write(v.Name);
-                else
-                    Console.Write(p.value);
+                Console.Write(p.value);
             }
 
             Console.ResetColor();

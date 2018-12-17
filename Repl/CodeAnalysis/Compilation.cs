@@ -55,7 +55,7 @@ namespace Repl.CodeAnalysis
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
         }
 
-        private BoundStatement GetStatement()
+        private BoundBlockStatement GetStatement()
         {
             var statement = Lowerer.Lower(GlobalScope.Statement);
             return statement;

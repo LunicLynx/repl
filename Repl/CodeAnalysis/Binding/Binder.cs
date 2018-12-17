@@ -7,6 +7,7 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class Binder
     {
+        private bool _inLoop;
         private BoundScope _scope;
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
@@ -89,33 +90,51 @@ namespace Repl.CodeAnalysis.Binding
             var variable = new VariableSymbol(syntax.IdentifierToken.Text, false, lowerBound.Type);
             _scope.TryDeclare(variable);
 
+            var oldInLoop = _inLoop;
+            _inLoop = true;
             var body = BindBlockStatement(syntax.Body);
+            _inLoop = oldInLoop;
 
             _scope = _scope.Parent;
 
             return new BoundForStatement(variable, lowerBound, upperBound, body);
         }
 
+
         private BoundStatement BindContinueStatement(ContinueStatementSyntax syntax)
         {
+            if (!_inLoop)
+            {
+                Diagnostics.ReportContinueOutsideLoop(syntax.ContinueKeyword.Span);
+            }
             return new BoundContinueStatement();
         }
 
         private BoundStatement BindBreakStatement(BreakStatementSyntax syntax)
         {
+            if (!_inLoop)
+            {
+                Diagnostics.ReportBreakOutsideLoop(syntax.BreakKeyword.Span);
+            }
             return new BoundBreakStatement();
         }
 
         private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
         {
             var condition = BindExpression(syntax.Condition, typeof(bool));
+            var oldInLoop = _inLoop;
+            _inLoop = true;
             var body = BindBlockStatement(syntax.Body);
+            _inLoop = oldInLoop;
             return new BoundWhileStatement(condition, body);
         }
 
         private BoundStatement BindLoopStatement(LoopStatementSyntax syntax)
         {
+            var oldInLoop = _inLoop;
+            _inLoop = true;
             var body = BindBlockStatement(syntax.Body);
+            _inLoop = oldInLoop;
             return new BoundLoopStatement(body);
         }
 

@@ -73,5 +73,17 @@ namespace Repl.CodeAnalysis
             var message = $"Variable '{name}' is read-only and cannot be assigned to.";
             Report(span, message);
         }
+
+        public void ReportContinueOutsideLoop(TextSpan span)
+        {
+            var message = "The 'continue'-Statement can only be used inside a loop";
+            Report(span, message);
+        }
+
+        public void ReportBreakOutsideLoop(TextSpan span)
+        {
+            var message = "The 'break'-Statement can only be used inside a loop";
+            Report(span, message);
+        }
     }
 }

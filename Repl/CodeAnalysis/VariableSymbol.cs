@@ -14,5 +14,7 @@ namespace Repl.CodeAnalysis
             IsReadOnly = isReadOnly;
             Type = type;
         }
+
+        public override string ToString() => Name;
     }
 }
