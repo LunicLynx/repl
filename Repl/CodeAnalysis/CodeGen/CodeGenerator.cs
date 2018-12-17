@@ -47,9 +47,6 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundLoopStatement l:
                     GenerateLoopStatement(l);
                     return;
-                case BoundForStatement f:
-                    GenerateForStatement(f);
-                    return;
                 case BoundBreakStatement b:
                     GenerateBreakStatement(b);
                     return;
@@ -66,10 +63,6 @@ namespace Repl.CodeAnalysis.CodeGen
         }
 
         private void GenerateBreakStatement(BoundBreakStatement node)
-        {
-        }
-
-        private void GenerateForStatement(BoundForStatement node)
         {
         }
 

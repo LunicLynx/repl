@@ -61,37 +61,11 @@ namespace Repl.CodeAnalysis
                     EvaluateContinueStatement(c); return;
                 case BoundBreakStatement b:
                     EvaluateBreakStatement(b); return;
-                case BoundForStatement f:
-                    EvaluateForStatement(f); return;
                 case BoundExpressionStatement e:
                     EvaluateExpressionStatement(e); return;
                 default:
                     throw new Exception($"Unexpected node {statement.GetType()}");
             }
-        }
-
-        private void EvaluateForStatement(BoundForStatement node)
-        {
-            var lowerBound = (int)EvaluateExpression(node.LowerBound);
-            var upperBound = (int)EvaluateExpression(node.UpperBound);
-            do
-            {
-                _action = ActionKind.None;
-
-                while (_action == ActionKind.None)
-                {
-                    if (lowerBound > upperBound) break;
-
-                    _variables[node.Variable] = lowerBound;
-                    EvaluateBlockStatement(node.Body);
-
-                    lowerBound++;
-                }
-            } while (_action == ActionKind.Continue);
-
-
-            if (_action == ActionKind.Break)
-                _action = ActionKind.None;
         }
 
         private void EvaluateBreakStatement(BoundBreakStatement node)

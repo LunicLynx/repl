@@ -16,7 +16,7 @@ namespace Repl
         {
             var showTree = false;
             var showProgram = true;
-            var compile = true;
+            var compile = false;
             var compiler = new Compiler();
             var variables = new Dictionary<VariableSymbol, object>();
             var textBuilder = new StringBuilder();
@@ -219,7 +219,11 @@ namespace Repl
                 Console.Write(" = ");
 
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.Write(p.value);
+
+                if (p.value is VariableSymbol v)
+                    Console.Write(v.Name);
+                else
+                    Console.Write(p.value);
             }
 
             Console.ResetColor();
@@ -233,8 +237,6 @@ namespace Repl
             foreach (var child in node.GetChildren())
                 Print(child, indent, child == lastChild);
         }
-
-
 
         private static IEnumerable<(string name, object value)> GetProperties(BoundNode node)
         {
