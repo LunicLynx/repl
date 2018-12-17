@@ -17,9 +17,30 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundContinueStatement c: return RewriteContinueStatement(c);
                 case BoundBlockStatement b: return RewriteBlockStatement(b);
                 case BoundForStatement f: return RewriteForStatement(f);
+                case BoundLabelStatement l: return RewriteLabelStatement(l);
+                case BoundGotoStatement g: return RewriteGotoStatement(g);
+                case BoundConditionalGotoStatement c: return RewriteConditionalGotoStatement(c);
                 case BoundExpressionStatement e: return RewriteExpressionStatement(e);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
+        {
+            var condition = RewriteExpression(node.Condition);
+            if (condition == node.Condition)
+                return node;
+            return new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfFalse);
+        }
+
+        private BoundStatement RewriteGotoStatement(BoundGotoStatement node)
+        {
+            return node;
+        }
+
+        private BoundStatement RewriteLabelStatement(BoundLabelStatement node)
+        {
+            return node;
         }
 
         protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)
