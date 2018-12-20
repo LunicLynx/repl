@@ -75,9 +75,16 @@ namespace Repl.CodeAnalysis.Binding
                     return BindForStatement(f);
                 case ExpressionStatementSyntax e:
                     return BindExpressionStatement(e);
+                case ExternDeclarationSyntax e:
+                    return BindExternDeclaration(e);
                 default:
                     throw new Exception($"Unexpected syntax {stmt.GetType()}");
             }
+        }
+
+        private BoundStatement BindExternDeclaration(ExternDeclarationSyntax syntax)
+        {
+            return new BoundExternDeclaration(syntax.Prototype.IdentifierToken.Text);
         }
 
         private BoundStatement BindForStatement(ForStatementSyntax syntax)

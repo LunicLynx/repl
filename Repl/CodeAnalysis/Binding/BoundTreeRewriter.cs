@@ -21,8 +21,14 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundGotoStatement g: return RewriteGotoStatement(g);
                 case BoundConditionalGotoStatement c: return RewriteConditionalGotoStatement(c);
                 case BoundExpressionStatement e: return RewriteExpressionStatement(e);
+                case BoundExternDeclaration e: return RewriteExternDeclaration(e);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundStatement RewriteExternDeclaration(BoundExternDeclaration node)
+        {
+            return node;
         }
 
         private BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)

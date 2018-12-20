@@ -53,6 +53,9 @@ namespace Repl.CodeAnalysis
                     case BoundLabelStatement _:
                         index++;
                         break;
+                    case BoundExternDeclaration e:
+                        index++;
+                        break;
                     default:
                         throw new Exception($"Unexpected node {s.GetType()}");
                 }

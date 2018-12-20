@@ -45,6 +45,7 @@
         ForKeyword,
         BreakKeyword,
         ContinueKeyword,
-        ToKeyword
+        ToKeyword,
+        ExternKeyword
     }
 }

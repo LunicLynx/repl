@@ -55,9 +55,44 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseBreakStatement();
                 case TokenKind.ContinueKeyword:
                     return ParseContinueStatement();
+                case TokenKind.ExternKeyword:
+                    return ParseExternDeclaration();
+                case TokenKind.Identifier:
+                    return ParseFunctionCallOrDeclaration();
                 default:
                     return ParseExpressionStatement();
             }
+        }
+
+        private StatementSyntax ParseExternDeclaration()
+        {
+            var externKeyword = MatchToken(TokenKind.ExternKeyword);
+            var prototype = ParsePrototype();
+            return new ExternDeclarationSyntax(externKeyword, prototype);
+        }
+
+        private StatementSyntax ParseFunctionCallOrDeclaration()
+        {
+            // extern abc()  // extern decl
+            // fn abc() {}      // function decl
+            // abc()         // call -> ambi a block could follow
+
+            Peek()
+        }
+
+        private StatementSyntax ParseFunctionDeclaration()
+        {
+            var prototype = ParsePrototype();
+            var body = ParseBlockStatement();
+            return new FunctionDeclarationSyntax(prototype, body);
+        }
+
+        private PrototypeSyntax ParsePrototype()
+        {
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
+            var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
+            return new PrototypeSyntax(identifierToken, openParenthesisToken, closeParenthesisToken);
         }
 
         private StatementSyntax ParseContinueStatement()
