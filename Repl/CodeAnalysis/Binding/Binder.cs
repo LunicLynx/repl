@@ -19,12 +19,15 @@ namespace Repl.CodeAnalysis.Binding
 
         public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax syntax)
         {
+            previous = previous ?? new BoundGlobalScope(null, ImmutableArray<Diagnostic>.Empty,
+                           ImmutableArray.Create<Symbol>(new TypeSymbol("void")),
+                           new BoundExpressionStatement(new BoundLiteralExpression(0)));
             var parent = CreateParentScopes(previous);
             var binder = new Binder(parent);
             var statement = binder.BindStatement(syntax.Statement);
             var diagnostics = binder.Diagnostics.ToImmutableArray();
-            var variables = binder._scope.GetDeclaredVariables();
-            return new BoundGlobalScope(previous, diagnostics, variables, statement);
+            var symbols = binder._scope.GetDeclaredSymbols();
+            return new BoundGlobalScope(previous, diagnostics, symbols, statement);
         }
 
         private static BoundScope CreateParentScopes(BoundGlobalScope previous)
@@ -42,9 +45,9 @@ namespace Repl.CodeAnalysis.Binding
             {
                 previous = stack.Pop();
                 var scope = new BoundScope(parent);
-                foreach (var v in previous.Variables)
+                foreach (var symbol in previous.Symbols)
                 {
-                    scope.TryDeclare(v);
+                    scope.TryDeclare(symbol);
                 }
 
                 parent = scope;
@@ -77,14 +80,59 @@ namespace Repl.CodeAnalysis.Binding
                     return BindExpressionStatement(e);
                 case ExternDeclarationSyntax e:
                     return BindExternDeclaration(e);
+                case FunctionDeclarationSyntax f:
+                    return BindFunctionDeclaration(f);
                 default:
                     throw new Exception($"Unexpected syntax {stmt.GetType()}");
             }
         }
 
+        private BoundStatement BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
+        {
+            var function = BindPrototype(syntax.Prototype);
+            if (function == null)
+                return new BoundExpressionStatement(new BoundLiteralExpression(0));
+
+            var body = BindBlockStatement(syntax.Body);
+
+            return new BoundFunctionDeclaration(function, body);
+        }
+
+        private FunctionSymbol BindPrototype(PrototypeSyntax syntax)
+        {
+            var typeIdentifierToken = syntax.ReturnType.TypeOrIdentifierToken;
+            var typeName = typeIdentifierToken.Text;
+
+            if (!_scope.TryLookup(typeName, out var symbol))
+            {
+                Diagnostics.ReportUndefinedName(typeIdentifierToken.Span, typeName);
+                return null;
+            }
+
+            if (!(symbol is TypeSymbol type))
+            {
+                Diagnostics.ReportUnexpectedSymbol(typeIdentifierToken.Span, symbol.GetType().Name, nameof(TypeSymbol));
+                return null;
+            }
+
+            var identifierToken = syntax.IdentifierToken;
+            var name = identifierToken.Text;
+
+            var function = new FunctionSymbol(type, name);
+
+            if (!_scope.TryDeclare(function))
+            {
+                Diagnostics.ReportSymbolAlreadyDeclared(identifierToken.Span, name);
+            }
+
+            return function;
+        }
+
+
         private BoundStatement BindExternDeclaration(ExternDeclarationSyntax syntax)
         {
-            return new BoundExternDeclaration(syntax.Prototype.IdentifierToken.Text);
+            var function = BindPrototype(syntax.Prototype);
+            return new BoundExternDeclaration(function);
         }
 
         private BoundStatement BindForStatement(ForStatementSyntax syntax)
@@ -166,7 +214,7 @@ namespace Repl.CodeAnalysis.Binding
 
             if (!_scope.TryDeclare(variable))
             {
-                Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
+                Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Span, name);
             }
 
             return new BoundVariableDeclaration(variable, initializer);
@@ -237,9 +285,15 @@ namespace Repl.CodeAnalysis.Binding
                 return new BoundLiteralExpression(0);
             }
 
-            if (!_scope.TryLookup(name, out var variable))
+            if (!_scope.TryLookup(name, out var symbol))
             {
                 Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
+                return new BoundLiteralExpression(0);
+            }
+
+            if (!(symbol is VariableSymbol variable))
+            {
+                Diagnostics.ReportUnexpectedSymbol(syntax.IdentifierToken.Span, symbol.GetType().Name, nameof(VariableSymbol));
                 return new BoundLiteralExpression(0);
             }
 
@@ -251,9 +305,15 @@ namespace Repl.CodeAnalysis.Binding
             var name = syntax.IdentifierToken.Text;
             var value = BindExpression(syntax.Expression);
 
-            if (!_scope.TryLookup(name, out var variable))
+            if (!_scope.TryLookup(name, out var symbol))
             {
                 Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
+                return value;
+            }
+
+            if (!(symbol is VariableSymbol variable))
+            {
+                Diagnostics.ReportUnexpectedSymbol(syntax.IdentifierToken.Span, symbol.GetType().Name, nameof(VariableSymbol));
                 return value;
             }
 

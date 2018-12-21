@@ -57,8 +57,9 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseContinueStatement();
                 case TokenKind.ExternKeyword:
                     return ParseExternDeclaration();
-                case TokenKind.Identifier:
-                    return ParseFunctionCallOrDeclaration();
+                case TokenKind.VoidKeyword:
+                case TokenKind.Identifier when Peek(1).Kind == TokenKind.Identifier:
+                    return ParseFunctionDeclaration();
                 default:
                     return ParseExpressionStatement();
             }
@@ -71,15 +72,6 @@ namespace Repl.CodeAnalysis.Syntax
             return new ExternDeclarationSyntax(externKeyword, prototype);
         }
 
-        private StatementSyntax ParseFunctionCallOrDeclaration()
-        {
-            // extern abc()  // extern decl
-            // fn abc() {}      // function decl
-            // abc()         // call -> ambi a block could follow
-
-            Peek()
-        }
-
         private StatementSyntax ParseFunctionDeclaration()
         {
             var prototype = ParsePrototype();
@@ -89,10 +81,37 @@ namespace Repl.CodeAnalysis.Syntax
 
         private PrototypeSyntax ParsePrototype()
         {
+            var returnType = ParseType();
             var identifierToken = MatchToken(TokenKind.Identifier);
             var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
-            return new PrototypeSyntax(identifierToken, openParenthesisToken, closeParenthesisToken);
+            return new PrototypeSyntax(returnType, identifierToken, openParenthesisToken, closeParenthesisToken);
+        }
+
+        private TypeSyntax ParseType()
+        {
+            var typeOrIdentifierToken = MatchTypeOrIdentifierToken();
+            return new TypeSyntax(typeOrIdentifierToken);
+        }
+
+        private Token MatchTypeOrIdentifierToken()
+        {
+            if (!IsTypeOrIdentifierToken(Current.Kind))
+                Diagnostics.ReportExpectedTypeOrIdentifier(Current.Span);
+
+            return MatchToken(Current.Kind);
+        }
+
+        private bool IsTypeOrIdentifierToken(TokenKind kind)
+        {
+            switch (kind)
+            {
+                case TokenKind.VoidKeyword:
+                case TokenKind.Identifier:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         private StatementSyntax ParseContinueStatement()
@@ -220,6 +239,12 @@ namespace Repl.CodeAnalysis.Syntax
 
             return ParseBinaryExpression();
         }
+
+        //  void x() {6}
+        //
+        //  d = -x()
+        //
+        // d => -6
 
         public ExpressionSyntax ParseBinaryExpression(int parentPrecedence = 0)
         {

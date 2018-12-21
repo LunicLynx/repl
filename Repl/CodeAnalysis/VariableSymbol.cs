@@ -2,9 +2,9 @@
 
 namespace Repl.CodeAnalysis
 {
-    public class VariableSymbol
+    public class VariableSymbol : Symbol
     {
-        public string Name { get; }
+        public override string Name { get; }
         public bool IsReadOnly { get; }
         public Type Type { get; }
 

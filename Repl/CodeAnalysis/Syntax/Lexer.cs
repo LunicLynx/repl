@@ -19,7 +19,8 @@ namespace Repl.CodeAnalysis.Syntax
             {"to", TokenKind.ToKeyword},
             {"break", TokenKind.BreakKeyword},
             {"continue", TokenKind.ContinueKeyword},
-            {"extern", TokenKind.ExternKeyword}
+            {"extern", TokenKind.ExternKeyword},
+            {"void", TokenKind.VoidKeyword},
         };
 
         public Lexer(SourceText text) : base(text) { }

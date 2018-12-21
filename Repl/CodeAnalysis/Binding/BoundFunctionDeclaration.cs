@@ -2,18 +2,20 @@
 
 namespace Repl.CodeAnalysis.Binding
 {
-    public class BoundExternDeclaration : BoundStatement
+    public class BoundFunctionDeclaration : BoundStatement
     {
         public FunctionSymbol Function { get; }
+        public BoundBlockStatement Body { get; }
 
-        public BoundExternDeclaration(FunctionSymbol function)
+        public BoundFunctionDeclaration(FunctionSymbol function, BoundBlockStatement body)
         {
             Function = function;
+            Body = body;
         }
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            yield break;
+            yield return Body;
         }
     }
 }

@@ -51,9 +51,8 @@ namespace Repl.CodeAnalysis
                             index++;
                         break;
                     case BoundLabelStatement _:
-                        index++;
-                        break;
-                    case BoundExternDeclaration e:
+                    case BoundExternDeclaration _:
+                    case BoundFunctionDeclaration _:
                         index++;
                         break;
                     default:

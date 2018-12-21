@@ -52,7 +52,7 @@ namespace Repl.CodeAnalysis
 
         public void ReportUndefinedName(TextSpan span, string name)
         {
-            var message = $"Variable '{name}' doesn't exist.";
+            var message = $"Symbol '{name}' doesn't exist.";
             Report(span, message);
         }
 
@@ -62,9 +62,9 @@ namespace Repl.CodeAnalysis
             Report(span, message);
         }
 
-        public void ReportVariableAlreadyDeclared(TextSpan span, string name)
+        public void ReportSymbolAlreadyDeclared(TextSpan span, string name)
         {
-            var message = $"Variable '{name}' is already declared.";
+            var message = $"Symbol '{name}' is already declared.";
             Report(span, message);
         }
 
@@ -83,6 +83,18 @@ namespace Repl.CodeAnalysis
         public void ReportBreakOutsideLoop(TextSpan span)
         {
             var message = "The 'break'-Statement can only be used inside a loop";
+            Report(span, message);
+        }
+
+        public void ReportExpectedTypeOrIdentifier(TextSpan span)
+        {
+            var message = "Expected type or identifier";
+            Report(span, message);
+        }
+        
+        public void ReportUnexpectedSymbol(TextSpan span, string actual, string expected)
+        {
+            var message = $"Unexpected symbol '{actual}', expected '{expected}'.";
             Report(span, message);
         }
     }

@@ -6,36 +6,36 @@ namespace Repl.CodeAnalysis.Binding
     public class BoundScope
     {
         public BoundScope Parent { get; }
-        private Dictionary<string, VariableSymbol> _variables = new Dictionary<string, VariableSymbol>();
+        private readonly Dictionary<string, Symbol> _symbols = new Dictionary<string, Symbol>();
 
         public BoundScope(BoundScope parent)
         {
             Parent = parent;
         }
 
-        public bool TryDeclare(VariableSymbol variable)
+        public bool TryDeclare(Symbol symbol)
         {
-            if (_variables.ContainsKey(variable.Name))
+            if (_symbols.ContainsKey(symbol.Name))
                 return false;
 
-            _variables.Add(variable.Name, variable);
+            _symbols.Add(symbol.Name, symbol);
             return true;
         }
 
-        public bool TryLookup(string name, out VariableSymbol variable)
+        public bool TryLookup(string name, out Symbol symbol)
         {
-            if (_variables.TryGetValue(name, out variable))
+            if (_symbols.TryGetValue(name, out symbol))
                 return true;
 
             if (Parent == null)
                 return false;
 
-            return Parent.TryLookup(name, out variable);
+            return Parent.TryLookup(name, out symbol);
         }
 
-        public ImmutableArray<VariableSymbol> GetDeclaredVariables()
+        public ImmutableArray<Symbol> GetDeclaredSymbols()
         {
-            return _variables.Values.ToImmutableArray();
+            return _symbols.Values.ToImmutableArray();
         }
     }
 }

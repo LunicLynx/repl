@@ -4,12 +4,14 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class PrototypeSyntax : SyntaxNode
     {
+        public TypeSyntax ReturnType { get; }
         public Token IdentifierToken { get; }
         public Token OpenParenthesisToken { get; }
         public Token CloseParenthesisToken { get; }
 
-        public PrototypeSyntax(Token identifierToken, Token openParenthesisToken, Token closeParenthesisToken)
+        public PrototypeSyntax(TypeSyntax returnType, Token identifierToken, Token openParenthesisToken, Token closeParenthesisToken)
         {
+            ReturnType = returnType;
             IdentifierToken = identifierToken;
             OpenParenthesisToken = openParenthesisToken;
             CloseParenthesisToken = closeParenthesisToken;

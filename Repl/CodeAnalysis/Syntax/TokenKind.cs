@@ -46,6 +46,7 @@
         BreakKeyword,
         ContinueKeyword,
         ToKeyword,
-        ExternKeyword
+        ExternKeyword,
+        VoidKeyword
     }
 }

@@ -12,7 +12,7 @@ namespace Repl
     {
         private Compilation _previous;
         private bool _showTree;
-        private bool _showProgram = true;
+        private bool _showProgram;
         private bool _compile;
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
 
