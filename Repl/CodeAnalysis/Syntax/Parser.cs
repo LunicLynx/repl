@@ -243,7 +243,9 @@ namespace Repl.CodeAnalysis.Syntax
         //  void x() {6}
         //
         //  d = -x()
-        //
+        //   1. x
+        //   2. ()
+        //   3. -
         // d => -6
 
         public ExpressionSyntax ParseBinaryExpression(int parentPrecedence = 0)
@@ -287,11 +289,21 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseBooleanLiteralExpression(Current.Kind);
                 case TokenKind.Number:
                     return ParseNumberLiteralExpression();
-
+                case TokenKind.Identifier when Peek(1).Kind == TokenKind.OpenParenthesis:
+                    return ParseInvokeExpression();
                 case TokenKind.Identifier:
                 default:
                     return ParseNameExpression();
             }
+        }
+
+        private ExpressionSyntax ParseInvokeExpression()
+        {
+            var target = ParseNameExpression();
+            var openParenthesis = MatchToken(TokenKind.OpenParenthesis);
+            var closeParenthesis = MatchToken(TokenKind.CloseParenthesis);
+
+            return new InvokeExpressionSyntax(target, openParenthesis, closeParenthesis);
         }
 
         private ExpressionSyntax ParseParenthesizedExpression()

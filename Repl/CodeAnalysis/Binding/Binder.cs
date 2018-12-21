@@ -20,7 +20,7 @@ namespace Repl.CodeAnalysis.Binding
         public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax syntax)
         {
             previous = previous ?? new BoundGlobalScope(null, ImmutableArray<Diagnostic>.Empty,
-                           ImmutableArray.Create<Symbol>(new TypeSymbol("void")),
+                           ImmutableArray.Create<Symbol>(new TypeSymbol("void", typeof(void))),
                            new BoundExpressionStatement(new BoundLiteralExpression(0)));
             var parent = CreateParentScopes(previous);
             var binder = new Binder(parent);
@@ -93,7 +93,9 @@ namespace Repl.CodeAnalysis.Binding
             if (function == null)
                 return new BoundExpressionStatement(new BoundLiteralExpression(0));
 
+            _scope = new BoundScope(_scope);
             var body = BindBlockStatement(syntax.Body);
+            _scope = _scope.Parent;
 
             return new BoundFunctionDeclaration(function, body);
         }
@@ -250,9 +252,9 @@ namespace Repl.CodeAnalysis.Binding
             return expression;
         }
 
-        private BoundExpression BindExpression(ExpressionSyntax expr)
+        private BoundExpression BindExpression(ExpressionSyntax syntax)
         {
-            switch (expr)
+            switch (syntax)
             {
                 case BinaryExpressionSyntax b:
                     return BindBinaryExpression(b);
@@ -266,9 +268,26 @@ namespace Repl.CodeAnalysis.Binding
                     return BindNameExpression(n);
                 case ParenthesizedExpressionSyntax p:
                     return BindParenthesizedExpression(p);
+                case InvokeExpressionSyntax i:
+                    return BindInvokeExpression(i);
                 default:
-                    return null;
+                    throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
+        }
+
+        private BoundExpression BindInvokeExpression(InvokeExpressionSyntax syntax)
+        {
+            if (!(syntax.Target is NameExpressionSyntax n))
+            {
+                Diagnostics.ReportFunctionNameExpected(syntax.Target.Span);
+                return new BoundLiteralExpression(0);
+            }
+
+            var function = GetSymbol<FunctionSymbol>(n.IdentifierToken);
+            if (function == null)
+                return new BoundLiteralExpression(0);
+
+            return new BoundInvokeExpression(function);
         }
 
         private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
@@ -276,27 +295,33 @@ namespace Repl.CodeAnalysis.Binding
             return BindExpression(syntax.Expression);
         }
 
-        private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
+        private T GetSymbol<T>(Token identifierToken) where T : Symbol
         {
-            var name = syntax.IdentifierToken.Text;
+            var name = identifierToken.Text;
             if (string.IsNullOrEmpty(name))
             {
                 // Token was inserted by parser
-                return new BoundLiteralExpression(0);
+                return null;
             }
 
             if (!_scope.TryLookup(name, out var symbol))
             {
-                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
-                return new BoundLiteralExpression(0);
+                Diagnostics.ReportUndefinedName(identifierToken.Span, name);
+                return null;
             }
 
-            if (!(symbol is VariableSymbol variable))
+            if (!(symbol is T s))
             {
-                Diagnostics.ReportUnexpectedSymbol(syntax.IdentifierToken.Span, symbol.GetType().Name, nameof(VariableSymbol));
-                return new BoundLiteralExpression(0);
+                Diagnostics.ReportUnexpectedSymbol(identifierToken.Span, symbol.GetType().Name, typeof(T).Name);
+                return null;
             }
 
+            return s;
+        }
+
+        private BoundVariableExpression BindNameExpression(NameExpressionSyntax syntax)
+        {
+            var variable = GetSymbol<VariableSymbol>(syntax.IdentifierToken);
             return new BoundVariableExpression(variable);
         }
 

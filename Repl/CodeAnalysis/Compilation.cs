@@ -43,14 +43,14 @@ namespace Repl.CodeAnalysis
             return new Compilation(this, syntaxTree);
         }
 
-        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
+        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables, Dictionary<FunctionSymbol, BoundBlockStatement> functions )
         {
             var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics, null);
 
             var statement = GetStatement();
-            var evaluator = new Evaluator(statement, variables);
+            var evaluator = new Evaluator(statement, variables, functions);
             var value = evaluator.Evaluate();
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
         }

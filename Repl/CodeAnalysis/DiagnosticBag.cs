@@ -97,5 +97,11 @@ namespace Repl.CodeAnalysis
             var message = $"Unexpected symbol '{actual}', expected '{expected}'.";
             Report(span, message);
         }
+
+        public void ReportFunctionNameExpected(TextSpan span)
+        {
+            var message = "Function name expected.";
+            Report(span, message);
+        }
     }
 }

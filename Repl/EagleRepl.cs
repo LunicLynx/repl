@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Repl.CodeAnalysis;
+using Repl.CodeAnalysis.Binding;
 using Repl.CodeAnalysis.CodeGen;
 using Repl.CodeAnalysis.Syntax;
 using Repl.CodeAnalysis.Text;
@@ -15,6 +16,9 @@ namespace Repl
         private bool _showProgram;
         private bool _compile;
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
+
+        private readonly Dictionary<FunctionSymbol, BoundBlockStatement> _functions =
+            new Dictionary<FunctionSymbol, BoundBlockStatement>();
 
         private readonly Compiler _compiler = new Compiler();
 
@@ -94,7 +98,7 @@ namespace Repl
                 printer.Print(compilation);
             }
 
-            var result = compilation.Evaluate(_variables);
+            var result = compilation.Evaluate(_variables, _functions);
 
             if (!result.Diagnostics.Any())
             {

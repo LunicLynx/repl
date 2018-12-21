@@ -9,11 +9,13 @@ namespace Repl.CodeAnalysis
         private object _lastValue;
         private readonly BoundBlockStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
+        private readonly Dictionary<FunctionSymbol, BoundBlockStatement> _functions;
 
-        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables)
+        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables, Dictionary<FunctionSymbol, BoundBlockStatement> functions)
         {
             _root = root;
             _variables = variables;
+            _functions = functions;
         }
 
         public object Evaluate()
@@ -50,9 +52,12 @@ namespace Repl.CodeAnalysis
                         else
                             index++;
                         break;
+                    case BoundFunctionDeclaration f:
+                        EvaluateFunctionDeclaration(f);
+                        index++;
+                        break;
                     case BoundLabelStatement _:
                     case BoundExternDeclaration _:
-                    case BoundFunctionDeclaration _:
                         index++;
                         break;
                     default:
@@ -61,6 +66,13 @@ namespace Repl.CodeAnalysis
             }
 
             return _lastValue;
+        }
+
+        private void EvaluateFunctionDeclaration(BoundFunctionDeclaration node)
+        {
+            var value = node.Body;
+            _functions[node.Function] = value;
+            _lastValue = value;
         }
 
         private object EvaluateExpression(BoundExpression expression)
@@ -77,9 +89,18 @@ namespace Repl.CodeAnalysis
                     return EvaluateAssignmentExpression(a);
                 case BoundVariableExpression v:
                     return EvaluateVariableExpression(v);
+                case BoundInvokeExpression i:
+                    return EvaluateInvokeExpression(i);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private object EvaluateInvokeExpression(BoundInvokeExpression node)
+        {
+            var body = _functions[node.Function];
+            var evaluator = new Evaluator(body, _variables, _functions);
+            return evaluator.Evaluate();
         }
 
         private void EvaluateVariableDeclaration(BoundVariableDeclaration node)

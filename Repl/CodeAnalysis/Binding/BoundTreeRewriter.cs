@@ -145,8 +145,14 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundUnaryExpression u: return RewriteUnaryExpression(u);
                 case BoundLiteralExpression l: return RewriteLiteralExpression(l);
                 case BoundVariableExpression v: return RewriteVariableExpression(v);
+                case BoundInvokeExpression i: return RewriteInvokeExpression(i);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundExpression RewriteInvokeExpression(BoundInvokeExpression node)
+        {
+            return node;
         }
 
         protected virtual BoundExpression RewriteVariableExpression(BoundVariableExpression node)
