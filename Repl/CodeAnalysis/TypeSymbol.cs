@@ -17,5 +17,8 @@ namespace Repl.CodeAnalysis
         {
             return Name;
         }
+
+        public static TypeSymbol Void = new TypeSymbol("void", typeof(void));
+        public static TypeSymbol Int32 = new TypeSymbol("int", typeof(int));
     }
 }

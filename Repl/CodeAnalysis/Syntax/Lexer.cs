@@ -21,6 +21,7 @@ namespace Repl.CodeAnalysis.Syntax
             {"continue", TokenKind.ContinueKeyword},
             {"extern", TokenKind.ExternKeyword},
             {"void", TokenKind.VoidKeyword},
+            {"int", TokenKind.IntKeyword }
         };
 
         public Lexer(SourceText text) : base(text) { }

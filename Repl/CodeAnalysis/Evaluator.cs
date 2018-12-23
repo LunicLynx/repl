@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Repl.CodeAnalysis.Binding;
 
 namespace Repl.CodeAnalysis
@@ -10,16 +11,20 @@ namespace Repl.CodeAnalysis
         private readonly BoundBlockStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
         private readonly Dictionary<FunctionSymbol, Delegate> _functions;
+        private Dictionary<ParameterSymbol, object> _arguments = new Dictionary<ParameterSymbol, object>();
 
-        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables, Dictionary<FunctionSymbol, Delegate> functions)
+        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables,
+            Dictionary<FunctionSymbol, Delegate> functions)
         {
             _root = root;
             _variables = variables;
             _functions = functions;
         }
 
-        public object Evaluate()
+        public object Evaluate(Dictionary<ParameterSymbol, object> arguments)
         {
+            _arguments = arguments;
+
             var labelToIndex = new Dictionary<LabelSymbol, int>();
 
             for (var i = 0; i < _root.Statements.Length; i++)
@@ -82,10 +87,19 @@ namespace Repl.CodeAnalysis
         {
             var body = node.Body;
             var evaluator = new Evaluator(body, _variables, _functions);
-            //evaluator.Evaluate();
 
             var value = node.Body;
-            _functions[node.Function] = (Func<object>)evaluator.Evaluate;
+            _functions[node.Function] = (Func<object[], object>)(args =>
+           {
+               var arguments = new Dictionary<ParameterSymbol, object>();
+               for (var i = 0; i < node.Function.Parameters.Length; i++)
+               {
+                   var parameter = node.Function.Parameters[i];
+                   arguments[parameter] = args[i];
+               }
+
+               return evaluator.Evaluate(arguments);
+           });
             _lastValue = value;
         }
 
@@ -103,16 +117,24 @@ namespace Repl.CodeAnalysis
                     return EvaluateAssignmentExpression(a);
                 case BoundVariableExpression v:
                     return EvaluateVariableExpression(v);
-                case BoundInvokeExpression i:
-                    return EvaluateInvokeExpression(i);
+                case BoundCallExpression i:
+                    return EvaluateCallExpression(i);
+                case BoundParameterExpression p:
+                    return EvaluateParameterExpression(p);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
         }
 
-        private object EvaluateInvokeExpression(BoundInvokeExpression node)
+        private object EvaluateParameterExpression(BoundParameterExpression node)
         {
-            return _functions[node.Function].DynamicInvoke();
+            return _arguments[node.Parameter];
+        }
+
+        private object EvaluateCallExpression(BoundCallExpression node)
+        {
+            var args = node.Arguments.Select(EvaluateExpression).ToArray();
+            return _functions[node.Function].DynamicInvoke(new object[] { args });
         }
 
         private void EvaluateVariableDeclaration(BoundVariableDeclaration node)
@@ -122,34 +144,34 @@ namespace Repl.CodeAnalysis
             _lastValue = value;
         }
 
-        private void EvaluateExpressionStatement(BoundExpressionStatement boundExpressionStatement)
+        private void EvaluateExpressionStatement(BoundExpressionStatement node)
         {
-            _lastValue = EvaluateExpression(boundExpressionStatement.Expression);
+            _lastValue = EvaluateExpression(node.Expression);
         }
 
-        private object EvaluateVariableExpression(BoundVariableExpression boundVariableExpression)
+        private object EvaluateVariableExpression(BoundVariableExpression node)
         {
-            var value = _variables[boundVariableExpression.Variable];
+            var value = _variables[node.Variable];
             return value;
         }
 
-        private object EvaluateAssignmentExpression(BoundAssignmentExpression boundAssignmentExpression)
+        private object EvaluateAssignmentExpression(BoundAssignmentExpression node)
         {
-            var value = EvaluateExpression(boundAssignmentExpression.Expression);
-            _variables[boundAssignmentExpression.Variable] = value;
+            var value = EvaluateExpression(node.Expression);
+            _variables[node.Variable] = value;
             return value;
         }
 
-        private object EvaluateLiteralExpression(BoundLiteralExpression boundLiteralExpression)
+        private object EvaluateLiteralExpression(BoundLiteralExpression node)
         {
-            return boundLiteralExpression.Value;
+            return node.Value;
         }
 
-        private object EvaluateUnaryExpression(BoundUnaryExpression boundUnaryExpression)
+        private object EvaluateUnaryExpression(BoundUnaryExpression node)
         {
-            var operand = EvaluateExpression(boundUnaryExpression.Operand);
+            var operand = EvaluateExpression(node.Operand);
 
-            switch (boundUnaryExpression.Operator.Kind)
+            switch (node.Operator.Kind)
             {
                 case BoundUnaryOperatorKind.Identity: return (int)operand;
                 case BoundUnaryOperatorKind.Negation: return -(int)operand;
@@ -159,12 +181,12 @@ namespace Repl.CodeAnalysis
             }
         }
 
-        private object EvaluateBinaryExpression(BoundBinaryExpression boundBinaryExpression)
+        private object EvaluateBinaryExpression(BoundBinaryExpression node)
         {
-            var left = EvaluateExpression(boundBinaryExpression.Left);
-            var right = EvaluateExpression(boundBinaryExpression.Right);
+            var left = EvaluateExpression(node.Left);
+            var right = EvaluateExpression(node.Right);
 
-            switch (boundBinaryExpression.Operator.Kind)
+            switch (node.Operator.Kind)
             {
                 case BoundBinaryOperatorKind.Addition: return (int)left + (int)right;
                 case BoundBinaryOperatorKind.Subtraction: return (int)left - (int)right;

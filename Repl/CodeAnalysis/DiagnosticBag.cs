@@ -91,7 +91,7 @@ namespace Repl.CodeAnalysis
             var message = "Expected type or identifier";
             Report(span, message);
         }
-        
+
         public void ReportUnexpectedSymbol(TextSpan span, string actual, string expected)
         {
             var message = $"Unexpected symbol '{actual}', expected '{expected}'.";
@@ -101,6 +101,18 @@ namespace Repl.CodeAnalysis
         public void ReportFunctionNameExpected(TextSpan span)
         {
             var message = "Function name expected.";
+            Report(span, message);
+        }
+
+        public void ReportParameterCount(TextSpan span, string name, int expected, int actual)
+        {
+            var message = $"Function '{name}' is called with {actual} but only accepts {expected}.";
+            Report(span, message);
+        }
+
+        public void ReportNotSupported(TextSpan span)
+        {
+            var message = "The given expression is not supported.";
             Report(span, message);
         }
     }

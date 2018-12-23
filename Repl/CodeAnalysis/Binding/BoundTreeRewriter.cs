@@ -145,14 +145,30 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundUnaryExpression u: return RewriteUnaryExpression(u);
                 case BoundLiteralExpression l: return RewriteLiteralExpression(l);
                 case BoundVariableExpression v: return RewriteVariableExpression(v);
-                case BoundInvokeExpression i: return RewriteInvokeExpression(i);
+                case BoundCallExpression i: return RewriteCallExpression(i);
+                case BoundParameterExpression p: return RewriteParameterExpression(p);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
         }
 
-        private BoundExpression RewriteInvokeExpression(BoundInvokeExpression node)
+        private BoundExpression RewriteParameterExpression(BoundParameterExpression node)
         {
             return node;
+        }
+
+        private BoundExpression RewriteCallExpression(BoundCallExpression node)
+        {
+            var changed = false;
+            var result = ImmutableArray.CreateBuilder<BoundExpression>();
+            foreach (var boundExpression in node.Arguments)
+            {
+                var expression = RewriteExpression(boundExpression);
+                if (expression != boundExpression)
+                    changed = true;
+                result.Add(expression);
+            }
+
+            return changed ? new BoundCallExpression(node.Function, result.ToImmutable()) : node;
         }
 
         protected virtual BoundExpression RewriteVariableExpression(BoundVariableExpression node)

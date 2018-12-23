@@ -212,14 +212,14 @@ namespace Repl.CodeAnalysis.CodeGen
                     return GenerateAssignmentExpression(a);
                 case BoundVariableExpression v:
                     return GenerateVariableExpression(v);
-                case BoundInvokeExpression i:
+                case BoundCallExpression i:
                     return GenerateInvokeExpression(i);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
         }
 
-        private Value GenerateInvokeExpression(BoundInvokeExpression node)
+        private Value GenerateInvokeExpression(BoundCallExpression node)
         {
             var function = _symbols[node.Function];
             return _builder.Call(function, Array.Empty<Value>());

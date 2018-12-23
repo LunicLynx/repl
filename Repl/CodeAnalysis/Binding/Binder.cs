@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Repl.CodeAnalysis.Syntax;
+using Repl.CodeAnalysis.Text;
 
 namespace Repl.CodeAnalysis.Binding
 {
@@ -21,7 +22,10 @@ namespace Repl.CodeAnalysis.Binding
         public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax syntax)
         {
             previous = previous ?? new BoundGlobalScope(null, ImmutableArray<Diagnostic>.Empty,
-                           ImmutableArray.Create<Symbol>(new TypeSymbol("void", typeof(void))),
+                           ImmutableArray.Create<Symbol>(
+                               TypeSymbol.Void,
+                               TypeSymbol.Int32
+                               ),
                            new BoundExpressionStatement(new BoundLiteralExpression(0)));
             var parent = CreateParentScopes(previous);
             var binder = new Binder(parent);
@@ -139,7 +143,7 @@ namespace Repl.CodeAnalysis.Binding
         private TypeSymbol BindType(TypeSyntax syntax)
         {
             var typeIdentifierToken = syntax.TypeOrIdentifierToken;
-            var type = GetSymbol<TypeSymbol>(typeIdentifierToken);
+            var type = GetSymbol<TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int32;
             return type;
         }
 
@@ -306,7 +310,26 @@ namespace Repl.CodeAnalysis.Binding
             if (function == null)
                 return new BoundLiteralExpression(0);
 
-            return new BoundInvokeExpression(function);
+            var arguments = syntax.Arguments.OfType<ExpressionSyntax>().ToArray();
+
+            if (function.Parameters.Length != arguments.Length)
+            {
+                var start = syntax.Arguments.First().Span.Start;
+                var end = syntax.Arguments.Last().Span.End;
+
+                Diagnostics.ReportParameterCount(TextSpan.FromBounds(start, end), function.Name, function.Parameters.Length, syntax.Arguments.Length);
+                return new BoundLiteralExpression(0);
+            }
+
+            var builder = ImmutableArray.CreateBuilder<BoundExpression>();
+            for (int i = 0; i < function.Parameters.Length; i++)
+            {
+                var parameter = function.Parameters[i];
+                var argument = BindExpression(arguments[i], parameter.Type.ClrType);
+                builder.Add(argument);
+            }
+
+            return new BoundCallExpression(function, builder.ToImmutable());
         }
 
         private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
@@ -338,10 +361,17 @@ namespace Repl.CodeAnalysis.Binding
             return s;
         }
 
-        private BoundVariableExpression BindNameExpression(NameExpressionSyntax syntax)
+        private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
-            var variable = GetSymbol<VariableSymbol>(syntax.IdentifierToken);
-            return new BoundVariableExpression(variable);
+            var symbol = GetSymbol<Symbol>(syntax.IdentifierToken);
+            switch (symbol)
+            {
+                case VariableSymbol v: return new BoundVariableExpression(v);
+                case ParameterSymbol p: return new BoundParameterExpression(p);
+                default:
+                    Diagnostics.ReportNotSupported(syntax.IdentifierToken.Span);
+                    return new BoundLiteralExpression(0);
+            }
         }
 
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)

@@ -2,10 +2,12 @@
 {
     public enum TokenKind
     {
+        // Other
         EndOfFile,
         Bad,
         WhiteSpace,
 
+        // Operators
         Plus,
         Star,
         Equals,
@@ -26,15 +28,14 @@
         Hat,
         Percent,
 
+        // Structure
         Comma,
-
         OpenParenthesis,
         CloseParenthesis,
         OpenBrace,
         CloseBrace,
 
-        TrueKeyword,
-        FalseKeyword,
+        // Keywords
         LetKeyword,
         VarKeyword,
         IfKeyword,
@@ -46,9 +47,16 @@
         ContinueKeyword,
         ToKeyword,
         ExternKeyword,
-        VoidKeyword,
 
+        // Types
+        VoidKeyword,
+        IntKeyword,
+
+        // Literals
+        TrueKeyword,
+        FalseKeyword,
         Number,
+
         Identifier,
     }
 }

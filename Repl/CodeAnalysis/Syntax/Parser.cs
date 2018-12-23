@@ -58,6 +58,7 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.ExternKeyword:
                     return ParseExternDeclaration();
                 case TokenKind.VoidKeyword:
+                case TokenKind.IntKeyword:
                 case TokenKind.Identifier when Peek(1).Kind == TokenKind.Identifier:
                     return ParseFunctionDeclaration();
                 default:
@@ -132,6 +133,7 @@ namespace Repl.CodeAnalysis.Syntax
             switch (kind)
             {
                 case TokenKind.VoidKeyword:
+                case TokenKind.IntKeyword:
                 case TokenKind.Identifier:
                     return true;
                 default:
@@ -326,9 +328,25 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var target = ParseNameExpression();
             var openParenthesis = MatchToken(TokenKind.OpenParenthesis);
+
+            var arguments = ImmutableArray.CreateBuilder<SyntaxNode>();
+            var first = true;
+            while (Current.Kind != TokenKind.CloseParenthesis &&
+                   Current.Kind != TokenKind.EndOfFile)
+            {
+                if (!first)
+                {
+                    var commaToken = MatchToken(TokenKind.Comma);
+                    arguments.Add(commaToken);
+                }
+                first = false;
+                var argument = ParseExpression();
+                arguments.Add(argument);
+            }
+
             var closeParenthesis = MatchToken(TokenKind.CloseParenthesis);
 
-            return new InvokeExpressionSyntax(target, openParenthesis, closeParenthesis);
+            return new InvokeExpressionSyntax(target, openParenthesis, arguments.ToImmutable(), closeParenthesis);
         }
 
         private ExpressionSyntax ParseParenthesizedExpression()

@@ -51,7 +51,7 @@ namespace Repl.CodeAnalysis
 
             var statement = GetStatement();
             var evaluator = new Evaluator(statement, variables, functions);
-            var value = evaluator.Evaluate();
+            var value = evaluator.Evaluate(new Dictionary<ParameterSymbol, object>());
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
         }
 

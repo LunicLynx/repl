@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Syntax
 {
@@ -6,12 +7,14 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public ExpressionSyntax Target { get; }
         public Token OpenParenthesisToken { get; }
+        public ImmutableArray<SyntaxNode> Arguments { get; }
         public Token CloseParenthesisToken { get; }
 
-        public InvokeExpressionSyntax(ExpressionSyntax target, Token openParenthesisToken, Token closeParenthesisToken)
+        public InvokeExpressionSyntax(ExpressionSyntax target, Token openParenthesisToken, ImmutableArray<SyntaxNode> arguments, Token closeParenthesisToken)
         {
             Target = target;
             OpenParenthesisToken = openParenthesisToken;
+            Arguments = arguments;
             CloseParenthesisToken = closeParenthesisToken;
         }
 
