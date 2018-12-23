@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Repl.CodeAnalysis.Syntax;
 
 namespace Repl.CodeAnalysis.Binding
@@ -93,7 +94,18 @@ namespace Repl.CodeAnalysis.Binding
             if (function == null)
                 return new BoundExpressionStatement(new BoundLiteralExpression(0));
 
+            DeclareSymbol(function, syntax.Prototype.IdentifierToken);
+
             _scope = new BoundScope(_scope);
+
+            var parameters = syntax.Prototype.Parameters.OfType<ParameterSyntax>().ToArray();
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                var parameter = parameters[i];
+                var symbol = function.Parameters[i];
+                DeclareSymbol(symbol, parameter.IdentifierToken);
+            }
+
             var body = BindBlockStatement(syntax.Body);
             _scope = _scope.Parent;
 
@@ -102,38 +114,39 @@ namespace Repl.CodeAnalysis.Binding
 
         private FunctionSymbol BindPrototype(PrototypeSyntax syntax)
         {
-            var typeIdentifierToken = syntax.ReturnType.TypeOrIdentifierToken;
-            var typeName = typeIdentifierToken.Text;
-
-            if (!_scope.TryLookup(typeName, out var symbol))
-            {
-                Diagnostics.ReportUndefinedName(typeIdentifierToken.Span, typeName);
-                return null;
-            }
-
-            if (!(symbol is TypeSymbol type))
-            {
-                Diagnostics.ReportUnexpectedSymbol(typeIdentifierToken.Span, symbol.GetType().Name, nameof(TypeSymbol));
-                return null;
-            }
+            var typeSyntax = syntax.ReturnType;
+            var type = BindType(typeSyntax);
 
             var identifierToken = syntax.IdentifierToken;
             var name = identifierToken.Text;
 
-            var function = new FunctionSymbol(type, name);
+            var parameters = syntax.Parameters.OfType<ParameterSyntax>().Select(BindParameter).ToArray();
 
-            if (!_scope.TryDeclare(function))
-            {
-                Diagnostics.ReportSymbolAlreadyDeclared(identifierToken.Span, name);
-            }
+            var function = new FunctionSymbol(type, name, parameters);
 
             return function;
         }
 
+        private ParameterSymbol BindParameter(ParameterSyntax syntax)
+        {
+            var type = BindType(syntax.Type);
+            var name = syntax.IdentifierToken.Text;
+            var parameter = new ParameterSymbol(type, name);
+
+            return parameter;
+        }
+
+        private TypeSymbol BindType(TypeSyntax syntax)
+        {
+            var typeIdentifierToken = syntax.TypeOrIdentifierToken;
+            var type = GetSymbol<TypeSymbol>(typeIdentifierToken);
+            return type;
+        }
 
         private BoundStatement BindExternDeclaration(ExternDeclarationSyntax syntax)
         {
             var function = BindPrototype(syntax.Prototype);
+            DeclareSymbol(function, syntax.Prototype.IdentifierToken);
             return new BoundExternDeclaration(function);
         }
 
@@ -209,17 +222,23 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundStatement BindVariableDeclaration(VariableDeclarationSyntax syntax)
         {
-            var name = syntax.Identifier.Text;
+            var identifierToken = syntax.IdentifierToken;
+            var name = identifierToken.Text;
             var isReadOnly = syntax.Keyword.Kind == TokenKind.LetKeyword;
             var initializer = BindExpression(syntax.Initializer);
             var variable = new VariableSymbol(name, isReadOnly, initializer.Type);
 
-            if (!_scope.TryDeclare(variable))
-            {
-                Diagnostics.ReportSymbolAlreadyDeclared(syntax.Identifier.Span, name);
-            }
+            DeclareSymbol(variable, identifierToken);
 
             return new BoundVariableDeclaration(variable, initializer);
+        }
+
+        private void DeclareSymbol(Symbol variable, Token identifierToken)
+        {
+            if (!_scope.TryDeclare(variable))
+            {
+                Diagnostics.ReportSymbolAlreadyDeclared(identifierToken.Span, identifierToken.Text);
+            }
         }
 
         private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)

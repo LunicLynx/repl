@@ -1,4 +1,10 @@
 ﻿
+# have loop state variable keywords
+first : bool -> true in first iteration
+last : bool -> true in last iteration # Possible for iterators ?
+
+Only emit the constructs for them if the keywords have been used. Maybe they should also support named loops
+-> frist name 
 
 # have a concept to break the outer loop
 loop name {

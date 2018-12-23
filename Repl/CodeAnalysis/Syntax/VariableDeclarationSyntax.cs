@@ -5,14 +5,14 @@ namespace Repl.CodeAnalysis.Syntax
     public class VariableDeclarationSyntax : StatementSyntax
     {
         public Token Keyword { get; }
-        public Token Identifier { get; }
+        public Token IdentifierToken { get; }
         public Token EqualsToken { get; }
         public ExpressionSyntax Initializer { get; }
 
-        public VariableDeclarationSyntax(Token keyword, Token identifier, Token equalsToken, ExpressionSyntax initializer)
+        public VariableDeclarationSyntax(Token keyword, Token identifierToken, Token equalsToken, ExpressionSyntax initializer)
         {
             Keyword = keyword;
-            Identifier = identifier;
+            IdentifierToken = identifierToken;
             EqualsToken = equalsToken;
             Initializer = initializer;
         }
@@ -20,7 +20,7 @@ namespace Repl.CodeAnalysis.Syntax
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return Keyword;
-            yield return Identifier;
+            yield return IdentifierToken;
             yield return EqualsToken;
             yield return Initializer;
         }

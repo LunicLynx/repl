@@ -12,9 +12,9 @@ namespace Repl
     public class EagleRepl : Repl
     {
         private Compilation _previous;
-        private bool _showTree;
+        private bool _showTree = true;
         private bool _showProgram = true;
-        private bool _compile = true;
+        private bool _compile = false;
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
 
         private readonly Dictionary<FunctionSymbol, Delegate> _functions =

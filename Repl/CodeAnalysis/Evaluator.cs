@@ -4,14 +4,6 @@ using Repl.CodeAnalysis.Binding;
 
 namespace Repl.CodeAnalysis
 {
-    public static class Functions
-    {
-        public static void putc()
-        {
-            Console.WriteLine("Hello world");
-        }
-    }
-
     public class Evaluator
     {
         private object _lastValue;

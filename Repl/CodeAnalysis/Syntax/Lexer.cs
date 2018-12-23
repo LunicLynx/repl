@@ -99,6 +99,9 @@ namespace Repl.CodeAnalysis.Syntax
                     case '%':
                         kind = TokenKind.Percent;
                         break;
+                    case ',':
+                        kind = TokenKind.Comma;
+                        break;
                     case '=' when Current == '=':
                         Next();
                         kind = TokenKind.EqualsEquals;

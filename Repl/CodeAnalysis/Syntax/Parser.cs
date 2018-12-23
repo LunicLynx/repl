@@ -84,14 +84,39 @@ namespace Repl.CodeAnalysis.Syntax
             var returnType = ParseType();
             var identifierToken = MatchToken(TokenKind.Identifier);
             var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
+
+            var parameters = ImmutableArray.CreateBuilder<SyntaxNode>();
+
+            var first = true;
+            while (Current.Kind != TokenKind.CloseParenthesis &&
+                   Current.Kind != TokenKind.EndOfFile)
+            {
+                if (!first)
+                {
+                    var commaToken = MatchToken(TokenKind.Comma);
+                    parameters.Add(commaToken);
+                }
+                first = false;
+
+                var parameter = ParseParameter();
+                parameters.Add(parameter);
+            }
+
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
-            return new PrototypeSyntax(returnType, identifierToken, openParenthesisToken, closeParenthesisToken);
+            return new PrototypeSyntax(returnType, identifierToken, openParenthesisToken, parameters.ToImmutable(), closeParenthesisToken);
         }
 
         private TypeSyntax ParseType()
         {
             var typeOrIdentifierToken = MatchTypeOrIdentifierToken();
             return new TypeSyntax(typeOrIdentifierToken);
+        }
+
+        private ParameterSyntax ParseParameter()
+        {
+            var type = ParseType();
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            return new ParameterSyntax(type, identifierToken);
         }
 
         private Token MatchTypeOrIdentifierToken()

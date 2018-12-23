@@ -26,13 +26,12 @@
         Hat,
         Percent,
 
+        Comma,
+
         OpenParenthesis,
         CloseParenthesis,
         OpenBrace,
         CloseBrace,
-
-        Number,
-        Identifier,
 
         TrueKeyword,
         FalseKeyword,
@@ -47,6 +46,9 @@
         ContinueKeyword,
         ToKeyword,
         ExternKeyword,
-        VoidKeyword
+        VoidKeyword,
+
+        Number,
+        Identifier,
     }
 }

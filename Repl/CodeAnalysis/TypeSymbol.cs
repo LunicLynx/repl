@@ -12,5 +12,10 @@ namespace Repl.CodeAnalysis
             Name = name;
             ClrType = clrType;
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
