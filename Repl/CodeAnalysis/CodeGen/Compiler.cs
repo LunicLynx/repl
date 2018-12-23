@@ -39,10 +39,10 @@ namespace Repl.CodeAnalysis.CodeGen
 
                 v = builder.Ret(value);
 
-                _function.ViewCfg();
+                //_function.ViewCfg();
 
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
-                _function.Print(Console.Out);
+                _module.Print(Console.Out);
                 Console.WriteLine();
                 Console.ResetColor();
 

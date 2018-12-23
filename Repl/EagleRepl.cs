@@ -13,8 +13,8 @@ namespace Repl
     {
         private Compilation _previous;
         private bool _showTree;
-        private bool _showProgram;
-        private bool _compile;
+        private bool _showProgram = true;
+        private bool _compile = true;
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
 
         private readonly Dictionary<FunctionSymbol, BoundBlockStatement> _functions =
@@ -60,7 +60,7 @@ namespace Repl
                     break;
                 case "#emit":
                     _compile = !_compile;
-                    Console.WriteLine(_showTree ? "Emit binary." : "Not emitting binary.");
+                    Console.WriteLine(_compile ? "Emit binary." : "Not emitting binary.");
                     break;
                 default:
                     base.EvaluateMetaCommand(input);

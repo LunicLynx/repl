@@ -60,7 +60,26 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private void GenerateFunctionDeclaration(BoundFunctionDeclaration node)
         {
-            
+            var ft = CreateFunctionType(node.Function);
+            var f = _module.AddFunction(ft, node.Function.Name);
+            _symbols[node.Function] = f;
+            var entry = f.AppendBasicBlock("entry");
+
+            using (var builder = new Builder())
+            {
+                builder.PositionAtEnd(entry);
+
+                var c = new CodeGenerator(_module, builder, _symbols);
+                c.Generate(node.Body);
+
+                builder.Ret(c._lastValue);
+            }
+        }
+
+        private FunctionType CreateFunctionType(FunctionSymbol function)
+        {
+            var returnType = GetXType(function.ReturnType.ClrType);
+            return new FunctionType(returnType);
         }
 
         private void GenerateLabelStatement(BoundLabelStatement node)
@@ -165,9 +184,9 @@ namespace Repl.CodeAnalysis.CodeGen
             _lastValue = value;
         }
 
-        private void GenerateExpressionStatement(BoundExpressionStatement boundExpressionStatement)
+        private void GenerateExpressionStatement(BoundExpressionStatement node)
         {
-            _lastValue = GenerateExpression(boundExpressionStatement.Expression);
+            _lastValue = GenerateExpression(node.Expression);
         }
 
         private Value GenerateExpression(BoundExpression expression)
@@ -184,26 +203,34 @@ namespace Repl.CodeAnalysis.CodeGen
                     return GenerateAssignmentExpression(a);
                 case BoundVariableExpression v:
                     return GenerateVariableExpression(v);
+                case BoundInvokeExpression i:
+                    return GenerateInvokeExpression(i);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
         }
 
-        private Value GenerateVariableExpression(BoundVariableExpression boundVariableExpression)
+        private Value GenerateInvokeExpression(BoundInvokeExpression node)
         {
-            var variable = boundVariableExpression.Variable;
+            var function = _symbols[node.Function];
+            return _builder.Call(function, Array.Empty<Value>());
+        }
+
+        private Value GenerateVariableExpression(BoundVariableExpression node)
+        {
+            var variable = node.Variable;
             if (_symbols.TryGetValue(variable, out var ptr))
                 return _builder.Load(ptr, variable.Name);
             return null;
         }
 
-        private Value GenerateAssignmentExpression(BoundAssignmentExpression boundAssignmentExpression)
+        private Value GenerateAssignmentExpression(BoundAssignmentExpression node)
         {
-            var variable = boundAssignmentExpression.Variable;
+            var variable = node.Variable;
             if (!_symbols.TryGetValue(variable, out var ptr))
                 throw new Exception("variable does not exist");
 
-            var value = GenerateExpression(boundAssignmentExpression.Expression);
+            var value = GenerateExpression(node.Expression);
             _builder.Store(value, ptr);
 
             return value;
@@ -216,12 +243,12 @@ namespace Repl.CodeAnalysis.CodeGen
             return XType.Int32;
         }
 
-        private Value GenerateBinaryExpression(BoundBinaryExpression boundBinaryExpression)
+        private Value GenerateBinaryExpression(BoundBinaryExpression node)
         {
-            var left = GenerateExpression(boundBinaryExpression.Left);
-            var right = GenerateExpression(boundBinaryExpression.Right);
+            var left = GenerateExpression(node.Left);
+            var right = GenerateExpression(node.Right);
 
-            switch (boundBinaryExpression.Operator.Kind)
+            switch (node.Operator.Kind)
             {
                 case BoundBinaryOperatorKind.Addition:
                     return _builder.Add(left, right);
@@ -258,10 +285,10 @@ namespace Repl.CodeAnalysis.CodeGen
             }
         }
 
-        private Value GenerateUnaryExpression(BoundUnaryExpression boundUnaryExpression)
+        private Value GenerateUnaryExpression(BoundUnaryExpression node)
         {
-            var operand = GenerateExpression(boundUnaryExpression.Operand);
-            switch (boundUnaryExpression.Operator.Kind)
+            var operand = GenerateExpression(node.Operand);
+            switch (node.Operator.Kind)
             {
                 case BoundUnaryOperatorKind.Identity:
                     return operand;
@@ -275,10 +302,10 @@ namespace Repl.CodeAnalysis.CodeGen
 
         }
 
-        private Value GenerateLiteralExpression(BoundLiteralExpression literal)
+        private Value GenerateLiteralExpression(BoundLiteralExpression node)
         {
-            var type = literal.Type;
-            var value = literal.Value;
+            var type = node.Type;
+            var value = node.Value;
             if (type == typeof(bool))
                 return Value.Int1((bool)value);
             return Value.Int32((int)value);
