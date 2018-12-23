@@ -51,11 +51,20 @@ namespace Repl.CodeAnalysis.CodeGen
                     case BoundFunctionDeclaration f:
                         GenerateFunctionDeclaration(f);
                         break;
-
+                    case BoundExternDeclaration e:
+                        GenerateExternDeclaration(e);
+                        break;
                     default:
                         throw new Exception($"Unexpected node {statement.GetType()}");
                 }
             }
+        }
+
+        private void GenerateExternDeclaration(BoundExternDeclaration node)
+        {
+            var ft = CreateFunctionType(node.Function);
+            var f = _module.AddFunction(ft, node.Function.Name);
+            _symbols[node.Function] = f;
         }
 
         private void GenerateFunctionDeclaration(BoundFunctionDeclaration node)

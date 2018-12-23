@@ -17,8 +17,8 @@ namespace Repl
         private bool _compile = true;
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
 
-        private readonly Dictionary<FunctionSymbol, BoundBlockStatement> _functions =
-            new Dictionary<FunctionSymbol, BoundBlockStatement>();
+        private readonly Dictionary<FunctionSymbol, Delegate> _functions =
+            new Dictionary<FunctionSymbol, Delegate>();
 
         private readonly Compiler _compiler = new Compiler();
 

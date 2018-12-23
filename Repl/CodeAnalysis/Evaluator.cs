@@ -4,14 +4,22 @@ using Repl.CodeAnalysis.Binding;
 
 namespace Repl.CodeAnalysis
 {
+    public static class Functions
+    {
+        public static void putc()
+        {
+            Console.WriteLine("Hello world");
+        }
+    }
+
     public class Evaluator
     {
         private object _lastValue;
         private readonly BoundBlockStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
-        private readonly Dictionary<FunctionSymbol, BoundBlockStatement> _functions;
+        private readonly Dictionary<FunctionSymbol, Delegate> _functions;
 
-        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables, Dictionary<FunctionSymbol, BoundBlockStatement> functions)
+        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables, Dictionary<FunctionSymbol, Delegate> functions)
         {
             _root = root;
             _variables = variables;
@@ -56,8 +64,11 @@ namespace Repl.CodeAnalysis
                         EvaluateFunctionDeclaration(f);
                         index++;
                         break;
+                    case BoundExternDeclaration e:
+                        EvaluateExternDeclaration(e);
+                        index++;
+                        break;
                     case BoundLabelStatement _:
-                    case BoundExternDeclaration _:
                         index++;
                         break;
                     default:
@@ -68,10 +79,21 @@ namespace Repl.CodeAnalysis
             return _lastValue;
         }
 
+        private void EvaluateExternDeclaration(BoundExternDeclaration node)
+        {
+            var method = typeof(Functions).GetMethod(node.Function.Name);
+
+            _functions[node.Function] = (Func<object>)(() => method.Invoke(null, null));
+        }
+
         private void EvaluateFunctionDeclaration(BoundFunctionDeclaration node)
         {
+            var body = node.Body;
+            var evaluator = new Evaluator(body, _variables, _functions);
+            //evaluator.Evaluate();
+
             var value = node.Body;
-            _functions[node.Function] = value;
+            _functions[node.Function] = (Func<object>)evaluator.Evaluate;
             _lastValue = value;
         }
 
@@ -98,9 +120,7 @@ namespace Repl.CodeAnalysis
 
         private object EvaluateInvokeExpression(BoundInvokeExpression node)
         {
-            var body = _functions[node.Function];
-            var evaluator = new Evaluator(body, _variables, _functions);
-            return evaluator.Evaluate();
+            return _functions[node.Function].DynamicInvoke();
         }
 
         private void EvaluateVariableDeclaration(BoundVariableDeclaration node)
