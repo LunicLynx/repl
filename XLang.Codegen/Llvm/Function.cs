@@ -26,14 +26,39 @@ namespace XLang.Codegen.Llvm
             return BasicBlock.Append(this, name);
         }
 
+        public int CountBasicBlocks()
+        {
+            return (int)LLVM.CountBasicBlocks(ValueRef);
+        }
+
+        public BasicBlock[] GetBasicBlocks()
+        {
+            return LLVM.GetBasicBlocks(ValueRef).Select(b => new BasicBlock(b)).ToArray();
+        }
+
+        public BasicBlock GetEntry()
+        {
+            return new BasicBlock(LLVM.GetEntryBasicBlock(ValueRef));
+        }
+
+        public BasicBlock GetFirst()
+        {
+            return new BasicBlock(LLVM.GetFirstBasicBlock(ValueRef));
+        }
+
+        public BasicBlock GetLast()
+        {
+            return new BasicBlock(LLVM.GetLastBasicBlock(ValueRef));
+        }
+
         public Value GetParam(int index)
         {
-            return new Value(LLVM.GetParam(ValueRef, (uint) index));
+            return new Value(LLVM.GetParam(ValueRef, (uint)index));
         }
 
         public int ArgSize()
         {
-            return (int) LLVM.CountParams(ValueRef);
+            return (int)LLVM.CountParams(ValueRef);
         }
 
         public Value[] Args()

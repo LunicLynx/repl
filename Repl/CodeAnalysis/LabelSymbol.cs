@@ -1,8 +1,8 @@
 ﻿namespace Repl.CodeAnalysis
 {
-    public class LabelSymbol
+    public class LabelSymbol : Symbol
     {
-        public string Name { get; }
+        public override string Name { get; }
 
         public LabelSymbol(string name)
         {

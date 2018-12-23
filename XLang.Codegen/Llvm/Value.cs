@@ -113,5 +113,39 @@ namespace XLang.Codegen.Llvm
         {
             return new Value(LLVM.ConstInt(LLVM.Int64Type(), number, Constants.Falsy));
         }
+
+        public Value IsABasicBlock()
+        {
+            return new Value(LLVM.IsABasicBlock(ValueRef));
+        }
+
+        public bool IsBasicBlock()
+        {
+            return LLVM.ValueIsBasicBlock(ValueRef);
+        }
+
+        public BasicBlock AsBasicBlock()
+        {
+            return new BasicBlock(LLVM.ValueAsBasicBlock(ValueRef));
+        }
+
+        public Function AsFunction()
+        {
+            return new Function(ValueRef);
+        }
+
+        public Value IsAFunction()
+        {
+            return new Value(LLVM.IsAFunction(ValueRef));
+        }
+
+        public BasicBlock GetParent()
+        {
+            return new BasicBlock(LLVM.GetInstructionParent(ValueRef));
+        }
+        public Phi AsPhi()
+        {
+            return new Phi(ValueRef);
+        }
     }
 }

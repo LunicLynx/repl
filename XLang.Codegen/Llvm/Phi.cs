@@ -6,7 +6,7 @@ namespace XLang.Codegen.Llvm
     {
         internal Phi(LLVMValueRef valueRef) : base(valueRef)
         {
-
+            
         }
 
         public void AddIncoming(Value incomingValue, BasicBlock incomingBlock)

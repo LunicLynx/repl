@@ -17,7 +17,7 @@ namespace Repl.CodeAnalysis.Lowering
             return Flatten(lowerer.RewriteStatement(statement));
         }
 
-        public static BoundBlockStatement Flatten(BoundStatement statement)
+        private static BoundBlockStatement Flatten(BoundStatement statement)
         {
             var builder = ImmutableArray.CreateBuilder<BoundStatement>();
             var stack = new Stack<BoundStatement>();

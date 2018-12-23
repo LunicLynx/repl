@@ -7,129 +7,159 @@ namespace Repl.CodeAnalysis.CodeGen
 {
     public class CodeGenerator
     {
-        private readonly Dictionary<VariableSymbol, Value> _variables;
+        private readonly Dictionary<Symbol, Value> _symbols;
+        private readonly XModule _module;
         private readonly Builder _builder;
 
-        public CodeGenerator(Builder builder, Dictionary<VariableSymbol, Value> variables)
+        public CodeGenerator(XModule module, Builder builder, Dictionary<Symbol, Value> symbols)
         {
+            _module = module;
             _builder = builder;
-            _variables = variables;
+            _symbols = symbols;
         }
 
         private Value _lastValue = Value.Int32(0);
 
-        public Value Generate(BoundStatement statement)
+        public Value Generate(BoundBlockStatement statement)
         {
             _lastValue = Value.Int32(0);
             GenerateStatement(statement);
             return _lastValue;
         }
 
-        private void GenerateStatement(BoundStatement statement)
+        private void GenerateStatement(BoundBlockStatement node)
         {
-            switch (statement)
+            foreach (var statement in node.Statements)
             {
-                case BoundBlockStatement b:
-                    GenerateBlockStatement(b);
-                    return;
-                case BoundVariableDeclaration v:
-                    GenerateVariableDeclaration(v);
-                    return;
-                case BoundExpressionStatement e:
-                    GenerateExpressionStatement(e);
-                    return;
-                case BoundIfStatement i:
-                    GenerateIfStatement(i);
-                    return;
-                case BoundWhileStatement w:
-                    GenerateWhileStatement(w);
-                    return;
-                case BoundLoopStatement l:
-                    GenerateLoopStatement(l);
-                    return;
-                case BoundBreakStatement b:
-                    GenerateBreakStatement(b);
-                    return;
-                case BoundContinueStatement c:
-                    GenerateContinueStatement(c);
-                    return;
-                default:
-                    throw new Exception($"Unexpected node {statement.GetType()}");
+                switch (statement)
+                {
+                    case BoundVariableDeclaration v:
+                        GenerateVariableDeclaration(v);
+                        break;
+                    case BoundExpressionStatement e:
+                        GenerateExpressionStatement(e);
+                        break;
+                    case BoundConditionalGotoStatement c:
+                        GenerateConditionalGotoStatement(c);
+                        break;
+                    case BoundGotoStatement g:
+                        GenerateGotoStatement(g);
+                        break;
+                    case BoundLabelStatement l:
+                        GenerateLabelStatement(l);
+                        break;
+                    case BoundFunctionDeclaration f:
+                        GenerateFunctionDeclaration(f);
+                        break;
+
+                    default:
+                        throw new Exception($"Unexpected node {statement.GetType()}");
+                }
             }
         }
 
-        private void GenerateContinueStatement(BoundContinueStatement node)
+        private void GenerateFunctionDeclaration(BoundFunctionDeclaration node)
         {
+            
         }
 
-        private void GenerateBreakStatement(BoundBreakStatement node)
+        private void GenerateLabelStatement(BoundLabelStatement node)
         {
-        }
+            var currentBlock = _builder.GetInsertBlock();
+            var target = GetOrAppend(node.Label, true);
+            target.MoveAfter(currentBlock);
 
-        private void GenerateLoopStatement(BoundLoopStatement node)
-        {
-        }
+            var targetPhi = target.GetFirstInstruction().AsPhi();
 
-        private void GenerateWhileStatement(BoundWhileStatement node)
-        {
-        }
-
-        private void GenerateIfStatement(BoundIfStatement node)
-        {
-            var function = _builder.GetInsertBlock().GetParent();
-
-            var then = function.AppendBasicBlock();
-            var @else = function.AppendBasicBlock();
-            var end = function.AppendBasicBlock();
-
-            var prevValue = _lastValue;
-
-            var cond = GenerateExpression(node.Condition);
-
-            _builder.CondBr(cond, then, @else);
-
-            // emit then 
-            _builder.PositionAtEnd(then);
-            _lastValue = prevValue;
-            GenerateBlockStatement(node.ThenBlock);
-            var thenValue = _lastValue;
-            _builder.Br(end);
-            then = _builder.GetInsertBlock();
-
-            // emit else 
-            @else.MoveAfter(then);
-            _builder.PositionAtEnd(@else);
-
-            _lastValue = prevValue;
-            if (node.ElseStatement != null)
+            // if the current block is not completed
+            // we need to branch to the target block
+            // otherwise we can expect to never reach this label
+            // and we can just switch to the target block for emitting
+            // this happens for the else statement: a goto followed by a label
+            if (!currentBlock.IsTerminated())
             {
-                GenerateStatement(node.ElseStatement);
+                targetPhi.AddIncoming(_lastValue, currentBlock);
+                _builder.Br(target);
             }
-            var elseValue = _lastValue;
 
-            _builder.Br(end);
-            @else = _builder.GetInsertBlock();
+            _lastValue = targetPhi;
 
-            // end
-            end.MoveAfter(@else);
-            _builder.PositionAtEnd(end);
-            var phi = _builder.Phi(XType.Int32);
+            _builder.PositionAtEnd(target);
+        }
 
-            phi.AddIncoming(thenValue, then);
-            phi.AddIncoming(elseValue, @else);
+        private BasicBlock Append(bool addPhi = false, string name = "")
+        {
+            var insertBlock = _builder.GetInsertBlock();
+            var function = insertBlock.GetParent().AsFunction();
+            var target = function.AppendBasicBlock(name);
 
-            _lastValue = phi;
+            if (addPhi)
+            {
+                _builder.PositionAtEnd(target);
+                _builder.Phi(XType.Int32);
+            }
+
+            _builder.PositionAtEnd(insertBlock);
+            return target;
+        }
+
+        private BasicBlock GetOrAppend(LabelSymbol labelSymbol, bool addPhi = false)
+        {
+            if (_symbols.TryGetValue(labelSymbol, out var label))
+            {
+                return label.AsBasicBlock();
+            }
+
+            var target = Append(addPhi, labelSymbol.Name);
+
+            _symbols[labelSymbol] = target.AsValue();
+            return target;
+        }
+
+        private void GenerateGotoStatement(BoundGotoStatement node)
+        {
+            var currentBlock = _builder.GetInsertBlock();
+
+            var target = GetOrAppend(node.Label, true);
+            var targetPhi = target.GetFirstInstruction().AsPhi();
+            targetPhi.AddIncoming(_lastValue, currentBlock);
+            _builder.Br(target);
+            _lastValue = targetPhi;
+            // TODO fall through creates issues a block should only have one terminator and it should be the last instruction
+            // Do we need to reposition the builder?
+            // does dead code crash llvm ?
+        }
+
+        private void GenerateConditionalGotoStatement(BoundConditionalGotoStatement node)
+        {
+            var fallThrough = Append();
+            var target = GetOrAppend(node.Label);
+
+            var lastValue = _lastValue;
+            var value = GenerateExpression(node.Condition);
+            _lastValue = lastValue;
+
+            if (node.JumpIfTrue)
+            {
+                _builder.CondBr(value, target, fallThrough);
+            }
+            else
+            {
+                _builder.CondBr(value, fallThrough, target);
+            }
+
+            _builder.PositionAtEnd(fallThrough);
         }
 
         private void GenerateVariableDeclaration(BoundVariableDeclaration node)
         {
             var value = GenerateExpression(node.Initializer);
             var variable = node.Variable;
-            if (!_variables.TryGetValue(variable, out var ptr))
+            if (!_symbols.TryGetValue(variable, out var ptr))
             {
                 var xType = GetXType(variable.Type);
                 ptr = _builder.Alloca(xType, variable.Name);
-                _variables[variable] = ptr;
+                _symbols[variable] = ptr;
             }
             _builder.Store(value, ptr);
             _lastValue = value;
@@ -138,14 +168,6 @@ namespace Repl.CodeAnalysis.CodeGen
         private void GenerateExpressionStatement(BoundExpressionStatement boundExpressionStatement)
         {
             _lastValue = GenerateExpression(boundExpressionStatement.Expression);
-        }
-
-        private void GenerateBlockStatement(BoundBlockStatement boundBlockStatement)
-        {
-            foreach (var statement in boundBlockStatement.Statements)
-            {
-                GenerateStatement(statement);
-            }
         }
 
         private Value GenerateExpression(BoundExpression expression)
@@ -170,7 +192,7 @@ namespace Repl.CodeAnalysis.CodeGen
         private Value GenerateVariableExpression(BoundVariableExpression boundVariableExpression)
         {
             var variable = boundVariableExpression.Variable;
-            if (_variables.TryGetValue(variable, out var ptr))
+            if (_symbols.TryGetValue(variable, out var ptr))
                 return _builder.Load(ptr, variable.Name);
             return null;
         }
@@ -178,7 +200,7 @@ namespace Repl.CodeAnalysis.CodeGen
         private Value GenerateAssignmentExpression(BoundAssignmentExpression boundAssignmentExpression)
         {
             var variable = boundAssignmentExpression.Variable;
-            if (!_variables.TryGetValue(variable, out var ptr))
+            if (!_symbols.TryGetValue(variable, out var ptr))
                 throw new Exception("variable does not exist");
 
             var value = GenerateExpression(boundAssignmentExpression.Expression);

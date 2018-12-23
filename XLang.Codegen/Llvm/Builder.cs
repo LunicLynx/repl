@@ -206,9 +206,9 @@ namespace XLang.Codegen.Llvm
             return new BasicBlock(basicBlockRef);
         }
 
-        public Value Br(BasicBlock end)
+        public Value Br(BasicBlock dest)
         {
-            return new Value(LLVM.BuildBr(BuilderRef, end.BasicBlockRef));
+            return new Value(LLVM.BuildBr(BuilderRef, dest.BasicBlockRef));
         }
 
         public Phi Phi(XType type, string name = "")

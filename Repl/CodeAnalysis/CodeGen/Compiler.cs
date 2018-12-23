@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Repl.CodeAnalysis.Lowering;
 using XLang.Codegen;
 using XLang.Codegen.Llvm;
 
@@ -8,13 +9,13 @@ namespace Repl.CodeAnalysis.CodeGen
     internal class Compiler
     {
         private BasicBlock _basicBlock;
-        private readonly Dictionary<VariableSymbol, Value> _variablePtrs;
+        private readonly Dictionary<Symbol, Value> _variablePtrs;
         private readonly XModule _module;
         private readonly Function _function;
 
         public Compiler()
         {
-            _variablePtrs = new Dictionary<VariableSymbol, Value>();
+            _variablePtrs = new Dictionary<Symbol, Value>();
 
             Statics.InitializeX86Target();
             _module = new XModule("test");
@@ -32,13 +33,13 @@ namespace Repl.CodeAnalysis.CodeGen
             {
                 builder.PositionAtEnd(_basicBlock);
 
-                var codeGenerator = new CodeGenerator(builder, _variablePtrs);
-                var value = codeGenerator.Generate(globalScope.Statement);
+                var codeGenerator = new CodeGenerator(_module, builder, _variablePtrs);
+                var value = codeGenerator.Generate(Lowerer.Lower(globalScope.Statement));
                 _basicBlock = builder.GetInsertBlock();
 
                 v = builder.Ret(value);
 
-                //Function.ViewCfg();
+                _function.ViewCfg();
 
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                 _function.Print(Console.Out);

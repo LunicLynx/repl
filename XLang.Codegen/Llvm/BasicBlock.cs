@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using LLVMSharp;
 
 namespace XLang.Codegen.Llvm
@@ -25,15 +26,26 @@ namespace XLang.Codegen.Llvm
             return new BasicBlock(basicBlockRef);
         }
 
+        public static BasicBlock Insert(BasicBlock before, string name = "")
+        {
+            var basicBlockRef = LLVM.InsertBasicBlock(before.BasicBlockRef, name);
+            return new BasicBlock(basicBlockRef);
+        }
+
         public void Print(TextWriter writer)
         {
             var value = new Value(LLVM.BasicBlockAsValue(BasicBlockRef));
             value.Print(writer);
         }
 
-        public Function GetParent()
+        public Value GetParent()
         {
-            return new Function(LLVM.GetBasicBlockParent(BasicBlockRef));
+            return new Value(LLVM.GetBasicBlockParent(BasicBlockRef));
+        }
+
+        public Value AsValue()
+        {
+            return new Value(LLVM.BasicBlockAsValue(BasicBlockRef));
         }
 
         public void RemoveFromParent()
@@ -49,6 +61,49 @@ namespace XLang.Codegen.Llvm
         public void MoveBefore(BasicBlock pos)
         {
             LLVM.MoveBasicBlockBefore(BasicBlockRef, pos.BasicBlockRef);
+        }
+
+        public void Delete()
+        {
+            LLVM.DeleteBasicBlock(BasicBlockRef);
+        }
+
+        public string GetName()
+        {
+            return LLVM.GetBasicBlockName(BasicBlockRef);
+        }
+
+        public Value GetTerminator()
+        {
+            var terminator = LLVM.GetBasicBlockTerminator(BasicBlockRef);
+            if (terminator.Pointer == IntPtr.Zero) return null;
+            return new Value(terminator);
+        }
+
+        public bool IsTerminated()
+        {
+            var terminator = LLVM.GetBasicBlockTerminator(BasicBlockRef);
+            return terminator.Pointer != IntPtr.Zero;
+        }
+
+        public BasicBlock GetNext()
+        {
+            return new BasicBlock(LLVM.GetNextBasicBlock(BasicBlockRef));
+        }
+
+        public BasicBlock GetPrevious()
+        {
+            return new BasicBlock(LLVM.GetPreviousBasicBlock(BasicBlockRef));
+        }
+
+        public Value GetFirstInstruction()
+        {
+            return new Value(LLVM.GetFirstInstruction(BasicBlockRef));
+        }
+
+        public Value GetLastInstruction()
+        {
+            return new Value(LLVM.GetLastInstruction(BasicBlockRef));
         }
     }
 }
