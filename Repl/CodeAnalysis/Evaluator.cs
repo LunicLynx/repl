@@ -80,7 +80,7 @@ namespace Repl.CodeAnalysis
         {
             var method = typeof(Functions).GetMethod(node.Function.Name);
 
-            _functions[node.Function] = (Func<object>)(() => method.Invoke(null, null));
+            _functions[node.Function] = (Func<object[], object>)(args => method.Invoke(null, args));
         }
 
         private void EvaluateFunctionDeclaration(BoundFunctionDeclaration node)

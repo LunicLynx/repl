@@ -24,8 +24,9 @@ namespace Repl.CodeAnalysis.Binding
             previous = previous ?? new BoundGlobalScope(null, ImmutableArray<Diagnostic>.Empty,
                            ImmutableArray.Create<Symbol>(
                                TypeSymbol.Void,
+                               TypeSymbol.Bool,
                                TypeSymbol.Int32
-                               ),
+                           ),
                            new BoundExpressionStatement(new BoundLiteralExpression(0)));
             var parent = CreateParentScopes(previous);
             var binder = new Binder(parent);

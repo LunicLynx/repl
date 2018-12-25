@@ -50,6 +50,7 @@
 
         // Types
         VoidKeyword,
+        BoolKeyword,
         IntKeyword,
 
         // Literals

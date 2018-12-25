@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Repl.CodeAnalysis
 {
@@ -8,5 +9,8 @@ namespace Repl.CodeAnalysis
         {
             Console.WriteLine("Hello world");
         }
+
+        [DllImport("kernel32.dll")]
+        public static extern int GetStdHandle(int x);
     }
 }

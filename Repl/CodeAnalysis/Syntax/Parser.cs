@@ -58,6 +58,7 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.ExternKeyword:
                     return ParseExternDeclaration();
                 case TokenKind.VoidKeyword:
+                case TokenKind.BoolKeyword:
                 case TokenKind.IntKeyword:
                 case TokenKind.Identifier when Peek(1).Kind == TokenKind.Identifier:
                     return ParseFunctionDeclaration();
@@ -133,6 +134,7 @@ namespace Repl.CodeAnalysis.Syntax
             switch (kind)
             {
                 case TokenKind.VoidKeyword:
+                case TokenKind.BoolKeyword:
                 case TokenKind.IntKeyword:
                 case TokenKind.Identifier:
                     return true;
