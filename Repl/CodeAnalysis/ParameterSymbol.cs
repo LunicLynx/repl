@@ -4,11 +4,13 @@
     {
         public TypeSymbol Type { get; }
         public override string Name { get; }
+        public int Index { get; }
 
-        public ParameterSymbol(TypeSymbol type, string name)
+        public ParameterSymbol(TypeSymbol type, string name, int index)
         {
             Type = type;
             Name = name;
+            Index = index;
         }
 
         public override string ToString()

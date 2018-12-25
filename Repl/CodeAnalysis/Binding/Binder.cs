@@ -131,11 +131,11 @@ namespace Repl.CodeAnalysis.Binding
             return function;
         }
 
-        private ParameterSymbol BindParameter(ParameterSyntax syntax)
+        private ParameterSymbol BindParameter(ParameterSyntax syntax, int index)
         {
             var type = BindType(syntax.Type);
             var name = syntax.IdentifierToken.Text;
-            var parameter = new ParameterSymbol(type, name);
+            var parameter = new ParameterSymbol(type, name, index);
 
             return parameter;
         }

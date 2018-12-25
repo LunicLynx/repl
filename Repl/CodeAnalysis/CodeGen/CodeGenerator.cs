@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Repl.CodeAnalysis.Binding;
 using XLang.Codegen.Llvm;
 
@@ -88,7 +89,8 @@ namespace Repl.CodeAnalysis.CodeGen
         private FunctionType CreateFunctionType(FunctionSymbol function)
         {
             var returnType = GetXType(function.ReturnType.ClrType);
-            return new FunctionType(returnType);
+            var parameterTypes = function.Parameters.Select(p => GetXType(p.Type.ClrType)).ToArray();
+            return new FunctionType(returnType, parameterTypes);
         }
 
         private void GenerateLabelStatement(BoundLabelStatement node)
@@ -214,15 +216,23 @@ namespace Repl.CodeAnalysis.CodeGen
                     return GenerateVariableExpression(v);
                 case BoundCallExpression i:
                     return GenerateInvokeExpression(i);
+                case BoundParameterExpression p:
+                    return GenerateParameterExpression(p);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
         }
 
+        private Value GenerateParameterExpression(BoundParameterExpression node)
+        {
+            return _builder.GetInsertBlock().GetParent().AsFunction().GetParam(node.Parameter.Index);
+        }
+
         private Value GenerateInvokeExpression(BoundCallExpression node)
         {
             var function = _symbols[node.Function];
-            return _builder.Call(function, Array.Empty<Value>());
+            var args = node.Arguments.Select(GenerateExpression).ToArray();
+            return _builder.Call(function, args);
         }
 
         private Value GenerateVariableExpression(BoundVariableExpression node)
