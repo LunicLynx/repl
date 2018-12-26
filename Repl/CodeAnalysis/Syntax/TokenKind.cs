@@ -57,6 +57,7 @@
         TrueKeyword,
         FalseKeyword,
         Number,
+        String,
 
         Identifier,
     }

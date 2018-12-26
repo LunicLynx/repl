@@ -318,12 +318,20 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseBooleanLiteralExpression(Current.Kind);
                 case TokenKind.Number:
                     return ParseNumberLiteralExpression();
+                case TokenKind.String:
+                    return ParseStringLiteralExpression();
                 case TokenKind.Identifier when Peek(1).Kind == TokenKind.OpenParenthesis:
                     return ParseInvokeExpression();
                 case TokenKind.Identifier:
                 default:
                     return ParseNameExpression();
             }
+        }
+
+        private ExpressionSyntax ParseStringLiteralExpression()
+        {
+            var token = MatchToken(TokenKind.String);
+            return new LiteralExpressionSyntax(token);
         }
 
         private ExpressionSyntax ParseInvokeExpression()

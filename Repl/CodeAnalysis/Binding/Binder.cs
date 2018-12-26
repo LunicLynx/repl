@@ -423,6 +423,9 @@ namespace Repl.CodeAnalysis.Binding
                         Diagnostics.ReportInvalidNumber(token.Span, token.Text);
                     value = number;
                     break;
+                case TokenKind.String:
+                    value = token.Text.Substring(1, token.Text.Length - 2);
+                    break;
             }
 
             return new BoundLiteralExpression(value);

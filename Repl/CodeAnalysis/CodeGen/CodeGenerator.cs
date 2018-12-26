@@ -318,7 +318,6 @@ namespace Repl.CodeAnalysis.CodeGen
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-
         }
 
         private Value GenerateLiteralExpression(BoundLiteralExpression node)
@@ -327,6 +326,8 @@ namespace Repl.CodeAnalysis.CodeGen
             var value = node.Value;
             if (type == typeof(bool))
                 return Value.Int1((bool)value);
+            if (type == typeof(string))
+                return Value.String((string)value);
             return Value.Int32((int)value);
         }
     }

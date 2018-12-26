@@ -49,6 +49,16 @@ namespace Repl.CodeAnalysis.Syntax
 
                 kind = TokenKind.Number;
             }
+            else if (c == '"')
+            {
+                while (Current != '"' && Current != '\0')
+                    Next();
+
+                if (Current == '"')
+                    Next();
+
+                kind = TokenKind.String;
+            }
             else if (IsIdentifierStart(c))
             {
                 while (IsIdentifierFollow(Current))

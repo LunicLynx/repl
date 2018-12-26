@@ -96,6 +96,11 @@ namespace XLang.Codegen.Llvm
             }
         }
 
+        public static Value String(string str)
+        {
+            return new Value(LLVM.ConstString(str, (uint)str.Length, Constants.Falsy));
+        }
+
         public static Value UInt32(uint number)
         {
             return new Value(LLVM.ConstInt(LLVM.Int32Type(), number, Constants.Falsy));
