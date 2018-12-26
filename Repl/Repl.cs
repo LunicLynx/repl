@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Repl
 {
@@ -346,9 +348,22 @@ namespace Repl
 
         protected virtual void EvaluateMetaCommand(string input)
         {
+            if (input.StartsWith("#load"))
+            {
+                HandleLoad(input);
+                return;
+            }
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"Invalid command {input}");
             Console.ResetColor();
+        }
+
+        private void HandleLoad(string input)
+        {
+            var match = Regex.Match(input, "^#load (?<path>.*)$");
+            var path = match.Groups["path"].Value;
+            var content = File.ReadAllText(path);
+            EvaluateSubmission(content);
         }
 
         protected abstract bool IsCompleteSubmission(string text);
