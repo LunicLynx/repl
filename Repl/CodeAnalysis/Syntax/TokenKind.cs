@@ -6,6 +6,7 @@
         EndOfFile,
         Bad,
         WhiteSpace,
+        SingleLineComment,
 
         // Operators
         Plus,
@@ -52,6 +53,7 @@
         VoidKeyword,
         BoolKeyword,
         IntKeyword,
+        StringKeyword,
 
         // Literals
         TrueKeyword,

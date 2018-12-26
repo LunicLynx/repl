@@ -1,21 +1,25 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Syntax
 {
     public class CompilationUnitSyntax : SyntaxNode
     {
-        public StatementSyntax Statement { get; }
+        public ImmutableArray<StatementSyntax> Statements { get; }
         public Token EndOfFileToken { get; }
 
-        public CompilationUnitSyntax(StatementSyntax statement, Token endOfFileToken)
+        public CompilationUnitSyntax(ImmutableArray<StatementSyntax> statements, Token endOfFileToken)
         {
-            Statement = statement;
+            Statements = statements;
             EndOfFileToken = endOfFileToken;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Statement;
+            foreach (var statement in Statements)
+            {
+                yield return statement;
+            }
             yield return EndOfFileToken;
         }
     }

@@ -22,7 +22,8 @@ namespace Repl.CodeAnalysis.Syntax
             {"extern", TokenKind.ExternKeyword},
             {"void", TokenKind.VoidKeyword},
             {"bool", TokenKind.BoolKeyword},
-            {"int", TokenKind.IntKeyword}
+            {"int", TokenKind.IntKeyword},
+            {"string", TokenKind.StringKeyword }
         };
 
         public Lexer(SourceText text) : base(text) { }
@@ -41,6 +42,12 @@ namespace Repl.CodeAnalysis.Syntax
                     Next();
 
                 kind = TokenKind.WhiteSpace;
+            }
+            else if (c == '/' && Current == '/')
+            {
+                while (Current != '\r' && Current != '\n' && Current != '\0')
+                    Next();
+                kind = TokenKind.SingleLineComment;
             }
             else if (char.IsDigit(c))
             {

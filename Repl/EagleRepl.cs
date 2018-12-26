@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Repl.CodeAnalysis;
-using Repl.CodeAnalysis.Binding;
 using Repl.CodeAnalysis.CodeGen;
 using Repl.CodeAnalysis.Syntax;
 using Repl.CodeAnalysis.Text;
@@ -89,7 +88,10 @@ namespace Repl
             if (_showTree)
             {
                 var printer = new Printer();
-                printer.Print(syntaxTree.Root.Statement);
+                foreach (var statement in syntaxTree.Root.Statements)
+                {
+                    printer.Print(statement);
+                }
             }
 
             if (_showProgram)

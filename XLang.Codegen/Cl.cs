@@ -52,6 +52,7 @@ namespace XLang.Codegen
             {
                 var process = Process.Start(fileName);
                 process.WaitForExit();
+                Console.WriteLine("Exit Code: " + process.ExitCode);
             }
         }
     }

@@ -1,6 +1,6 @@
 ﻿// TODO define HANDLE
 // TODO define DWORD
-extern int GetStdHandle(int nStdHandle);
+extern int GetStdHandle(int nStdHandle)
 // TODO define BOOL
 // TODO define LPCVOID
 // TODO define LPDWORD

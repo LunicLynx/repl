@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Repl.CodeAnalysis.Binding;
 using Repl.CodeAnalysis.Lowering;
 using XLang.Codegen;
 using XLang.Codegen.Llvm;
@@ -34,7 +35,7 @@ namespace Repl.CodeAnalysis.CodeGen
                 builder.PositionAtEnd(_basicBlock);
 
                 var codeGenerator = new CodeGenerator(_module, builder, _variablePtrs);
-                var value = codeGenerator.Generate(Lowerer.Lower(globalScope.Statement));
+                var value = codeGenerator.Generate(Lowerer.Lower(new BoundBlockStatement(globalScope.Statements)));
                 _basicBlock = builder.GetInsertBlock();
 
                 v = builder.Ret(value);

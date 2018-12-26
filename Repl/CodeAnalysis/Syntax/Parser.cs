@@ -19,7 +19,7 @@ namespace Repl.CodeAnalysis.Syntax
             {
                 token = lexer.Lex();
 
-                if (token.Kind != TokenKind.WhiteSpace && token.Kind != TokenKind.Bad)
+                if (token.Kind != TokenKind.WhiteSpace && token.Kind != TokenKind.SingleLineComment && token.Kind != TokenKind.Bad)
                     tokens.Add(token);
 
             } while (token.Kind != TokenKind.EndOfFile);
@@ -29,7 +29,7 @@ namespace Repl.CodeAnalysis.Syntax
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
-            var statement = ParseStatement();
+            var statement = ParseStatements();
             var endOfFileToken = MatchToken(TokenKind.EndOfFile);
             return new CompilationUnitSyntax(statement, endOfFileToken);
         }
@@ -60,6 +60,7 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.VoidKeyword:
                 case TokenKind.BoolKeyword:
                 case TokenKind.IntKeyword:
+                case TokenKind.StringKeyword:
                 case TokenKind.Identifier when Peek(1).Kind == TokenKind.Identifier:
                     return ParseFunctionDeclaration();
                 default:
@@ -136,6 +137,7 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.VoidKeyword:
                 case TokenKind.BoolKeyword:
                 case TokenKind.IntKeyword:
+                case TokenKind.StringKeyword:
                 case TokenKind.Identifier:
                     return true;
                 default:
@@ -227,9 +229,18 @@ namespace Repl.CodeAnalysis.Syntax
 
         private BlockStatementSyntax ParseBlockStatement()
         {
-            var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
-
             var openBraceToken = MatchToken(TokenKind.OpenBrace);
+
+            var statements = ParseStatements();
+
+            var closeBraceToken = MatchToken(TokenKind.CloseBrace);
+
+            return new BlockStatementSyntax(openBraceToken, statements, closeBraceToken);
+        }
+
+        private ImmutableArray<StatementSyntax> ParseStatements()
+        {
+            var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
 
             var startToken = Current;
             while (Current.Kind != TokenKind.EndOfFile &&
@@ -245,9 +256,7 @@ namespace Repl.CodeAnalysis.Syntax
                 startToken = Current;
             }
 
-            var closeBraceToken = MatchToken(TokenKind.CloseBrace);
-
-            return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
+            return statements.ToImmutable();
         }
 
         public ExpressionSyntax ParseExpression()

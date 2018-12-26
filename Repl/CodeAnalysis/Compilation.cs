@@ -43,7 +43,7 @@ namespace Repl.CodeAnalysis
             return new Compilation(this, syntaxTree);
         }
 
-        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables, Dictionary<FunctionSymbol, Delegate> functions )
+        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables, Dictionary<FunctionSymbol, Delegate> functions)
         {
             var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
@@ -62,7 +62,7 @@ namespace Repl.CodeAnalysis
 
         private BoundBlockStatement GetStatement()
         {
-            var statement = Lowerer.Lower(GlobalScope.Statement);
+            var statement = Lowerer.Lower(new BoundBlockStatement(GlobalScope.Statements));
             return statement;
         }
 

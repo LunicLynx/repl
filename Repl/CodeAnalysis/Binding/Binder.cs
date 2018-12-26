@@ -25,15 +25,17 @@ namespace Repl.CodeAnalysis.Binding
                            ImmutableArray.Create<Symbol>(
                                TypeSymbol.Void,
                                TypeSymbol.Bool,
-                               TypeSymbol.Int32
+                               TypeSymbol.Int32,
+                               TypeSymbol.String
                            ),
-                           new BoundExpressionStatement(new BoundLiteralExpression(0)));
+                           ImmutableArray.Create<BoundStatement>(
+                           new BoundExpressionStatement(new BoundLiteralExpression(0))));
             var parent = CreateParentScopes(previous);
             var binder = new Binder(parent);
-            var statement = binder.BindStatement(syntax.Statement);
+            var statements = binder.BindStatements(syntax.Statements);
             var diagnostics = binder.Diagnostics.ToImmutableArray();
             var symbols = binder._scope.GetDeclaredSymbols();
-            return new BoundGlobalScope(previous, diagnostics, symbols, statement);
+            return new BoundGlobalScope(previous, diagnostics, symbols, statements);
         }
 
         private static BoundScope CreateParentScopes(BoundGlobalScope previous)
@@ -248,18 +250,26 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
-            var statements = ImmutableArray.CreateBuilder<BoundStatement>();
             _scope = new BoundScope(_scope);
 
-            foreach (var statementSyntax in syntax.Statements)
+            var statements = BindStatements(syntax.Statements);
+
+            _scope = _scope.Parent;
+
+            return new BoundBlockStatement(statements);
+        }
+
+        private ImmutableArray<BoundStatement> BindStatements(ImmutableArray<StatementSyntax> syntaxStatements)
+        {
+            var statements = ImmutableArray.CreateBuilder<BoundStatement>();
+
+            foreach (var statementSyntax in syntaxStatements)
             {
                 var statement = BindStatement(statementSyntax);
                 statements.Add(statement);
             }
 
-            _scope = _scope.Parent;
-
-            return new BoundBlockStatement(statements.ToImmutable());
+            return statements.ToImmutable();
         }
 
         private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
