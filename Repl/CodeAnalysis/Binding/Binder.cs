@@ -25,7 +25,16 @@ namespace Repl.CodeAnalysis.Binding
                            ImmutableArray.Create<Symbol>(
                                TypeSymbol.Void,
                                TypeSymbol.Bool,
-                               TypeSymbol.Int32,
+                               TypeSymbol.I8,
+                               TypeSymbol.I16,
+                               TypeSymbol.I32,
+                               TypeSymbol.I64,
+                               TypeSymbol.U8,
+                               TypeSymbol.U16,
+                               TypeSymbol.U32,
+                               TypeSymbol.U64,
+                               TypeSymbol.Int,
+                               TypeSymbol.Uint,
                                TypeSymbol.String
                            ),
                            ImmutableArray.Create<BoundStatement>(
@@ -146,7 +155,7 @@ namespace Repl.CodeAnalysis.Binding
         private TypeSymbol BindType(TypeSyntax syntax)
         {
             var typeIdentifierToken = syntax.TypeOrIdentifierToken;
-            var type = GetSymbol<TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int32;
+            var type = GetSymbol<TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int;
             return type;
         }
 
@@ -281,9 +290,36 @@ namespace Repl.CodeAnalysis.Binding
         private BoundExpression BindExpression(ExpressionSyntax syntax, Type targetType)
         {
             var expression = BindExpression(syntax);
-            if (expression.Type != targetType)
+            if (!IsAssignable(targetType, expression.Type))
                 Diagnostics.ReportCannotConvert(syntax.Span, expression.Type, targetType);
+            if (expression.Type != targetType)
+                return new BoundCastExpression(targetType, expression);
             return expression;
+        }
+
+        private bool IsAssignable(Type to, Type from)
+        {
+            if (from == to) return true;
+            if (to.IsAssignableFrom(from)) return true;
+
+            var toProperties = GetIntegerTypeProperties(to);
+            var fromProperties = GetIntegerTypeProperties(from);
+
+            return toProperties.signed == fromProperties.signed && toProperties.size >= fromProperties.size
+                   || toProperties.signed && toProperties.size > fromProperties.size;
+        }
+
+        private (bool signed, int size) GetIntegerTypeProperties(Type type)
+        {
+            if (type == typeof(long)) return (true, 8);
+            if (type == typeof(int)) return (true, 4);
+            if (type == typeof(short)) return (true, 2);
+            if (type == typeof(sbyte)) return (true, 1);
+            if (type == typeof(ulong)) return (false, 8);
+            if (type == typeof(uint)) return (false, 4);
+            if (type == typeof(ushort)) return (false, 2);
+            if (type == typeof(byte)) return (false, 1);
+            throw new Exception("Non integer types are not supported");
         }
 
         private BoundExpression BindExpression(ExpressionSyntax syntax)

@@ -22,8 +22,19 @@ namespace Repl.CodeAnalysis.Syntax
             {"extern", TokenKind.ExternKeyword},
             {"void", TokenKind.VoidKeyword},
             {"bool", TokenKind.BoolKeyword},
+            {"i8", TokenKind.I8Keyword },
+            {"i16", TokenKind.I16Keyword },
+            {"i32", TokenKind.I32Keyword },
+            {"i64", TokenKind.I64Keyword },
+            {"i128", TokenKind.I128Keyword },
+            {"u8", TokenKind.U8Keyword },
+            {"u16", TokenKind.U16Keyword },
+            {"u32", TokenKind.U32Keyword },
+            {"u64", TokenKind.U64Keyword },
+            {"u128", TokenKind.U128Keyword },
             {"int", TokenKind.IntKeyword},
-            {"string", TokenKind.StringKeyword }
+            {"uint", TokenKind.UintKeyword},
+            {"string", TokenKind.StringKeyword },
         };
 
         public Lexer(SourceText text) : base(text) { }

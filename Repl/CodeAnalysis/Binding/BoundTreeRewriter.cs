@@ -147,8 +147,17 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundVariableExpression v: return RewriteVariableExpression(v);
                 case BoundCallExpression i: return RewriteCallExpression(i);
                 case BoundParameterExpression p: return RewriteParameterExpression(p);
+                case BoundCastExpression c: return RewriteCastExpression(c);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundExpression RewriteCastExpression(BoundCastExpression node)
+        {
+            var expression = RewriteExpression(node.Expression);
+            if (expression == node.Expression)
+                return node;
+            return new BoundCastExpression(node.Type, expression);
         }
 
         private BoundExpression RewriteParameterExpression(BoundParameterExpression node)

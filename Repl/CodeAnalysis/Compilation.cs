@@ -51,8 +51,17 @@ namespace Repl.CodeAnalysis
 
             var statement = GetStatement();
             var evaluator = new Evaluator(statement, variables, functions);
-            var value = evaluator.Evaluate(new Dictionary<ParameterSymbol, object>());
-            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+
+            try
+            {
+                var value = evaluator.Evaluate(new Dictionary<ParameterSymbol, object>());
+                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            }
+            catch (Exception e)
+            {
+                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, 0);
+                //return new EvaluationResult(ImmutableArray.Create(new Diagnostic(SyntaxTree.Root.Span, e.Message)), 0);
+            }
         }
 
         public void Emit(string fileName)

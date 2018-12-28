@@ -120,20 +120,22 @@ namespace Repl
 
                 foreach (var diagnostic in result.Diagnostics)
                 {
-                    var lineIndex = text1.GetLineIndex(diagnostic.Span.Start);
-                    var line = text1.Lines[lineIndex];
-                    var lineNumber = lineIndex + 1;
-                    var character = diagnostic.Span.Start - line.Start + 1;
+                    var lineIndexStart = text1.GetLineIndex(diagnostic.Span.Start);
+                    var lineIndexEnd = text1.GetLineIndex(diagnostic.Span.End);
+                    var lineStart = text1.Lines[lineIndexStart];
+                    var lineEnd = text1.Lines[lineIndexEnd];
+                    var lineNumberStart = lineIndexStart + 1;
+                    var character = diagnostic.Span.Start - lineStart.Start + 1;
 
                     Console.WriteLine();
 
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Write($"({lineNumber}, {character}): ");
+                    Console.Write($"({lineNumberStart}, {character}): ");
                     Console.WriteLine(diagnostic);
                     Console.ResetColor();
 
-                    var prefixSpan = TextSpan.FromBounds(line.Start, diagnostic.Span.Start);
-                    var suffixSpan = TextSpan.FromBounds(diagnostic.Span.End, line.End);
+                    var prefixSpan = TextSpan.FromBounds(lineStart.Start, diagnostic.Span.Start);
+                    var suffixSpan = TextSpan.FromBounds(diagnostic.Span.End, lineEnd.End);
 
                     var prefix = text1.ToString(prefixSpan);
                     var error = text1.ToString(diagnostic.Span);

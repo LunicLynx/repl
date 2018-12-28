@@ -58,6 +58,11 @@ namespace XLang.Codegen.Llvm
             return new Value(LLVM.BuildGlobalString(BuilderRef, str, name));
         }
 
+        public Value GlobalStringPtr(string str, string name = "")
+        {
+            return new Value(LLVM.BuildGlobalStringPtr(BuilderRef, str, name));
+        }
+
         public Value GEP(Value pointer, Value[] indices, string name = "")
         {
             return new Value(LLVM.BuildGEP(BuilderRef, pointer.ValueRef,
@@ -221,6 +226,11 @@ namespace XLang.Codegen.Llvm
             return new Value(LLVM.BuildXor(BuilderRef, left.ValueRef, right.ValueRef, name));
         }
 
-        
+        public Value IntCast(Value value, XType dest, string name = "")
+        {
+            return new Value(
+                LLVM.BuildIntCast(BuilderRef, value.ValueRef, dest.TypeRef, name)
+            );
+        }
     }
 }

@@ -218,9 +218,18 @@ namespace Repl.CodeAnalysis.CodeGen
                     return GenerateInvokeExpression(i);
                 case BoundParameterExpression p:
                     return GenerateParameterExpression(p);
+                case BoundCastExpression c:
+                    return GenerateCastExpression(c);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private Value GenerateCastExpression(BoundCastExpression node)
+        {
+            var type = GetXType(node.Type);
+            var value = GenerateExpression(node.Expression);
+            return _builder.IntCast(value, type);
         }
 
         private Value GenerateParameterExpression(BoundParameterExpression node)
@@ -257,9 +266,17 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private XType GetXType(Type type)
         {
-            if (type == typeof(bool))
-                return XType.Int1;
-            return XType.Int32;
+            if (type == typeof(bool)) return XType.Int1;
+            if (type == typeof(sbyte)) return XType.Int8;
+            if (type == typeof(short)) return XType.Int16;
+            if (type == typeof(int)) return XType.Int32;
+            if (type == typeof(long)) return XType.Int64;
+            if (type == typeof(byte)) return XType.Int8;
+            if (type == typeof(ushort)) return XType.Int16;
+            if (type == typeof(uint)) return XType.Int32;
+            if (type == typeof(ulong)) return XType.Int64;
+            if (type == typeof(string)) return XType.Int64;
+            throw new Exception("Unsupported type");
         }
 
         private Value GenerateBinaryExpression(BoundBinaryExpression node)
@@ -327,7 +344,8 @@ namespace Repl.CodeAnalysis.CodeGen
             if (type == typeof(bool))
                 return Value.Int1((bool)value);
             if (type == typeof(string))
-                return Value.String((string)value);
+                //return Value.String((string)value);
+                return _builder.GlobalStringPtr((string)value);
             return Value.Int32((int)value);
         }
     }

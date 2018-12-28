@@ -52,7 +52,18 @@
         // Types
         VoidKeyword,
         BoolKeyword,
+        I8Keyword,
+        I16Keyword,
+        I32Keyword,
+        I64Keyword,
+        I128Keyword,
+        U8Keyword,
+        U16Keyword,
+        U32Keyword,
+        U64Keyword,
+        U128Keyword,
         IntKeyword,
+        UintKeyword,
         StringKeyword,
 
         // Literals

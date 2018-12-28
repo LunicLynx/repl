@@ -15,6 +15,9 @@ namespace Repl
 
         public void Run()
         {
+            if (File.Exists("demo.e"))
+                EvaluateMetaCommand("#load demo.e");
+
             while (true)
             {
                 var text = EditSubmission();

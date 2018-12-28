@@ -80,6 +80,9 @@ namespace Repl.CodeAnalysis
         {
             var method = typeof(Functions).GetMethod(node.Function.Name);
 
+            if (method == null)
+                throw new Exception($"Extern function {node.Function} was not found.");
+
             _functions[node.Function] = (Func<object[], object>)(args => method.Invoke(null, args));
         }
 
@@ -121,9 +124,16 @@ namespace Repl.CodeAnalysis
                     return EvaluateCallExpression(i);
                 case BoundParameterExpression p:
                     return EvaluateParameterExpression(p);
+                case BoundCastExpression c:
+                    return EvaluateCastExpression(c);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private object EvaluateCastExpression(BoundCastExpression node)
+        {
+            return EvaluateExpression(node.Expression);
         }
 
         private object EvaluateParameterExpression(BoundParameterExpression node)

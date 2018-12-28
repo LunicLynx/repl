@@ -57,13 +57,11 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseContinueStatement();
                 case TokenKind.ExternKeyword:
                     return ParseExternDeclaration();
-                case TokenKind.VoidKeyword:
-                case TokenKind.BoolKeyword:
-                case TokenKind.IntKeyword:
-                case TokenKind.StringKeyword:
                 case TokenKind.Identifier when Peek(1).Kind == TokenKind.Identifier:
                     return ParseFunctionDeclaration();
                 default:
+                    if (IsTypeToken(Current.Kind))
+                        return ParseFunctionDeclaration();
                     return ParseExpressionStatement();
             }
         }
@@ -130,19 +128,34 @@ namespace Repl.CodeAnalysis.Syntax
             return MatchToken(Current.Kind);
         }
 
-        private bool IsTypeOrIdentifierToken(TokenKind kind)
+        private bool IsTypeToken(TokenKind kind)
         {
             switch (kind)
             {
                 case TokenKind.VoidKeyword:
                 case TokenKind.BoolKeyword:
+                case TokenKind.I8Keyword:
+                case TokenKind.I16Keyword:
+                case TokenKind.I32Keyword:
+                case TokenKind.I64Keyword:
+                case TokenKind.I128Keyword:
+                case TokenKind.U8Keyword:
+                case TokenKind.U16Keyword:
+                case TokenKind.U32Keyword:
+                case TokenKind.U64Keyword:
+                case TokenKind.U128Keyword:
                 case TokenKind.IntKeyword:
+                case TokenKind.UintKeyword:
                 case TokenKind.StringKeyword:
-                case TokenKind.Identifier:
                     return true;
                 default:
                     return false;
             }
+        }
+
+        private bool IsTypeOrIdentifierToken(TokenKind kind)
+        {
+            return IsTypeToken(kind) || kind == TokenKind.Identifier;
         }
 
         private StatementSyntax ParseContinueStatement()
