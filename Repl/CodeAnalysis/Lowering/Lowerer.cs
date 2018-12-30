@@ -11,10 +11,17 @@ namespace Repl.CodeAnalysis.Lowering
 
         private Lowerer() { }
 
-        public static BoundBlockStatement Lower(BoundStatement statement)
+        public static BoundUnit Lower(BoundUnit unit)
         {
             var lowerer = new Lowerer();
-            return Flatten(lowerer.RewriteStatement(statement));
+
+            var statements = unit.GetChildren().OfType<BoundStatement>().ToImmutableArray();
+            var declarations = unit.GetChildren().Except(statements).Select(lowerer.RewriteNode);
+            var boundBlockStatement = new BoundBlockStatement(statements);
+
+            var x = Flatten(lowerer.RewriteStatement(boundBlockStatement));
+
+            return new BoundScriptUnit(declarations.Concat(new[] { x }).ToImmutableArray());
         }
 
         private static BoundBlockStatement Flatten(BoundStatement statement)

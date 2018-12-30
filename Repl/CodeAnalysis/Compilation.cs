@@ -49,12 +49,12 @@ namespace Repl.CodeAnalysis
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics, null);
 
-            var statement = GetStatement();
+            var statement = GetUnit();
             var evaluator = new Evaluator(statement, variables, functions);
 
             try
             {
-                var value = evaluator.Evaluate(new Dictionary<ParameterSymbol, object>());
+                var value = evaluator.Evaluate();
                 return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
             }
             catch (Exception e)
@@ -69,15 +69,15 @@ namespace Repl.CodeAnalysis
 
         }
 
-        private BoundBlockStatement GetStatement()
+        private BoundUnit GetUnit()
         {
-            var statement = Lowerer.Lower(new BoundBlockStatement(GlobalScope.Statements));
+            var statement = Lowerer.Lower(GlobalScope.Unit);
             return statement;
         }
 
         public void Print(Action<BoundNode> print)
         {
-            print(GetStatement());
+            print(GetUnit());
         }
     }
 }

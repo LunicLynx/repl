@@ -21,11 +21,32 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private Value _lastValue = Value.Int32(0);
 
-        public Value Generate(BoundBlockStatement statement)
+        public Value Generate(BoundUnit unit)
         {
             _lastValue = Value.Int32(0);
-            GenerateStatement(statement);
+
+            foreach (var node in unit.GetChildren())
+            {
+                GenerateNode(node);
+            }
+
             return _lastValue;
+        }
+
+        private void GenerateNode(BoundNode node)
+        {
+            switch (node)
+            {
+                case BoundBlockStatement s:
+                    GenerateStatement(s);
+                    break;
+                case BoundFunctionDeclaration f:
+                    GenerateFunctionDeclaration(f);
+                    break;
+                case BoundExternDeclaration e:
+                    GenerateExternDeclaration(e);
+                    break;
+            }
         }
 
         private void GenerateStatement(BoundBlockStatement node)
@@ -49,12 +70,7 @@ namespace Repl.CodeAnalysis.CodeGen
                     case BoundLabelStatement l:
                         GenerateLabelStatement(l);
                         break;
-                    case BoundFunctionDeclaration f:
-                        GenerateFunctionDeclaration(f);
-                        break;
-                    case BoundExternDeclaration e:
-                        GenerateExternDeclaration(e);
-                        break;
+
                     default:
                         throw new Exception($"Unexpected node {statement.GetType()}");
                 }
@@ -80,7 +96,7 @@ namespace Repl.CodeAnalysis.CodeGen
                 builder.PositionAtEnd(entry);
 
                 var c = new CodeGenerator(_module, builder, _symbols);
-                c.Generate(node.Body);
+                c.GenerateStatement(node.Body);
 
                 builder.Ret(c._lastValue);
             }

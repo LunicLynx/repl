@@ -29,9 +29,45 @@ namespace Repl.CodeAnalysis.Syntax
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
-            var statement = ParseStatements();
+            var nodes = ParseStatementsOrDeclarations();
             var endOfFileToken = MatchToken(TokenKind.EndOfFile);
-            return new CompilationUnitSyntax(statement, endOfFileToken);
+            return new CompilationUnitSyntax(nodes, endOfFileToken);
+        }
+
+        public bool TryParseDeclaration(out SyntaxNode node)
+        {
+            node = null;
+            switch (Current.Kind)
+            {
+                case TokenKind.AliasKeyword:
+                    node = ParseAliasDeclaration();
+                    return true;
+                case TokenKind.ExternKeyword:
+                    node = ParseExternDeclaration();
+                    return true;
+                case TokenKind.StructKeyword:
+                    node = ParseStructDeclaration();
+                    return true;
+                case TokenKind.Identifier when Peek(1).Kind == TokenKind.Identifier:
+                    node = ParseFunctionDeclaration();
+                    return true;
+                default:
+                    if (IsTypeToken(Current.Kind))
+                    {
+                        node = ParseFunctionDeclaration();
+                        return true;
+                    }
+                    return false;
+            }
+        }
+
+        private SyntaxNode ParseAliasDeclaration()
+        {
+            var aliasKeyword = MatchToken(TokenKind.AliasKeyword);
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            var type = ParseType();
+
+            return new AliasDeclarationSyntax(aliasKeyword, identifierToken, type);
         }
 
         public StatementSyntax ParseStatement()
@@ -55,25 +91,50 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseBreakStatement();
                 case TokenKind.ContinueKeyword:
                     return ParseContinueStatement();
-                case TokenKind.ExternKeyword:
-                    return ParseExternDeclaration();
-                case TokenKind.Identifier when Peek(1).Kind == TokenKind.Identifier:
-                    return ParseFunctionDeclaration();
                 default:
-                    if (IsTypeToken(Current.Kind))
-                        return ParseFunctionDeclaration();
                     return ParseExpressionStatement();
             }
         }
 
-        private StatementSyntax ParseExternDeclaration()
+        private SyntaxNode ParseStructDeclaration()
+        {
+            var structKeyword = MatchToken(TokenKind.StructKeyword);
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            var openBraceToken = MatchToken(TokenKind.OpenBrace);
+
+            var builder = ImmutableArray.CreateBuilder<MemberDeclarationSyntax>();
+            Token startToken = null;
+            while (Current.Kind != TokenKind.CloseBrace &&
+                   Current.Kind != TokenKind.EndOfFile)
+            {
+                var member = ParseMemberDeclaration();
+                builder.Add(member);
+
+                // Make sure we consume tokens
+                if (Current == startToken)
+                    NextToken();
+
+                startToken = Current;
+            }
+            var closeBraceToken = MatchToken(TokenKind.CloseBrace);
+            return new StructDeclarationSyntax(structKeyword, identifierToken, openBraceToken, builder.ToImmutable(), closeBraceToken);
+        }
+
+        private MemberDeclarationSyntax ParseMemberDeclaration()
+        {
+            var type = ParseType();
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            return new MemberDeclarationSyntax(type, identifierToken);
+        }
+
+        private SyntaxNode ParseExternDeclaration()
         {
             var externKeyword = MatchToken(TokenKind.ExternKeyword);
             var prototype = ParsePrototype();
             return new ExternDeclarationSyntax(externKeyword, prototype);
         }
 
-        private StatementSyntax ParseFunctionDeclaration()
+        private SyntaxNode ParseFunctionDeclaration()
         {
             var prototype = ParsePrototype();
             var body = ParseBlockStatement();
@@ -110,6 +171,9 @@ namespace Repl.CodeAnalysis.Syntax
         private TypeSyntax ParseType()
         {
             var typeOrIdentifierToken = MatchTypeOrIdentifierToken();
+
+            var pointer = false;
+
             return new TypeSyntax(typeOrIdentifierToken);
         }
 
@@ -244,15 +308,6 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var openBraceToken = MatchToken(TokenKind.OpenBrace);
 
-            var statements = ParseStatements();
-
-            var closeBraceToken = MatchToken(TokenKind.CloseBrace);
-
-            return new BlockStatementSyntax(openBraceToken, statements, closeBraceToken);
-        }
-
-        private ImmutableArray<StatementSyntax> ParseStatements()
-        {
             var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
 
             var startToken = Current;
@@ -269,7 +324,30 @@ namespace Repl.CodeAnalysis.Syntax
                 startToken = Current;
             }
 
-            return statements.ToImmutable();
+            var closeBraceToken = MatchToken(TokenKind.CloseBrace);
+
+            return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
+        }
+
+        private ImmutableArray<SyntaxNode> ParseStatementsOrDeclarations()
+        {
+            var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+
+            var startToken = Current;
+            while (Current.Kind != TokenKind.EndOfFile)
+            {
+                if (!TryParseDeclaration(out var node))
+                    node = ParseStatement();
+                builder.Add(node);
+
+                // Make sure we consume tokens
+                if (Current == startToken)
+                    NextToken();
+
+                startToken = Current;
+            }
+
+            return builder.ToImmutable();
         }
 
         public ExpressionSyntax ParseExpression()
@@ -342,12 +420,21 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseNumberLiteralExpression();
                 case TokenKind.String:
                     return ParseStringLiteralExpression();
+                case TokenKind.NewKeyword:
+                    return ParseNewExpression();
                 case TokenKind.Identifier when Peek(1).Kind == TokenKind.OpenParenthesis:
                     return ParseInvokeExpression();
                 case TokenKind.Identifier:
                 default:
                     return ParseNameExpression();
             }
+        }
+
+        private ExpressionSyntax ParseNewExpression()
+        {
+            var newKeyword = MatchToken(TokenKind.NewKeyword);
+            var nameExpression = (NameExpressionSyntax)ParseNameExpression();
+            return new NewExpressionSyntax(newKeyword, nameExpression);
         }
 
         private ExpressionSyntax ParseStringLiteralExpression()
@@ -363,6 +450,7 @@ namespace Repl.CodeAnalysis.Syntax
 
             var arguments = ImmutableArray.CreateBuilder<SyntaxNode>();
             var first = true;
+            Token startToken = null;
             while (Current.Kind != TokenKind.CloseParenthesis &&
                    Current.Kind != TokenKind.EndOfFile)
             {
@@ -374,6 +462,12 @@ namespace Repl.CodeAnalysis.Syntax
                 first = false;
                 var argument = ParseExpression();
                 arguments.Add(argument);
+
+                // Make sure we consume tokens
+                if (Current == startToken)
+                    NextToken();
+
+                startToken = Current;
             }
 
             var closeParenthesis = MatchToken(TokenKind.CloseParenthesis);

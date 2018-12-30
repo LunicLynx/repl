@@ -48,6 +48,7 @@
         ContinueKeyword,
         ToKeyword,
         ExternKeyword,
+        StructKeyword,
 
         // Types
         VoidKeyword,
@@ -73,5 +74,7 @@
         String,
 
         Identifier,
+        NewKeyword,
+        AliasKeyword
     }
 }

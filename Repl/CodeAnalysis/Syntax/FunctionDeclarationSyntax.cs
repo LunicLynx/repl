@@ -2,7 +2,7 @@
 
 namespace Repl.CodeAnalysis.Syntax
 {
-    public class FunctionDeclarationSyntax : StatementSyntax
+    public class FunctionDeclarationSyntax : SyntaxNode
     {
         public PrototypeSyntax Prototype { get; }
         public BlockStatementSyntax Body { get; }

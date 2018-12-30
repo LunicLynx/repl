@@ -21,30 +21,30 @@ namespace Repl.CodeAnalysis.Binding
 
         public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax syntax)
         {
+            var builtInSymbols = ImmutableArray.Create<Symbol>(
+                TypeSymbol.Void,
+                TypeSymbol.Bool,
+                TypeSymbol.I8,
+                TypeSymbol.I16,
+                TypeSymbol.I32,
+                TypeSymbol.I64,
+                TypeSymbol.U8,
+                TypeSymbol.U16,
+                TypeSymbol.U32,
+                TypeSymbol.U64,
+                TypeSymbol.Int,
+                TypeSymbol.Uint,
+                TypeSymbol.String
+            );
+
             previous = previous ?? new BoundGlobalScope(null, ImmutableArray<Diagnostic>.Empty,
-                           ImmutableArray.Create<Symbol>(
-                               TypeSymbol.Void,
-                               TypeSymbol.Bool,
-                               TypeSymbol.I8,
-                               TypeSymbol.I16,
-                               TypeSymbol.I32,
-                               TypeSymbol.I64,
-                               TypeSymbol.U8,
-                               TypeSymbol.U16,
-                               TypeSymbol.U32,
-                               TypeSymbol.U64,
-                               TypeSymbol.Int,
-                               TypeSymbol.Uint,
-                               TypeSymbol.String
-                           ),
-                           ImmutableArray.Create<BoundStatement>(
-                           new BoundExpressionStatement(new BoundLiteralExpression(0))));
+                           builtInSymbols, null);
             var parent = CreateParentScopes(previous);
             var binder = new Binder(parent);
-            var statements = binder.BindStatements(syntax.Statements);
+            var nodes = binder.BindNodes(syntax.Nodes);
             var diagnostics = binder.Diagnostics.ToImmutableArray();
             var symbols = binder._scope.GetDeclaredSymbols();
-            return new BoundGlobalScope(previous, diagnostics, symbols, statements);
+            return new BoundGlobalScope(previous, diagnostics, symbols, new BoundScriptUnit(nodes));
         }
 
         private static BoundScope CreateParentScopes(BoundGlobalScope previous)
@@ -73,6 +73,34 @@ namespace Repl.CodeAnalysis.Binding
             return parent;
         }
 
+        public BoundNode BindNode(SyntaxNode node)
+        {
+            switch (node)
+            {
+                case StatementSyntax s:
+                    return BindStatement(s);
+                case AliasDeclarationSyntax a:
+                    return BindAliasDeclaration(a);
+                case ExternDeclarationSyntax e:
+                    return BindExternDeclaration(e);
+                case FunctionDeclarationSyntax f:
+                    return BindFunctionDeclaration(f);
+                case StructDeclarationSyntax s:
+                    return BindStructDeclaration(s);
+                default:
+                    throw new Exception($"Unsupported node {node}");
+            }
+        }
+
+        private BoundNode BindAliasDeclaration(AliasDeclarationSyntax syntax)
+        {
+            var typeSymbol = BindType(syntax.Type);
+            var identifierToken = syntax.IdentifierToken;
+            var aliasSymbol = new AliasSymbol(identifierToken.Text, typeSymbol);
+            DeclareSymbol(aliasSymbol, identifierToken);
+            return new BoundAliasDeclaration(aliasSymbol);
+        }
+
         public BoundStatement BindStatement(StatementSyntax stmt)
         {
             switch (stmt)
@@ -95,20 +123,24 @@ namespace Repl.CodeAnalysis.Binding
                     return BindForStatement(f);
                 case ExpressionStatementSyntax e:
                     return BindExpressionStatement(e);
-                case ExternDeclarationSyntax e:
-                    return BindExternDeclaration(e);
-                case FunctionDeclarationSyntax f:
-                    return BindFunctionDeclaration(f);
+
                 default:
                     throw new Exception($"Unexpected syntax {stmt.GetType()}");
             }
         }
 
-        private BoundStatement BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
+        private BoundStructDeclaration BindStructDeclaration(StructDeclarationSyntax syntax)
+        {
+            var symbol = new TypeSymbol(syntax.IdentifierToken.Text, typeof(object));
+            DeclareSymbol(symbol, syntax.IdentifierToken);
+            return new BoundStructDeclaration(symbol);
+        }
+
+        private BoundFunctionDeclaration BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
         {
             var function = BindPrototype(syntax.Prototype);
             if (function == null)
-                return new BoundExpressionStatement(new BoundLiteralExpression(0));
+                return null;// new BoundExpressionStatement(new BoundLiteralExpression(0));
 
             DeclareSymbol(function, syntax.Prototype.IdentifierToken);
 
@@ -155,11 +187,15 @@ namespace Repl.CodeAnalysis.Binding
         private TypeSymbol BindType(TypeSyntax syntax)
         {
             var typeIdentifierToken = syntax.TypeOrIdentifierToken;
-            var type = GetSymbol<TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int;
-            return type;
+            var type = GetSymbol<AliasSymbol, TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int;
+
+            if (type is AliasSymbol a)
+                type = a.Type;
+
+            return (TypeSymbol)type;
         }
 
-        private BoundStatement BindExternDeclaration(ExternDeclarationSyntax syntax)
+        private BoundExternDeclaration BindExternDeclaration(ExternDeclarationSyntax syntax)
         {
             var function = BindPrototype(syntax.Prototype);
             DeclareSymbol(function, syntax.Prototype.IdentifierToken);
@@ -249,9 +285,9 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundVariableDeclaration(variable, initializer);
         }
 
-        private void DeclareSymbol(Symbol variable, Token identifierToken)
+        private void DeclareSymbol(Symbol symbol, Token identifierToken)
         {
-            if (!_scope.TryDeclare(variable))
+            if (!_scope.TryDeclare(symbol))
             {
                 Diagnostics.ReportSymbolAlreadyDeclared(identifierToken.Span, identifierToken.Text);
             }
@@ -261,24 +297,27 @@ namespace Repl.CodeAnalysis.Binding
         {
             _scope = new BoundScope(_scope);
 
-            var statements = BindStatements(syntax.Statements);
-
-            _scope = _scope.Parent;
-
-            return new BoundBlockStatement(statements);
-        }
-
-        private ImmutableArray<BoundStatement> BindStatements(ImmutableArray<StatementSyntax> syntaxStatements)
-        {
             var statements = ImmutableArray.CreateBuilder<BoundStatement>();
-
-            foreach (var statementSyntax in syntaxStatements)
+            foreach (var statementSyntax in syntax.Statements)
             {
                 var statement = BindStatement(statementSyntax);
                 statements.Add(statement);
             }
 
-            return statements.ToImmutable();
+            _scope = _scope.Parent;
+
+            return new BoundBlockStatement(statements.ToImmutable());
+        }
+
+        private ImmutableArray<BoundNode> BindNodes(ImmutableArray<SyntaxNode> syntaxNodes)
+        {
+            var nodes = ImmutableArray.CreateBuilder<BoundNode>();
+            foreach (var syntaxNode in syntaxNodes)
+            {
+                var node = BindNode(syntaxNode);
+                nodes.Add(node);
+            }
+            return nodes.ToImmutable();
         }
 
         private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
@@ -340,9 +379,18 @@ namespace Repl.CodeAnalysis.Binding
                     return BindParenthesizedExpression(p);
                 case InvokeExpressionSyntax i:
                     return BindInvokeExpression(i);
+                case NewExpressionSyntax n:
+                    return BindNewExpression(n);
                 default:
                     throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
+        }
+
+        private BoundExpression BindNewExpression(NewExpressionSyntax syntax)
+        {
+            var identifierToken = syntax.TypeName.IdentifierToken;
+            var typeSymbol = GetSymbol<TypeSymbol>(identifierToken);
+            return new BoundNewExpression(typeSymbol);
         }
 
         private BoundExpression BindInvokeExpression(InvokeExpressionSyntax syntax)
@@ -386,6 +434,18 @@ namespace Repl.CodeAnalysis.Binding
 
         private T GetSymbol<T>(Token identifierToken) where T : Symbol
         {
+            return (T)GetSymbol(new[] { typeof(T) }, identifierToken);
+        }
+
+        private Symbol GetSymbol<T1, T2>(Token identifierToken)
+            where T1 : Symbol
+            where T2 : Symbol
+        {
+            return GetSymbol(new[] { typeof(T1), typeof(T2) }, identifierToken);
+        }
+
+        private Symbol GetSymbol(Type[] allowedTypes, Token identifierToken)
+        {
             var name = identifierToken.Text;
             if (string.IsNullOrEmpty(name))
             {
@@ -399,13 +459,14 @@ namespace Repl.CodeAnalysis.Binding
                 return null;
             }
 
-            if (!(symbol is T s))
+            var type = symbol.GetType();
+            if (!allowedTypes.Any(a => a.IsAssignableFrom(type)))
             {
-                Diagnostics.ReportUnexpectedSymbol(identifierToken.Span, symbol.GetType().Name, typeof(T).Name);
+                Diagnostics.ReportUnexpectedSymbol(identifierToken.Span, symbol.GetType().Name, allowedTypes.Select(t => t.Name).ToArray());
                 return null;
             }
 
-            return s;
+            return symbol;
         }
 
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
@@ -415,6 +476,7 @@ namespace Repl.CodeAnalysis.Binding
             {
                 case VariableSymbol v: return new BoundVariableExpression(v);
                 case ParameterSymbol p: return new BoundParameterExpression(p);
+                case TypeSymbol t: return new BoundTypeExpression(t);
                 default:
                     Diagnostics.ReportNotSupported(syntax.IdentifierToken.Span);
                     return new BoundLiteralExpression(0);

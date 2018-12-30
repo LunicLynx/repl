@@ -5,6 +5,18 @@ namespace Repl.CodeAnalysis.Binding
 {
     public abstract class BoundTreeRewriter
     {
+        public virtual BoundNode RewriteNode(BoundNode node)
+        {
+            switch (node)
+            {
+                case BoundStatement s: return RewriteStatement(s);
+                case BoundExternDeclaration e: return RewriteExternDeclaration(e);
+                case BoundFunctionDeclaration f: return RewriteFunctionDeclaration(f);
+                case BoundStructDeclaration s: return RewriteStructDeclaration(s);
+                default: throw new Exception($"Unexpected node '{node.GetType().Name}'");
+            }
+        }
+
         public virtual BoundStatement RewriteStatement(BoundStatement statement)
         {
             switch (statement)
@@ -21,13 +33,16 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundGotoStatement g: return RewriteGotoStatement(g);
                 case BoundConditionalGotoStatement c: return RewriteConditionalGotoStatement(c);
                 case BoundExpressionStatement e: return RewriteExpressionStatement(e);
-                case BoundExternDeclaration e: return RewriteExternDeclaration(e);
-                case BoundFunctionDeclaration f: return RewriteFunctionDeclaration(f);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
         }
 
-        private BoundStatement RewriteFunctionDeclaration(BoundFunctionDeclaration node)
+        protected virtual BoundStructDeclaration RewriteStructDeclaration(BoundStructDeclaration node)
+        {
+            return node;
+        }
+
+        protected virtual BoundFunctionDeclaration RewriteFunctionDeclaration(BoundFunctionDeclaration node)
         {
             var body = RewriteBlockStatement(node.Body);
             if (body == node.Body)
@@ -35,12 +50,12 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundFunctionDeclaration(node.Function, body);
         }
 
-        private BoundStatement RewriteExternDeclaration(BoundExternDeclaration node)
+        protected virtual BoundExternDeclaration RewriteExternDeclaration(BoundExternDeclaration node)
         {
             return node;
         }
 
-        private BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
+        protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
         {
             var condition = RewriteExpression(node.Condition);
             if (condition == node.Condition)
@@ -48,12 +63,12 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfTrue);
         }
 
-        private BoundStatement RewriteGotoStatement(BoundGotoStatement node)
+        protected virtual BoundStatement RewriteGotoStatement(BoundGotoStatement node)
         {
             return node;
         }
 
-        private BoundStatement RewriteLabelStatement(BoundLabelStatement node)
+        protected virtual BoundStatement RewriteLabelStatement(BoundLabelStatement node)
         {
             return node;
         }
@@ -148,8 +163,20 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundCallExpression i: return RewriteCallExpression(i);
                 case BoundParameterExpression p: return RewriteParameterExpression(p);
                 case BoundCastExpression c: return RewriteCastExpression(c);
+                case BoundTypeExpression t: return RewriteTypeExpression(t);
+                case BoundNewExpression n: return RewriteNewExpression(n);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundExpression RewriteNewExpression(BoundNewExpression node)
+        {
+            return node;
+        }
+
+        private BoundExpression RewriteTypeExpression(BoundTypeExpression node)
+        {
+            return node;
         }
 
         private BoundExpression RewriteCastExpression(BoundCastExpression node)

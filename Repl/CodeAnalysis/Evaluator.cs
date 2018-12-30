@@ -8,12 +8,12 @@ namespace Repl.CodeAnalysis
     public class Evaluator
     {
         private object _lastValue;
-        private readonly BoundBlockStatement _root;
+        private readonly BoundUnit _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
         private readonly Dictionary<FunctionSymbol, Delegate> _functions;
         private Dictionary<ParameterSymbol, object> _arguments = new Dictionary<ParameterSymbol, object>();
 
-        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables,
+        public Evaluator(BoundUnit root, Dictionary<VariableSymbol, object> variables,
             Dictionary<FunctionSymbol, Delegate> functions)
         {
             _root = root;
@@ -21,22 +21,49 @@ namespace Repl.CodeAnalysis
             _functions = functions;
         }
 
-        public object Evaluate(Dictionary<ParameterSymbol, object> arguments)
+        public object Evaluate()
+        {
+            foreach (var node in _root.GetChildren())
+            {
+                EvaluateNode(node);
+            }
+
+            return _lastValue;
+        }
+
+        public void EvaluateNode(BoundNode node)
+        {
+            switch (node)
+            {
+                case BoundBlockStatement b:
+                    EvaluateBlock(b, new Dictionary<ParameterSymbol, object>());
+                    break;
+                case BoundFunctionDeclaration f:
+                    EvaluateFunctionDeclaration(f);
+                    break;
+                case BoundExternDeclaration e:
+                    EvaluateExternDeclaration(e);
+                    break;
+            }
+        }
+
+        public object EvaluateBlock(BoundBlockStatement block, Dictionary<ParameterSymbol, object> arguments)
         {
             _arguments = arguments;
 
             var labelToIndex = new Dictionary<LabelSymbol, int>();
 
-            for (var i = 0; i < _root.Statements.Length; i++)
+            var statements = block.Statements;
+            for (var i = 0; i < statements.Length; i++)
             {
-                if (_root.Statements[i] is BoundLabelStatement l)
+                if (statements[i] is BoundLabelStatement l)
                     labelToIndex.Add(l.Label, i + 1);
             }
 
             var index = 0;
-            while (index < _root.Statements.Length)
+            while (index < statements.Length)
             {
-                var s = _root.Statements[index];
+                var s = statements[index];
                 switch (s)
                 {
                     case BoundVariableDeclaration v:
@@ -57,14 +84,7 @@ namespace Repl.CodeAnalysis
                         else
                             index++;
                         break;
-                    case BoundFunctionDeclaration f:
-                        EvaluateFunctionDeclaration(f);
-                        index++;
-                        break;
-                    case BoundExternDeclaration e:
-                        EvaluateExternDeclaration(e);
-                        index++;
-                        break;
+
                     case BoundLabelStatement _:
                         index++;
                         break;
@@ -89,7 +109,7 @@ namespace Repl.CodeAnalysis
         private void EvaluateFunctionDeclaration(BoundFunctionDeclaration node)
         {
             var body = node.Body;
-            var evaluator = new Evaluator(body, _variables, _functions);
+            //var evaluator = new Evaluator(body, _variables, _functions);
 
             var value = node.Body;
             _functions[node.Function] = (Func<object[], object>)(args =>
@@ -101,7 +121,7 @@ namespace Repl.CodeAnalysis
                    arguments[parameter] = args[i];
                }
 
-               return evaluator.Evaluate(arguments);
+               return EvaluateBlock(body, arguments);
            });
             _lastValue = value;
         }

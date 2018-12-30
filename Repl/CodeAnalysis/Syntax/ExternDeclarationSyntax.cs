@@ -2,7 +2,7 @@
 
 namespace Repl.CodeAnalysis.Syntax
 {
-    public class ExternDeclarationSyntax : StatementSyntax
+    public class ExternDeclarationSyntax : SyntaxNode
     {
         public Token ExternKeyword { get; }
         public PrototypeSyntax Prototype { get; }

@@ -2,7 +2,7 @@
 
 namespace Repl.CodeAnalysis.Binding
 {
-    public class BoundFunctionDeclaration : BoundStatement
+    public class BoundFunctionDeclaration : BoundNode
     {
         public FunctionSymbol Function { get; }
         public BoundBlockStatement Body { get; }

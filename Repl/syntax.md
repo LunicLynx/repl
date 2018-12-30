@@ -1,4 +1,11 @@
 ﻿
+# semicolons
+yes
+
+# types
+after identifiers
+optional except in prototypes
+
 # have loop state variable keywords
 first : bool -> true in first iteration
 last : bool -> true in last iteration # Possible for iterators ?

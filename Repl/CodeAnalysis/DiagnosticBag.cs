@@ -92,9 +92,9 @@ namespace Repl.CodeAnalysis
             Report(span, message);
         }
 
-        public void ReportUnexpectedSymbol(TextSpan span, string actual, string expected)
+        public void ReportUnexpectedSymbol(TextSpan span, string actual, params string[] expected)
         {
-            var message = $"Unexpected symbol '{actual}', expected '{expected}'.";
+            var message = $"Unexpected symbol '{actual}', expected '{string.Join("', '", expected)}'.";
             Report(span, message);
         }
 

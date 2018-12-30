@@ -7,14 +7,14 @@ namespace Repl.CodeAnalysis.Binding
         public BoundGlobalScope Previous { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public ImmutableArray<Symbol> Symbols { get; }
-        public ImmutableArray<BoundStatement> Statements { get; }
+        public BoundUnit Unit { get; }
 
-        public BoundGlobalScope(BoundGlobalScope previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<Symbol> symbols, ImmutableArray<BoundStatement> statements)
+        public BoundGlobalScope(BoundGlobalScope previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<Symbol> symbols, BoundUnit unit)
         {
             Previous = previous;
             Diagnostics = diagnostics;
             Symbols = symbols;
-            Statements = statements;
+            Unit = unit;
         }
     }
 }
