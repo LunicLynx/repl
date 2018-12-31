@@ -7,6 +7,7 @@
         Bad,
         WhiteSpace,
         SingleLineComment,
+        MultiLineComment,
 
         // Operators
         Plus,
@@ -30,6 +31,7 @@
         Percent,
 
         // Structure
+        Colon,
         Dot,
         Comma,
         OpenParenthesis,
@@ -79,5 +81,6 @@
         Identifier,
         NewKeyword,
         AliasKeyword,
+        FuncKeyword
     }
 }

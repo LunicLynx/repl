@@ -82,6 +82,6 @@ Example()
 }
 
 // function declaration
-Example()
+func Example()
 {
 }

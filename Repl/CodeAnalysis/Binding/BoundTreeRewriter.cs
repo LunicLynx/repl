@@ -13,8 +13,14 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundExternDeclaration e: return RewriteExternDeclaration(e);
                 case BoundFunctionDeclaration f: return RewriteFunctionDeclaration(f);
                 case BoundStructDeclaration s: return RewriteStructDeclaration(s);
+                case BoundAliasDeclaration a: return RewriteAliasDeclaration(a);
                 default: throw new Exception($"Unexpected node '{node.GetType().Name}'");
             }
+        }
+
+        private BoundNode RewriteAliasDeclaration(BoundAliasDeclaration node)
+        {
+            return node;
         }
 
         public virtual BoundStatement RewriteStatement(BoundStatement statement)

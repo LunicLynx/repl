@@ -162,7 +162,8 @@ namespace Repl.CodeAnalysis.Binding
         private FunctionSymbol BindPrototype(PrototypeSyntax syntax)
         {
             var typeSyntax = syntax.ReturnType;
-            var type = BindType(typeSyntax);
+
+            var type = typeSyntax != null ? BindTypeAnnotation(typeSyntax) : TypeSymbol.Void;
 
             var identifierToken = syntax.IdentifierToken;
             var name = identifierToken.Text;
@@ -176,11 +177,16 @@ namespace Repl.CodeAnalysis.Binding
 
         private ParameterSymbol BindParameter(ParameterSyntax syntax, int index)
         {
-            var type = BindType(syntax.Type);
+            var type = BindTypeAnnotation(syntax.Type);
             var name = syntax.IdentifierToken.Text;
             var parameter = new ParameterSymbol(type, name, index);
 
             return parameter;
+        }
+
+        private TypeSymbol BindTypeAnnotation(TypeAnnotationSyntax syntax)
+        {
+            return BindType(syntax.Type);
         }
 
         private TypeSymbol BindType(TypeSyntax syntax)
@@ -340,11 +346,17 @@ namespace Repl.CodeAnalysis.Binding
             if (from == to) return true;
             if (to.IsAssignableFrom(from)) return true;
 
-            var toProperties = GetIntegerTypeProperties(to);
-            var fromProperties = GetIntegerTypeProperties(from);
-
-            return toProperties.signed == fromProperties.signed && toProperties.size >= fromProperties.size
-                   || toProperties.signed && toProperties.size > fromProperties.size;
+            try
+            {
+                var toProperties = GetIntegerTypeProperties(to);
+                var fromProperties = GetIntegerTypeProperties(from);
+                return toProperties.signed == fromProperties.signed && toProperties.size >= fromProperties.size
+                       || toProperties.signed && toProperties.size > fromProperties.size;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private (bool signed, int size) GetIntegerTypeProperties(Type type)

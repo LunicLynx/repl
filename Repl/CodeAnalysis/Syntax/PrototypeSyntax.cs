@@ -5,24 +5,23 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class PrototypeSyntax : SyntaxNode
     {
-        public TypeSyntax ReturnType { get; }
         public Token IdentifierToken { get; }
         public Token OpenParenthesisToken { get; }
         public ImmutableArray<SyntaxNode> Parameters { get; }
         public Token CloseParenthesisToken { get; }
+        public TypeAnnotationSyntax ReturnType { get; }
 
-        public PrototypeSyntax(TypeSyntax returnType, Token identifierToken, Token openParenthesisToken, ImmutableArray<SyntaxNode> parameters, Token closeParenthesisToken)
+        public PrototypeSyntax(Token identifierToken, Token openParenthesisToken, ImmutableArray<SyntaxNode> parameters, Token closeParenthesisToken, TypeAnnotationSyntax returnType)
         {
-            ReturnType = returnType;
             IdentifierToken = identifierToken;
             OpenParenthesisToken = openParenthesisToken;
             Parameters = parameters;
             CloseParenthesisToken = closeParenthesisToken;
+            ReturnType = returnType;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return ReturnType;
             yield return IdentifierToken;
             yield return OpenParenthesisToken;
             foreach (var parameter in Parameters)
@@ -30,6 +29,10 @@ namespace Repl.CodeAnalysis.Syntax
                 yield return parameter;
             }
             yield return CloseParenthesisToken;
+            if (ReturnType != null)
+            {
+                yield return ReturnType;
+            }
         }
     }
 }

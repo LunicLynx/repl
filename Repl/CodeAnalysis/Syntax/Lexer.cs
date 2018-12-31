@@ -23,6 +23,8 @@ namespace Repl.CodeAnalysis.Syntax
             {"struct", TokenKind.StructKeyword },
             {"new", TokenKind.NewKeyword },
             {"alias", TokenKind.AliasKeyword },
+            {"func", TokenKind.FuncKeyword },
+
             {"void", TokenKind.VoidKeyword},
             {"bool", TokenKind.BoolKeyword},
             {"i8", TokenKind.I8Keyword },
@@ -38,8 +40,6 @@ namespace Repl.CodeAnalysis.Syntax
             {"int", TokenKind.IntKeyword},
             {"uint", TokenKind.UintKeyword},
             {"string", TokenKind.StringKeyword },
-            {"[", TokenKind.OpenBracket },
-            {"]", TokenKind.CloseBracket },
         };
 
         public Lexer(SourceText text) : base(text) { }
@@ -61,9 +61,28 @@ namespace Repl.CodeAnalysis.Syntax
             }
             else if (c == '/' && Current == '/')
             {
+                Next();
                 while (Current != '\r' && Current != '\n' && Current != '\0')
                     Next();
+
+                // Windows uses \r\n  we want to consume the \n as well 
+                if (Current == '\n')
+                    Next();
                 kind = TokenKind.SingleLineComment;
+            }
+            else if (c == '/' && Current == '*')
+            {
+                Next();
+                while (Current != '\0')
+                {
+                    Next();
+                    if (Current != '*') continue;
+                    Next();
+                    if (Current != '/') continue;
+                    Next();
+                    break;
+                }
+                kind = TokenKind.MultiLineComment;
             }
             else if (char.IsDigit(c))
             {
@@ -125,6 +144,12 @@ namespace Repl.CodeAnalysis.Syntax
                     case '}':
                         kind = TokenKind.CloseBrace;
                         break;
+                    case '[':
+                        kind = TokenKind.OpenBracket;
+                        break;
+                    case ']':
+                        kind = TokenKind.CloseBracket;
+                        break;
                     case '~':
                         kind = TokenKind.Tilde;
                         break;
@@ -136,6 +161,9 @@ namespace Repl.CodeAnalysis.Syntax
                         break;
                     case ',':
                         kind = TokenKind.Comma;
+                        break;
+                    case ':':
+                        kind = TokenKind.Colon;
                         break;
                     case '=' when Current == '=':
                         Next();

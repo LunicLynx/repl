@@ -16,7 +16,7 @@ propertyExprBody: exprBody;
 getClause: 'get' body;
 setClause: 'set' body;
 
-method: function;
+method: Identifier parameterList body;
 
 body: blockBody | exprBody;
 
@@ -47,7 +47,7 @@ exprStmt: expr;
 
 exprBody: '=>' expr;
 
-function: Identifier parameterList body;
+function: 'func' Identifier parameterList body;
 
 parameterList: '(' parameter (',' parameter)* ')';
 
@@ -140,6 +140,7 @@ ForKeyword: 'for';
 ToKeyword: 'to';
 BreakKeyword: 'break';
 ContinueKeyword: 'continue';
+FuncKeyword: 'func';
 
 I8Keyword: 'i8';
 I16Keyword: 'i16';

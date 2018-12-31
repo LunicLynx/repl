@@ -19,7 +19,10 @@ namespace Repl.CodeAnalysis.Syntax
             {
                 token = lexer.Lex();
 
-                if (token.Kind != TokenKind.WhiteSpace && token.Kind != TokenKind.SingleLineComment && token.Kind != TokenKind.Bad)
+                if (token.Kind != TokenKind.WhiteSpace &&
+                    token.Kind != TokenKind.SingleLineComment &&
+                    token.Kind != TokenKind.MultiLineComment &&
+                    token.Kind != TokenKind.Bad)
                     tokens.Add(token);
 
             } while (token.Kind != TokenKind.EndOfFile);
@@ -48,15 +51,10 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.StructKeyword:
                     node = ParseStructDeclaration();
                     return true;
-                case TokenKind.Identifier when Peek(1).Kind == TokenKind.Identifier:
+                case TokenKind.FuncKeyword:
                     node = ParseFunctionDeclaration();
                     return true;
                 default:
-                    if (IsTypeToken(Current.Kind))
-                    {
-                        node = ParseFunctionDeclaration();
-                        return true;
-                    }
                     return false;
             }
         }
@@ -65,9 +63,10 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var aliasKeyword = MatchToken(TokenKind.AliasKeyword);
             var identifierToken = MatchToken(TokenKind.Identifier);
+            var equalsToken = MatchToken(TokenKind.Equals);
             var type = ParseType();
 
-            return new AliasDeclarationSyntax(aliasKeyword, identifierToken, type);
+            return new AliasDeclarationSyntax(aliasKeyword, identifierToken, equalsToken, type);
         }
 
         public StatementSyntax ParseStatement()
@@ -136,14 +135,14 @@ namespace Repl.CodeAnalysis.Syntax
 
         private SyntaxNode ParseFunctionDeclaration()
         {
+            var funcKeyword = MatchToken(TokenKind.FuncKeyword);
             var prototype = ParsePrototype();
             var body = ParseBlockStatement();
-            return new FunctionDeclarationSyntax(prototype, body);
+            return new FunctionDeclarationSyntax(funcKeyword, prototype, body);
         }
 
         private PrototypeSyntax ParsePrototype()
         {
-            var returnType = ParseType();
             var identifierToken = MatchToken(TokenKind.Identifier);
             var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
 
@@ -165,23 +164,34 @@ namespace Repl.CodeAnalysis.Syntax
             }
 
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
-            return new PrototypeSyntax(returnType, identifierToken, openParenthesisToken, parameters.ToImmutable(), closeParenthesisToken);
+
+            TypeAnnotationSyntax returnTypeAnnotation = null;
+            if (Current.Kind == TokenKind.Colon)
+            {
+                returnTypeAnnotation = ParseTypeAnnotation();
+            }
+
+            return new PrototypeSyntax(identifierToken, openParenthesisToken, parameters.ToImmutable(), closeParenthesisToken, returnTypeAnnotation);
+        }
+
+        private TypeAnnotationSyntax ParseTypeAnnotation()
+        {
+            var colonToken = MatchToken(TokenKind.Colon);
+            var type = ParseType();
+            return new TypeAnnotationSyntax(colonToken, type);
         }
 
         private TypeSyntax ParseType()
         {
             var typeOrIdentifierToken = MatchTypeOrIdentifierToken();
-
-            var pointer = false;
-
             return new TypeSyntax(typeOrIdentifierToken);
         }
 
         private ParameterSyntax ParseParameter()
         {
-            var type = ParseType();
             var identifierToken = MatchToken(TokenKind.Identifier);
-            return new ParameterSyntax(type, identifierToken);
+            var type = ParseTypeAnnotation();
+            return new ParameterSyntax(identifierToken, type);
         }
 
         private Token MatchTypeOrIdentifierToken()

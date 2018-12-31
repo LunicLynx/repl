@@ -4,19 +4,19 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class ParameterSyntax : SyntaxNode
     {
-        public TypeSyntax Type { get; }
         public Token IdentifierToken { get; }
+        public TypeAnnotationSyntax Type { get; }
 
-        public ParameterSyntax(TypeSyntax type, Token identifierToken)
+        public ParameterSyntax(Token identifierToken, TypeAnnotationSyntax type)
         {
-            Type = type;
             IdentifierToken = identifierToken;
+            Type = type;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Type;
             yield return IdentifierToken;
+            yield return Type;
         }
     }
 }
