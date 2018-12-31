@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Repl.CodeAnalysis;
 using Repl.CodeAnalysis.CodeGen;
@@ -11,8 +12,8 @@ namespace Repl
     public class EagleRepl : Repl
     {
         private Compilation _previous;
-        private bool _showTree = true;
-        private bool _showProgram = false;
+        private bool _showTree = false;
+        private bool _showProgram = true;
         private bool _compile = false;
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
 
@@ -20,6 +21,14 @@ namespace Repl
             new Dictionary<FunctionSymbol, Delegate>();
 
         private readonly Compiler _compiler = new Compiler();
+
+        public override void Run()
+        {
+            var path = "demo.es";
+            if (File.Exists(path))
+                Load(path);
+            base.Run();
+        }
 
         protected override void RenderLine(string line)
         {
@@ -50,9 +59,6 @@ namespace Repl
                 case "#showProgram":
                     _showProgram = !_showProgram;
                     Console.WriteLine(_showProgram ? "Showing bound trees." : "Not showing bound trees.");
-                    break;
-                case "#cls":
-                    Console.Clear();
                     break;
                 case "#reset":
                     _previous = null;

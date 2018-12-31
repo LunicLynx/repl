@@ -38,6 +38,8 @@ namespace Repl.CodeAnalysis.Syntax
             {"int", TokenKind.IntKeyword},
             {"uint", TokenKind.UintKeyword},
             {"string", TokenKind.StringKeyword },
+            {"[", TokenKind.OpenBracket },
+            {"]", TokenKind.CloseBracket },
         };
 
         public Lexer(SourceText text) : base(text) { }

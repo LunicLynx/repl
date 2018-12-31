@@ -25,7 +25,7 @@ struct Person {
 //	}
 }
 
-//let p1 = Person
+let p1 = Person
 //let p2 = new Person
 
 //let p3: Person# = Person
@@ -42,4 +42,4 @@ struct Person {
 //p4.Tell()
 
 let handle = GetStdHandle(-11);
-WriteFile(handle, "Hello Alma", 10, 0, 0)
+WriteFile(handle, "Hello Alma\n", 11, 0, 0)

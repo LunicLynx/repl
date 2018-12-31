@@ -13,11 +13,8 @@ namespace Repl
         private int _submissionHistoryIndex;
         private bool _done;
 
-        public void Run()
+        public virtual void Run()
         {
-            if (File.Exists("demo.e"))
-                EvaluateMetaCommand("#load demo.e");
-
             while (true)
             {
                 var text = EditSubmission();
@@ -351,6 +348,13 @@ namespace Repl
 
         protected virtual void EvaluateMetaCommand(string input)
         {
+            switch (input)
+            {
+                case "#cls":
+                    Console.Clear();
+                    return;
+            }
+
             if (input.StartsWith("#load"))
             {
                 HandleLoad(input);
@@ -365,6 +369,11 @@ namespace Repl
         {
             var match = Regex.Match(input, "^#load (?<path>.*)$");
             var path = match.Groups["path"].Value;
+            Load(path);
+        }
+
+        protected void Load(string path)
+        {
             var content = File.ReadAllText(path);
             EvaluateSubmission(content);
         }

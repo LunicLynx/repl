@@ -393,6 +393,8 @@ namespace Repl.CodeAnalysis.Syntax
                 left = ParsePrimaryExpression();
             }
 
+
+
             while (true)
             {
                 var precedence = SyntaxFacts.GetBinaryOperatorPrecedence(Current.Kind);
@@ -409,6 +411,37 @@ namespace Repl.CodeAnalysis.Syntax
 
         public ExpressionSyntax ParsePrimaryExpression()
         {
+            var result = ParsePrimaryExpressionStart();
+
+            var done = false;
+            while (!done)
+            {
+                switch (Current.Kind)
+                {
+                    case TokenKind.OpenParenthesis:
+                        result = ParseInvokeExpression(result);
+                        break;
+                    case TokenKind.Dot:
+                        result = ParseMemberAccessExpression(result);
+                        break;
+                    default:
+                        done = true;
+                        break;
+                }
+            }
+
+            return result;
+        }
+
+        private ExpressionSyntax ParseMemberAccessExpression(ExpressionSyntax target)
+        {
+            var dotToken = MatchToken(TokenKind.Dot);
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            return new MemberAccessExpressionSyntax(target, dotToken, identifierToken);
+        }
+
+        public ExpressionSyntax ParsePrimaryExpressionStart()
+        {
             switch (Current.Kind)
             {
                 case TokenKind.OpenParenthesis:
@@ -422,12 +455,13 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseStringLiteralExpression();
                 case TokenKind.NewKeyword:
                     return ParseNewExpression();
-                case TokenKind.Identifier when Peek(1).Kind == TokenKind.OpenParenthesis:
-                    return ParseInvokeExpression();
+
                 case TokenKind.Identifier:
                 default:
                     return ParseNameExpression();
             }
+
+
         }
 
         private ExpressionSyntax ParseNewExpression()
@@ -443,9 +477,8 @@ namespace Repl.CodeAnalysis.Syntax
             return new LiteralExpressionSyntax(token);
         }
 
-        private ExpressionSyntax ParseInvokeExpression()
+        private ExpressionSyntax ParseInvokeExpression(ExpressionSyntax target)
         {
-            var target = ParseNameExpression();
             var openParenthesis = MatchToken(TokenKind.OpenParenthesis);
 
             var arguments = ImmutableArray.CreateBuilder<SyntaxNode>();

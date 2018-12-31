@@ -30,11 +30,14 @@
         Percent,
 
         // Structure
+        Dot,
         Comma,
         OpenParenthesis,
         CloseParenthesis,
         OpenBrace,
         CloseBrace,
+        OpenBracket,
+        CloseBracket,
 
         // Keywords
         LetKeyword,
@@ -75,6 +78,6 @@
 
         Identifier,
         NewKeyword,
-        AliasKeyword
+        AliasKeyword,
     }
 }

@@ -123,7 +123,6 @@ namespace Repl.CodeAnalysis.Binding
                     return BindForStatement(f);
                 case ExpressionStatementSyntax e:
                     return BindExpressionStatement(e);
-
                 default:
                     throw new Exception($"Unexpected syntax {stmt.GetType()}");
             }
@@ -532,7 +531,10 @@ namespace Repl.CodeAnalysis.Binding
                     value = number;
                     break;
                 case TokenKind.String:
-                    value = token.Text.Substring(1, token.Text.Length - 2);
+                    value = token.Text.Substring(1, token.Text.Length - 2)
+                        .Replace(@"\t", "\t")
+                        .Replace(@"\r", "\r")
+                        .Replace(@"\n", "\n");
                     break;
             }
 
