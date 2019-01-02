@@ -15,6 +15,9 @@ namespace Repl
         private bool _showTree = false;
         private bool _showProgram = true;
         private bool _compile = false;
+
+        private readonly Dictionary<ConstSymbol, object> _constants = new Dictionary<ConstSymbol, object>();
+
         private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
 
         private readonly Dictionary<FunctionSymbol, Delegate> _functions =
@@ -106,7 +109,7 @@ namespace Repl
                 printer.Print(compilation);
             }
 
-            var result = compilation.Evaluate(_variables, _functions);
+            var result = compilation.Evaluate(_constants, _variables, _functions);
 
             if (!result.Diagnostics.Any())
             {

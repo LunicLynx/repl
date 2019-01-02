@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Repl.CodeAnalysis
+﻿namespace Repl.CodeAnalysis
 {
     public class MemberSymbol : Symbol
     {
@@ -11,6 +9,11 @@ namespace Repl.CodeAnalysis
         {
             Name = name;
             Type = type;
+        }
+
+        public override string ToString()
+        {
+            return $"{Name}";
         }
     }
 }

@@ -2,6 +2,31 @@
 {
     class SyntaxFacts
     {
+        public static bool IsTypeKeyword(TokenKind kind)
+        {
+            switch (kind)
+            {
+                case TokenKind.VoidKeyword:
+                case TokenKind.BoolKeyword:
+                case TokenKind.I8Keyword:
+                case TokenKind.I16Keyword:
+                case TokenKind.I32Keyword:
+                case TokenKind.I64Keyword:
+                case TokenKind.I128Keyword:
+                case TokenKind.U8Keyword:
+                case TokenKind.U16Keyword:
+                case TokenKind.U32Keyword:
+                case TokenKind.U64Keyword:
+                case TokenKind.U128Keyword:
+                case TokenKind.IntKeyword:
+                case TokenKind.UintKeyword:
+                case TokenKind.StringKeyword:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static int GetUnaryOperatorPrecedence(TokenKind kind)
         {
             switch (kind)

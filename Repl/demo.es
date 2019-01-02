@@ -7,11 +7,12 @@ alias LPDWORD = i64
 alias LPCVOID = /*const*/ string
 alias BOOL = int
 
-const STD_OUTPUT_HANDLE: DWORD = (DWORD)-11
+const STD_OUTPUT_HANDLE: DWORD = (DWORD)(-11)
 
 // should also work
 //const STD_OUTPUT_HANDLE2: DWORD = (DWORD)11
 //const STD_OUTPUT_HANDLE3 = (int)11
+//const STD_OUTPUT_HANDLE4 = 11
 
 extern GetStdHandle(nStdHandle: DWORD): HANDLE
 //extern i64 GetStdHandle(i32 nStdHandle)
@@ -28,7 +29,7 @@ struct Person {
     //i32 Age
 
 //	Tell() {
-//		Print("");
+//		Print("")
 //	}
 }
 
@@ -48,5 +49,7 @@ p2
 //p3.Tell()
 //p4.Tell()
 
-let handle = GetStdHandle(-11);
+let handle = GetStdHandle(-11)
 WriteFile(handle, "Hello Alma\n", 11, 0, 0)
+
+Print("Hello World!\n")

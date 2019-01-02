@@ -96,7 +96,8 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundNode BindConstDeclaration(ConstDeclarationSyntax syntax)
         {
-            if (!TryBindConstExpression(syntax.Initializer, out var type, out var value))
+            var initializer = BindExpression(syntax.Initializer);
+            if (!TryEvalConstExpression(initializer, out var type, out var value))
             {
                 Diagnostics.ReportExpressionIsNotCompileTimeConstant(syntax.Initializer.Span);
                 type = TypeSymbol.I32;
@@ -114,21 +115,47 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundConstDeclaration(constSymbol, value);
         }
 
-        private bool TryBindConstExpression(ExpressionSyntax expression, out TypeSymbol type, out object value)
+        private bool TryEvalConstExpression(BoundExpression expression, out TypeSymbol type, out object value)
         {
             type = null;
             value = null;
-            var boundExpression = BindExpression(expression);
-            while (boundExpression is BoundCastExpression c)
-                boundExpression = c.Expression;
-
-            if (boundExpression is BoundLiteralExpression l)
+            switch (expression)
             {
-                value = l.Value;
-                type = l.Type;
-                return true;
+                case BoundCastExpression c:
+                    if (!TryEvalConstExpression(c.Expression, out var t1, out var v1)) return false;
+                    type = c.Type;
+                    value = v1;
+                    return true;
+                case BoundUnaryExpression u:
+                    if (!TryEvalConstExpression(u.Operand, out var t2, out var v2)) return false;
+                    type = t2;
+                    switch (u.Operator.Kind)
+                    {
+                        case BoundUnaryOperatorKind.Identity:
+                            value = +(int)v2;
+                            break;
+                        case BoundUnaryOperatorKind.Negation:
+                            value = -(int)v2;
+                            break;
+                        case BoundUnaryOperatorKind.LogicalNot:
+                            value = !(bool)v2;
+                            break;
+                        case BoundUnaryOperatorKind.BitwiseComplement:
+                            value = ~(int)v2;
+                            break;
+                    }
+                    return true;
+                case BoundBinaryExpression b:
+                    if (!TryEvalConstExpression(b.Left, out var lt, out var lv)) return false;
+                    if (!TryEvalConstExpression(b.Right, out var rt, out var rv)) return false;
+                    return true;
+                case BoundLiteralExpression l:
+                    type = l.Type;
+                    value = l.Value;
+                    return true;
+                default:
+                    return false;
             }
-            return false;
         }
 
         private BoundNode BindAliasDeclaration(AliasDeclarationSyntax syntax)
@@ -440,7 +467,7 @@ namespace Repl.CodeAnalysis.Binding
             throw new Exception("Non integer types are not supported");
         }
 
-        private BoundExpression BindExpression(ExpressionSyntax syntax)
+        private BoundExpression BindExpression(ExpressionSyntax syntax, bool allowTypes = true)
         {
             switch (syntax)
             {
@@ -453,18 +480,27 @@ namespace Repl.CodeAnalysis.Binding
                 case AssignmentExpressionSyntax a:
                     return BindAssignmentExpression(a);
                 case NameExpressionSyntax n:
-                    return BindNameExpression(n);
+                    return BindNameExpression(n, allowTypes);
                 case ParenthesizedExpressionSyntax p:
-                    return BindParenthesizedExpression(p);
+                    return BindParenthesizedExpression(p, allowTypes);
                 case InvokeExpressionSyntax i:
                     return BindInvokeExpression(i);
                 case NewExpressionSyntax n:
                     return BindNewExpression(n);
                 case MemberAccessExpressionSyntax m:
                     return BindMemberAccessExpression(m);
+                case CastExpressionSyntax c:
+                    return BindCastExpression(c);
                 default:
                     throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
+        }
+
+        private BoundExpression BindCastExpression(CastExpressionSyntax syntax)
+        {
+            var type = BindType(syntax.Type);
+            var expression = BindExpression(syntax.Expression);
+            return new BoundCastExpression(type, expression);
         }
 
         private BoundExpression BindMemberAccessExpression(MemberAccessExpressionSyntax syntax)
@@ -522,9 +558,9 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundCallExpression(function, builder.ToImmutable());
         }
 
-        private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
+        private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax, bool allowTypes)
         {
-            return BindExpression(syntax.Expression);
+            return BindExpression(syntax.Expression, allowTypes);
         }
 
         private T GetSymbol<T>(Token identifierToken) where T : Symbol
@@ -601,7 +637,7 @@ namespace Repl.CodeAnalysis.Binding
             return symbol;
         }
 
-        private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
+        private BoundExpression BindNameExpression(NameExpressionSyntax syntax, bool allowTypes)
         {
             var symbol = GetSymbol<Symbol>(syntax.IdentifierToken);
 
@@ -612,7 +648,7 @@ namespace Repl.CodeAnalysis.Binding
             {
                 case VariableSymbol v: return new BoundVariableExpression(v);
                 case ParameterSymbol p: return new BoundParameterExpression(p);
-                case TypeSymbol t: return new BoundTypeExpression(t);
+                case TypeSymbol t when allowTypes: return new BoundTypeExpression(t);
                 case ConstSymbol c: return new BoundConstExpression(c);
                 default:
                     Diagnostics.ReportNotSupported(syntax.IdentifierToken.Span);
@@ -700,10 +736,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax)
         {
-            if (TryBindCastExpression(syntax, out var castExpression))
-                return castExpression;
-
-            var left = BindExpression(syntax.Left);
+            var left = BindExpression(syntax.Left, false);
             var right = BindExpression(syntax.Right);
 
             var operatorToken = syntax.OperatorToken;
@@ -716,32 +749,5 @@ namespace Repl.CodeAnalysis.Binding
 
             return new BoundBinaryExpression(left, boundOperator, right);
         }
-
-        private bool TryBindCastExpression(BinaryExpressionSyntax syntax, out BoundCastExpression castExpression)
-        {
-            castExpression = null;
-            var isCastExpression = false;
-            TypeSymbol type = null;
-            if (syntax.Left is ParenthesizedExpressionSyntax p)
-            {
-                if (p.Expression is NameExpressionSyntax n)
-                {
-                    if (TryGetTypeSymbol(n.IdentifierToken, out type))
-                    {
-                        isCastExpression = true;
-                    }
-                }
-            }
-
-            if (isCastExpression)
-            {
-                var expression = BindExpression(syntax.Right);
-                castExpression = new BoundCastExpression(type, expression);
-                return true;
-            }
-            return false;
-        }
-
-
     }
 }

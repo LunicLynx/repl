@@ -35,5 +35,15 @@ namespace Repl.CodeAnalysis.Syntax
             Diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
             return new Token(kind, new TextSpan(0, 0), "");
         }
+
+        protected int GetPosition()
+        {
+            return _position;
+        }
+
+        protected void ResetPosition(int position)
+        {
+            _position = position;
+        }
     }
 }

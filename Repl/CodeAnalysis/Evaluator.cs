@@ -9,14 +9,19 @@ namespace Repl.CodeAnalysis
     {
         private object _lastValue;
         private readonly BoundUnit _root;
+        private readonly Dictionary<ConstSymbol, object> _constants;
         private readonly Dictionary<VariableSymbol, object> _variables;
         private readonly Dictionary<FunctionSymbol, Delegate> _functions;
         private Dictionary<ParameterSymbol, object> _arguments = new Dictionary<ParameterSymbol, object>();
 
-        public Evaluator(BoundUnit root, Dictionary<VariableSymbol, object> variables,
+        public Evaluator(
+            BoundUnit root,
+            Dictionary<ConstSymbol, object> constants,
+            Dictionary<VariableSymbol, object> variables,
             Dictionary<FunctionSymbol, Delegate> functions)
         {
             _root = root;
+            _constants = constants;
             _variables = variables;
             _functions = functions;
         }
@@ -44,7 +49,27 @@ namespace Repl.CodeAnalysis
                 case BoundExternDeclaration e:
                     EvaluateExternDeclaration(e);
                     break;
+                case BoundAliasDeclaration a:
+                    break;
+                case BoundConstDeclaration c:
+                    EvaluateConstDeclaration(c);
+                    break;
+                case BoundStructDeclaration s:
+                    EvaluateStructDeclaration(s);
+                    break;
+                default:
+                    throw new Exception($"Unexpected node {node.GetType()}");
             }
+        }
+
+        private void EvaluateStructDeclaration(BoundStructDeclaration node)
+        {
+
+        }
+
+        private void EvaluateConstDeclaration(BoundConstDeclaration node)
+        {
+            _constants[node.Const] = node.Value;
         }
 
         public object EvaluateBlock(BoundBlockStatement block, Dictionary<ParameterSymbol, object> arguments)
@@ -150,9 +175,30 @@ namespace Repl.CodeAnalysis
                     return EvaluateTypeExpression(t);
                 case BoundNewExpression n:
                     return EvaluateNewExpression(n);
+                case BoundConstExpression c:
+                    return EvaluateConstExpression(c);
+                case BoundMemberAccessExpression m:
+                    return EvaluateMemberAccessExpression(m);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private object EvaluateMemberAccessExpression(BoundMemberAccessExpression node)
+        {
+            if (node.Target.Type == TypeSymbol.String)
+            {
+                var value = (string)EvaluateExpression(node.Target);
+                return typeof(string).GetProperty(node.Member.Name).GetValue(value, null);
+            }
+
+            var target = (IDictionary<string, object>)EvaluateExpression(node.Target);
+            return target[node.Member.Name];
+        }
+
+        private object EvaluateConstExpression(BoundConstExpression node)
+        {
+            return _constants[node.Const];
         }
 
         private object EvaluateNewExpression(BoundNewExpression node)

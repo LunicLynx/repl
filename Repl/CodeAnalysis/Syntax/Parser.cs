@@ -231,34 +231,9 @@ namespace Repl.CodeAnalysis.Syntax
             return MatchToken(Current.Kind);
         }
 
-        private bool IsTypeToken(TokenKind kind)
-        {
-            switch (kind)
-            {
-                case TokenKind.VoidKeyword:
-                case TokenKind.BoolKeyword:
-                case TokenKind.I8Keyword:
-                case TokenKind.I16Keyword:
-                case TokenKind.I32Keyword:
-                case TokenKind.I64Keyword:
-                case TokenKind.I128Keyword:
-                case TokenKind.U8Keyword:
-                case TokenKind.U16Keyword:
-                case TokenKind.U32Keyword:
-                case TokenKind.U64Keyword:
-                case TokenKind.U128Keyword:
-                case TokenKind.IntKeyword:
-                case TokenKind.UintKeyword:
-                case TokenKind.StringKeyword:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         private bool IsTypeOrIdentifierToken(TokenKind kind)
         {
-            return IsTypeToken(kind) || kind == TokenKind.Identifier;
+            return SyntaxFacts.IsTypeKeyword(kind) || kind == TokenKind.Identifier;
         }
 
         private StatementSyntax ParseContinueStatement()
@@ -483,7 +458,7 @@ namespace Repl.CodeAnalysis.Syntax
             switch (Current.Kind)
             {
                 case TokenKind.OpenParenthesis:
-                    return ParseParenthesizedExpression();
+                    return ParseCastOrParenthesizedExpression();
                 case TokenKind.TrueKeyword:
                 case TokenKind.FalseKeyword:
                     return ParseBooleanLiteralExpression(Current.Kind);
@@ -544,12 +519,112 @@ namespace Repl.CodeAnalysis.Syntax
             return new InvokeExpressionSyntax(target, openParenthesis, arguments.ToImmutable(), closeParenthesis);
         }
 
-        private ExpressionSyntax ParseParenthesizedExpression()
+        private ExpressionSyntax ParseCastOrParenthesizedExpression()
         {
+            if (TryParseCast(out var castExpression))
+            {
+                return castExpression;
+            }
+
+            //var x = (TokenKind) - 3;
+
             var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
             var expression = ParseExpression();
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
             return new ParenthesizedExpressionSyntax(openParenthesisToken, expression, closeParenthesisToken);
+        }
+
+        private bool TryParseCast(out CastExpressionSyntax castExpression)
+        {
+            castExpression = null;
+            var resetPosition = GetPosition();
+            var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
+
+            var result = TryParseType(out var type);
+            if (result == TypeFacts.NotType)
+            {
+                ResetPosition(resetPosition);
+                return false;
+            }
+
+            var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
+
+            if (result == TypeFacts.TypeOrExpression && !CanFollowCast(Current.Kind))
+            {
+                ResetPosition(resetPosition);
+                return false;
+            }
+
+            var expression = ParseExpression();
+            castExpression = new CastExpressionSyntax(openParenthesisToken, type, closeParenthesisToken, expression);
+            return true;
+        }
+
+        private bool CanFollowCast(TokenKind kind)
+        {
+            switch (kind)
+            {
+                case TokenKind.Ampersand:
+                case TokenKind.AmpersandAmpersand:
+                case TokenKind.Bang:
+                case TokenKind.BangEquals:
+                case TokenKind.CloseBrace:
+                case TokenKind.CloseBracket:
+                case TokenKind.CloseParenthesis:
+                case TokenKind.Colon:
+                case TokenKind.Comma:
+                case TokenKind.Dot:
+                case TokenKind.EndOfFile:
+                case TokenKind.Equals:
+                case TokenKind.EqualsEquals:
+                case TokenKind.Greater:
+                case TokenKind.GreaterEquals:
+                case TokenKind.Hat:
+                case TokenKind.Less:
+                case TokenKind.LessEquals:
+                case TokenKind.Minus:
+                case TokenKind.OpenBrace:
+                case TokenKind.OpenBracket:
+                case TokenKind.Percent:
+                case TokenKind.Pipe:
+                case TokenKind.PipePipe:
+                case TokenKind.Plus:
+                case TokenKind.Slash:
+                case TokenKind.Star:
+                case TokenKind.Tilde:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
+        private enum TypeFacts
+        {
+            NotType,
+            MustBeType,
+
+            TypeOrExpression,
+        }
+
+        private TypeFacts TryParseType(out TypeSyntax type)
+        {
+            type = null;
+            var resetPosition = GetPosition();
+
+            if (SyntaxFacts.IsTypeKeyword(Current.Kind))
+            {
+                type = ParseType();
+                return TypeFacts.MustBeType;
+            }
+
+            if (Current.Kind == TokenKind.Identifier)
+            {
+                type = ParseType();
+                return TypeFacts.TypeOrExpression;
+            }
+
+            ResetPosition(resetPosition);
+            return TypeFacts.NotType;
         }
 
         private ExpressionSyntax ParseBooleanLiteralExpression(TokenKind kind)
