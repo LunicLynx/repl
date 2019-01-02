@@ -7,21 +7,25 @@ alias LPDWORD = i64
 alias LPCVOID = /*const*/ string
 alias BOOL = int
 
-//const STD_OUTPUT_HANDLE:DWORD = (DWORD)-11
+const STD_OUTPUT_HANDLE: DWORD = (DWORD)-11
+
+// should also work
+//const STD_OUTPUT_HANDLE2: DWORD = (DWORD)11
+//const STD_OUTPUT_HANDLE3 = (int)11
 
 extern GetStdHandle(nStdHandle: DWORD): HANDLE
 //extern i64 GetStdHandle(i32 nStdHandle)
 extern WriteFile(hFile: HANDLE, lpBuffer: LPCVOID, nNumberOfBytesToWrite: DWORD, lpNumberOfBytesWritten: LPDWORD, lpOverlapped: i64): BOOL
 //extern int WriteFile(i64 hFile, string lpBuffer, i32 nNumberOfBytesToWrite, i64 lpNumberOfBytesWritten, i64 lpOverlapped)
 
-//func Print(text: string) {
-//	let handle = GetStdHandle(STD_OUTPUT_HANDLE);
-//	WriteFile(handle, text, text.Length, 0, 0)
-//}
+func Print(text: string) {
+	let handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	WriteFile(handle, text, text.Length, 0, 0)
+}
 
 struct Person {
-    //Age:i32
-    i32 Age
+    Age:i32
+    //i32 Age
 
 //	Tell() {
 //		Print("");

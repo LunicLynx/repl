@@ -146,9 +146,23 @@ namespace Repl.CodeAnalysis
                     return EvaluateParameterExpression(p);
                 case BoundCastExpression c:
                     return EvaluateCastExpression(c);
+                case BoundTypeExpression t:
+                    return EvaluateTypeExpression(t);
+                case BoundNewExpression n:
+                    return EvaluateNewExpression(n);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private object EvaluateNewExpression(BoundNewExpression node)
+        {
+            return new Dictionary<string, object>();
+        }
+
+        private object EvaluateTypeExpression(BoundTypeExpression node)
+        {
+            return new Dictionary<string, object>();
         }
 
         private object EvaluateCastExpression(BoundCastExpression node)

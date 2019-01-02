@@ -5,11 +5,9 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class BoundNewExpression : BoundExpression
     {
-        public TypeSymbol TypeSymbol { get; }
-
         public BoundNewExpression(TypeSymbol type)
         {
-            TypeSymbol = type;
+            Type = type;
         }
 
         public override IEnumerable<BoundNode> GetChildren()
@@ -17,6 +15,6 @@ namespace Repl.CodeAnalysis.Binding
             yield break;
         }
 
-        public override Type Type => TypeSymbol?.ClrType ?? typeof(int);
+        public override TypeSymbol Type { get; }
     }
 }

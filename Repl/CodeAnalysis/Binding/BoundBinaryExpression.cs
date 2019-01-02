@@ -8,7 +8,7 @@ namespace Repl.CodeAnalysis.Binding
         public BoundExpression Left { get; }
         public BoundBinaryOperator Operator { get; }
         public BoundExpression Right { get; }
-        public override Type Type => Operator.ResultType;
+        public override TypeSymbol Type => Operator.ResultType;
 
         public BoundBinaryExpression(BoundExpression left, BoundBinaryOperator @operator, BoundExpression right)
         {

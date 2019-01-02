@@ -1,11 +1,13 @@
-﻿namespace Repl.CodeAnalysis
+﻿using System;
+
+namespace Repl.CodeAnalysis
 {
-    public class AliasSymbol : Symbol
+    public class ConstSymbol : Symbol
     {
         public override string Name { get; }
         public TypeSymbol Type { get; }
 
-        public AliasSymbol(string name, TypeSymbol type)
+        public ConstSymbol(string name, TypeSymbol type)
         {
             Name = name;
             Type = type;
@@ -13,7 +15,7 @@
 
         public override string ToString()
         {
-            return $"{Name} = {Type}";
+            return $"{Name}: {Type}";
         }
     }
 }

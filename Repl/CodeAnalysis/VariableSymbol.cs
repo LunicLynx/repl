@@ -6,9 +6,9 @@ namespace Repl.CodeAnalysis
     {
         public override string Name { get; }
         public bool IsReadOnly { get; }
-        public Type Type { get; }
+        public TypeSymbol Type { get; }
 
-        public VariableSymbol(string name, bool isReadOnly, Type type)
+        public VariableSymbol(string name, bool isReadOnly, TypeSymbol type)
         {
             Name = name;
             IsReadOnly = isReadOnly;

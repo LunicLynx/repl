@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using Repl.CodeAnalysis.Syntax;
 using Repl.CodeAnalysis.Text;
@@ -35,12 +34,12 @@ namespace Repl.CodeAnalysis
             Report(span, $"Unexpected token '{actual}', expected '{expected}'.");
         }
 
-        public void ReportUndefinedUnaryOperator(TextSpan span, string operatorText, Type type)
+        public void ReportUndefinedUnaryOperator(TextSpan span, string operatorText, TypeSymbol type)
         {
             Report(span, $"Unary operator '{operatorText}' is not defined for type '{type}'.");
         }
 
-        public void ReportUndefinedBinaryOperator(TextSpan span, string operatorText, Type leftType, Type rightType)
+        public void ReportUndefinedBinaryOperator(TextSpan span, string operatorText, TypeSymbol leftType, TypeSymbol rightType)
         {
             Report(span, $"Binary operator '{operatorText}' is not defined for types '{leftType}' and '{rightType}'.");
         }
@@ -56,7 +55,7 @@ namespace Repl.CodeAnalysis
             Report(span, message);
         }
 
-        public void ReportCannotConvert(TextSpan span, Type from, Type to)
+        public void ReportCannotConvert(TextSpan span, TypeSymbol from, TypeSymbol to)
         {
             var message = $"Cannot convert type '{from}' to '{to}'.";
             Report(span, message);
@@ -113,6 +112,18 @@ namespace Repl.CodeAnalysis
         public void ReportNotSupported(TextSpan span)
         {
             var message = "The given expression is not supported.";
+            Report(span, message);
+        }
+
+        public void ReportExpressionIsNotCompileTimeConstant(TextSpan span)
+        {
+            var message = "The given expression is not compile time constant.";
+            Report(span, message);
+        }
+
+        public void ReportMemberMustBeTyped(TextSpan span)
+        {
+            var message = "Either annotate the member with a type or initialize it.";
             Report(span, message);
         }
     }

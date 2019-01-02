@@ -15,7 +15,7 @@
 
         public override string ToString()
         {
-            return $"{Type} {Name}";
+            return $"{Name}: {Type}";
         }
     }
 }

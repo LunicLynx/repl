@@ -14,8 +14,14 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundFunctionDeclaration f: return RewriteFunctionDeclaration(f);
                 case BoundStructDeclaration s: return RewriteStructDeclaration(s);
                 case BoundAliasDeclaration a: return RewriteAliasDeclaration(a);
+                case BoundConstDeclaration c: return RewriteConstDeclaration(c);
                 default: throw new Exception($"Unexpected node '{node.GetType().Name}'");
             }
+        }
+
+        private BoundNode RewriteConstDeclaration(BoundConstDeclaration node)
+        {
+            return node;
         }
 
         private BoundNode RewriteAliasDeclaration(BoundAliasDeclaration node)
@@ -171,8 +177,23 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundCastExpression c: return RewriteCastExpression(c);
                 case BoundTypeExpression t: return RewriteTypeExpression(t);
                 case BoundNewExpression n: return RewriteNewExpression(n);
+                case BoundMemberAccessExpression m: return RewriteMemberAccessExpression(m);
+                case BoundConstExpression c: return RewriteConstExpression(c);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundExpression RewriteConstExpression(BoundConstExpression node)
+        {
+            return node;
+        }
+
+        private BoundExpression RewriteMemberAccessExpression(BoundMemberAccessExpression node)
+        {
+            var target = RewriteExpression(node.Target);
+            if (target == node.Target)
+                return node;
+            return new BoundMemberAccessExpression(target, node.Member);
         }
 
         private BoundExpression RewriteNewExpression(BoundNewExpression node)

@@ -52,16 +52,16 @@ namespace Repl.CodeAnalysis
             var statement = GetUnit();
             var evaluator = new Evaluator(statement, variables, functions);
 
-            try
+            //try
             {
                 var value = evaluator.Evaluate();
                 return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
             }
-            catch (Exception e)
-            {
-                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, 0);
-                //return new EvaluationResult(ImmutableArray.Create(new Diagnostic(SyntaxTree.Root.Span, e.Message)), 0);
-            }
+            //catch (Exception e)
+            //{
+            //    return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, 0);
+            //    //return new EvaluationResult(ImmutableArray.Create(new Diagnostic(SyntaxTree.Root.Span, e.Message)), 0);
+            //}
         }
 
         public void Emit(string fileName)

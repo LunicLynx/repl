@@ -24,6 +24,7 @@ namespace Repl.CodeAnalysis.Syntax
             {"new", TokenKind.NewKeyword },
             {"alias", TokenKind.AliasKeyword },
             {"func", TokenKind.FuncKeyword },
+            {"const", TokenKind.ConstKeyword },
 
             {"void", TokenKind.VoidKeyword},
             {"bool", TokenKind.BoolKeyword},
@@ -161,6 +162,9 @@ namespace Repl.CodeAnalysis.Syntax
                         break;
                     case ',':
                         kind = TokenKind.Comma;
+                        break;
+                    case '.':
+                        kind = TokenKind.Dot;
                         break;
                     case ':':
                         kind = TokenKind.Colon;

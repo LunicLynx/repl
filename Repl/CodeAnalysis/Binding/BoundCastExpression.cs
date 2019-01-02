@@ -5,10 +5,10 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class BoundCastExpression : BoundExpression
     {
-        public override Type Type { get; }
+        public override TypeSymbol Type { get; }
         public BoundExpression Expression { get; }
 
-        public BoundCastExpression(Type type, BoundExpression expression)
+        public BoundCastExpression(TypeSymbol type, BoundExpression expression)
         {
             Type = type;
             Expression = expression;

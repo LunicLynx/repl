@@ -4,18 +4,20 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class MemberDeclarationSyntax : SyntaxNode
     {
-        public TypeSyntax Type { get; }
+        public TypeAnnotationSyntax TypeAnnotation { get; }
+        public ExpressionSyntax Initializer { get; }
         public Token IdentifierToken { get; }
 
-        public MemberDeclarationSyntax(TypeSyntax type, Token identifierToken)
+        public MemberDeclarationSyntax(Token identifierToken, TypeAnnotationSyntax typeAnnotation, ExpressionSyntax initializer)
         {
-            Type = type;
             IdentifierToken = identifierToken;
+            TypeAnnotation = typeAnnotation;
+            Initializer = initializer;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Type;
+            yield return TypeAnnotation;
             yield return IdentifierToken;
         }
     }

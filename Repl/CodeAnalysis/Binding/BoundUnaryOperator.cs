@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using Repl.CodeAnalysis.Syntax;
 
 namespace Repl.CodeAnalysis.Binding
@@ -7,13 +7,13 @@ namespace Repl.CodeAnalysis.Binding
     {
         public TokenKind TokenKind { get; }
         public BoundUnaryOperatorKind Kind { get; }
-        public Type OperandType { get; }
-        public Type ResultType { get; }
+        public TypeSymbol OperandType { get; }
+        public TypeSymbol ResultType { get; }
 
-        public BoundUnaryOperator(TokenKind tokenKind, BoundUnaryOperatorKind kind, Type type)
+        public BoundUnaryOperator(TokenKind tokenKind, BoundUnaryOperatorKind kind, TypeSymbol type)
             : this(tokenKind, kind, type, type) { }
 
-        public BoundUnaryOperator(TokenKind tokenKind, BoundUnaryOperatorKind kind, Type operandType, Type resultType)
+        public BoundUnaryOperator(TokenKind tokenKind, BoundUnaryOperatorKind kind, TypeSymbol operandType, TypeSymbol resultType)
         {
             TokenKind = tokenKind;
             Kind = kind;
@@ -21,14 +21,26 @@ namespace Repl.CodeAnalysis.Binding
             ResultType = resultType;
         }
 
-        private static readonly BoundUnaryOperator[] Operators = {
-            new BoundUnaryOperator(TokenKind.Plus, BoundUnaryOperatorKind.Identity, typeof(int)),
-            new BoundUnaryOperator(TokenKind.Minus, BoundUnaryOperatorKind.Negation, typeof(int)),
-            new BoundUnaryOperator(TokenKind.Bang, BoundUnaryOperatorKind.LogicalNot, typeof(bool)),
-            new BoundUnaryOperator(TokenKind.Tilde, BoundUnaryOperatorKind.BitwiseComplement, typeof(int))
-        };
+        static BoundUnaryOperator()
+        {
 
-        public static BoundUnaryOperator Bind(TokenKind operatorTokenKind, Type operandType)
+        }
+
+        private static IEnumerable<BoundUnaryOperator> NumericalOperators(TypeSymbol type, TypeSymbol _)
+        {
+            yield return new BoundUnaryOperator(TokenKind.Plus, BoundUnaryOperatorKind.Identity, type);
+            yield return new BoundUnaryOperator(TokenKind.Minus, BoundUnaryOperatorKind.Negation, type);
+            yield return new BoundUnaryOperator(TokenKind.Tilde, BoundUnaryOperatorKind.BitwiseComplement, type);
+        }
+
+        private static IEnumerable<BoundUnaryOperator> BooleanOperators(TypeSymbol type)
+        {
+            yield return new BoundUnaryOperator(TokenKind.Bang, BoundUnaryOperatorKind.LogicalNot, type);
+        }
+
+        private static readonly BoundUnaryOperator[] Operators = BoundOperators.GetOperators(NumericalOperators, BooleanOperators);
+
+        public static BoundUnaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol operandType)
         {
             foreach (var @operator in Operators)
             {

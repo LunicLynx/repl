@@ -6,7 +6,7 @@ namespace Repl.CodeAnalysis.Binding
     public class BoundParameterExpression : BoundExpression
     {
         public ParameterSymbol Parameter { get; }
-        public override Type Type => Parameter.Type.ClrType;
+        public override TypeSymbol Type => Parameter.Type;
 
         public BoundParameterExpression(ParameterSymbol parameter)
         {

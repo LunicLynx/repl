@@ -81,6 +81,7 @@
         Identifier,
         NewKeyword,
         AliasKeyword,
-        FuncKeyword
+        FuncKeyword,
+        ConstKeyword
     }
 }

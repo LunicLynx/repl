@@ -23,6 +23,6 @@ namespace Repl.CodeAnalysis.Binding
             }
         }
 
-        public override Type Type => Function.ReturnType.ClrType;
+        public override TypeSymbol Type => Function.ReturnType;
     }
 }

@@ -180,11 +180,11 @@ namespace Repl.CodeAnalysis.Lowering
             var variableDeclaration = new BoundVariableDeclaration(node.Variable, node.LowerBound);
             var variableExpression = new BoundVariableExpression(node.Variable);
 
-            var upperBoundVariable = new VariableSymbol("upperBound", true, typeof(int));
+            var upperBoundVariable = new VariableSymbol("upperBound", true, TypeSymbol.I32);
             var upperBoundDeclaration = new BoundVariableDeclaration(upperBoundVariable, node.UpperBound);
             var condition = new BoundBinaryExpression(
                 variableExpression,
-                BoundBinaryOperator.Bind(Syntax.TokenKind.LessEquals, typeof(int), typeof(int)),
+                BoundBinaryOperator.Bind(Syntax.TokenKind.LessEquals, TypeSymbol.I32, TypeSymbol.I32),
                 new BoundVariableExpression(upperBoundVariable)
             );
 
@@ -193,8 +193,8 @@ namespace Repl.CodeAnalysis.Lowering
                     node.Variable,
                     new BoundBinaryExpression(
                         variableExpression,
-                        BoundBinaryOperator.Bind(Syntax.TokenKind.Plus, typeof(int), typeof(int)),
-                        new BoundLiteralExpression(1))));
+                        BoundBinaryOperator.Bind(Syntax.TokenKind.Plus, TypeSymbol.I32, TypeSymbol.I32),
+                        new BoundLiteralExpression(TypeSymbol.I32, 1))));
 
             var whileBody = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(node.Body, increment));
             var whileStatement = new BoundWhileStatement(condition, whileBody);

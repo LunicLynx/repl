@@ -7,7 +7,7 @@ namespace Repl.CodeAnalysis.Binding
     {
         public BoundUnaryOperator Operator { get; }
         public BoundExpression Operand { get; }
-        public override Type Type => Operator.ResultType;
+        public override TypeSymbol Type => Operator.ResultType;
 
         public BoundUnaryExpression(BoundUnaryOperator @operator, BoundExpression operand)
         {

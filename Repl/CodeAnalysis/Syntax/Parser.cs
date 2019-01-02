@@ -54,9 +54,26 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.FuncKeyword:
                     node = ParseFunctionDeclaration();
                     return true;
+                case TokenKind.ConstKeyword:
+                    node = ParseConstDeclaration();
+                    return true;
                 default:
                     return false;
             }
+        }
+
+        private SyntaxNode ParseConstDeclaration()
+        {
+            var constKeyword = MatchToken(TokenKind.ConstKeyword);
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            TypeAnnotationSyntax typeAnnotation = null;
+            if (Current.Kind == TokenKind.Colon)
+            {
+                typeAnnotation = ParseTypeAnnotation();
+            }
+            var equalsToken = MatchToken(TokenKind.Equals);
+            var expression = ParseExpression();
+            return new ConstDeclarationSyntax(constKeyword, identifierToken, typeAnnotation, equalsToken, expression);
         }
 
         private SyntaxNode ParseAliasDeclaration()
@@ -121,9 +138,21 @@ namespace Repl.CodeAnalysis.Syntax
 
         private MemberDeclarationSyntax ParseMemberDeclaration()
         {
-            var type = ParseType();
             var identifierToken = MatchToken(TokenKind.Identifier);
-            return new MemberDeclarationSyntax(type, identifierToken);
+
+            TypeAnnotationSyntax typeAnnotation = null;
+            if (Current.Kind == TokenKind.Colon)
+            {
+                typeAnnotation = ParseTypeAnnotation();
+            }
+
+            ExpressionSyntax initializer = null;
+            if (Current.Kind == TokenKind.Equals)
+            {
+                initializer = ParseExpression();
+            }
+
+            return new MemberDeclarationSyntax(identifierToken, typeAnnotation, initializer);
         }
 
         private SyntaxNode ParseExternDeclaration()
@@ -401,9 +430,8 @@ namespace Repl.CodeAnalysis.Syntax
             else
             {
                 left = ParsePrimaryExpression();
+
             }
-
-
 
             while (true)
             {
@@ -470,8 +498,6 @@ namespace Repl.CodeAnalysis.Syntax
                 default:
                     return ParseNameExpression();
             }
-
-
         }
 
         private ExpressionSyntax ParseNewExpression()

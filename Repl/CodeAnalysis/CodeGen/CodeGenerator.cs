@@ -104,8 +104,8 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private FunctionType CreateFunctionType(FunctionSymbol function)
         {
-            var returnType = GetXType(function.ReturnType.ClrType);
-            var parameterTypes = function.Parameters.Select(p => GetXType(p.Type.ClrType)).ToArray();
+            var returnType = GetXType(function.ReturnType);
+            var parameterTypes = function.Parameters.Select(p => GetXType(p.Type)).ToArray();
             return new FunctionType(returnType, parameterTypes);
         }
 
@@ -280,18 +280,18 @@ namespace Repl.CodeAnalysis.CodeGen
             return value;
         }
 
-        private XType GetXType(Type type)
+        private XType GetXType(TypeSymbol type)
         {
-            if (type == typeof(bool)) return XType.Int1;
-            if (type == typeof(sbyte)) return XType.Int8;
-            if (type == typeof(short)) return XType.Int16;
-            if (type == typeof(int)) return XType.Int32;
-            if (type == typeof(long)) return XType.Int64;
-            if (type == typeof(byte)) return XType.Int8;
-            if (type == typeof(ushort)) return XType.Int16;
-            if (type == typeof(uint)) return XType.Int32;
-            if (type == typeof(ulong)) return XType.Int64;
-            if (type == typeof(string)) return XType.Int64;
+            if (type == TypeSymbol.Bool) return XType.Int1;
+            if (type == TypeSymbol.I8) return XType.Int8;
+            if (type == TypeSymbol.I16) return XType.Int16;
+            if (type == TypeSymbol.I32) return XType.Int32;
+            if (type == TypeSymbol.I64) return XType.Int64;
+            if (type == TypeSymbol.U8) return XType.Int8;
+            if (type == TypeSymbol.U16) return XType.Int16;
+            if (type == TypeSymbol.U32) return XType.Int32;
+            if (type == TypeSymbol.U64) return XType.Int64;
+            if (type == TypeSymbol.String) return XType.Int64;
             throw new Exception("Unsupported type");
         }
 
@@ -357,9 +357,9 @@ namespace Repl.CodeAnalysis.CodeGen
         {
             var type = node.Type;
             var value = node.Value;
-            if (type == typeof(bool))
+            if (type == TypeSymbol.Bool)
                 return Value.Int1((bool)value);
-            if (type == typeof(string))
+            if (type == TypeSymbol.String)
                 //return Value.String((string)value);
                 return _builder.GlobalStringPtr((string)value);
             return Value.Int32((int)value);

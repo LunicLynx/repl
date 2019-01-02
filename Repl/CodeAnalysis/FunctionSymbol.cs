@@ -17,7 +17,7 @@ namespace Repl.CodeAnalysis
 
         public override string ToString()
         {
-            return $"{ReturnType} {Name}({string.Join(", ", Parameters.Select(p => p.ToString()))})";
+            return $"{Name}({string.Join(", ", Parameters.Select(p => p.ToString()))}): {ReturnType} ";
         }
     }
 }

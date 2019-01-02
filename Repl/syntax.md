@@ -1,4 +1,8 @@
-﻿
+﻿# TODO
+
+Remove BoundBlockStatement at root of ScriptUnit.
+Also dont change the order.
+
 # semicolons
 yes
 

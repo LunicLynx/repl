@@ -85,3 +85,13 @@ Example()
 func Example()
 {
 }
+
+// alias
+alias Number = int
+
+// casts
+let n = (int)3
+let n = (int)-3
+let n = (Number)3
+let n = (Number)-3
+

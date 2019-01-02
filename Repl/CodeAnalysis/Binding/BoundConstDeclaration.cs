@@ -2,15 +2,15 @@
 
 namespace Repl.CodeAnalysis.Binding
 {
-    public class BoundLiteralExpression : BoundExpression
-    {
-        public override TypeSymbol Type { get; }
+    public class BoundConstDeclaration : BoundNode
 
+    {
+        public ConstSymbol Const { get; }
         public object Value { get; }
 
-        public BoundLiteralExpression(TypeSymbol type, object value)
+        public BoundConstDeclaration(ConstSymbol @const, object value)
         {
-            Type = type;
+            Const = @const;
             Value = value;
         }
 
