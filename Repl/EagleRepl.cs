@@ -39,7 +39,7 @@ namespace Repl
             foreach (var token in tokens)
             {
                 var isKeyword = token.Kind.ToString().EndsWith("Keyword");
-                var isNumber = token.Kind == TokenKind.Number;
+                var isNumber = token.Kind == TokenKind.NumberLiteral;
                 if (isKeyword)
                     Console.ForegroundColor = ConsoleColor.Blue;
                 else if (!isNumber)

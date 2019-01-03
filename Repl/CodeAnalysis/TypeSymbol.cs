@@ -41,6 +41,6 @@ namespace Repl.CodeAnalysis
         //public static TypeSymbol U128 = new TypeSymbol("u128", typeof(sbyte));
         public static TypeSymbol Int = new TypeSymbol("int", IntPtr.Size == 4 ? typeof(int) : typeof(long), ImmutableArray<MemberSymbol>.Empty);
         public static TypeSymbol Uint = new TypeSymbol("uint", IntPtr.Size == 4 ? typeof(uint) : typeof(ulong), ImmutableArray<MemberSymbol>.Empty);
-        public static TypeSymbol String = new TypeSymbol("string", typeof(string), ImmutableArray.Create(new MemberSymbol("Length", I32)));
+        public static TypeSymbol String = new TypeSymbol("string", typeof(string), ImmutableArray.Create<MemberSymbol>(new PropertySymbol("Length", I32)));
     }
 }

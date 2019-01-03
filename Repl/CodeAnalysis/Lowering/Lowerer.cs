@@ -190,7 +190,7 @@ namespace Repl.CodeAnalysis.Lowering
 
             var increment = new BoundExpressionStatement(
                 new BoundAssignmentExpression(
-                    node.Variable,
+                    new BoundVariableExpression(node.Variable),
                     new BoundBinaryExpression(
                         variableExpression,
                         BoundBinaryOperator.Bind(Syntax.TokenKind.Plus, TypeSymbol.I32, TypeSymbol.I32),

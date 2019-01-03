@@ -247,9 +247,23 @@ namespace Repl.CodeAnalysis
 
         private object EvaluateAssignmentExpression(BoundAssignmentExpression node)
         {
-            var value = EvaluateExpression(node.Expression);
-            _variables[node.Variable] = value;
-            return value;
+            if (node.Target is BoundVariableExpression v)
+            {
+                var value = EvaluateExpression(node.Expression);
+                _variables[v.Variable] = value;
+                return value;
+            }
+            else if (node.Target is BoundMemberAccessExpression m)
+            {
+                var target = (IDictionary<string, object>)EvaluateExpression(m.Target);
+                var value = EvaluateExpression(node.Expression);
+                target[m.Member.Name] = value;
+                return value;
+            }
+            else
+            {
+                throw new Exception("Unsupported assignment target.");
+            }
         }
 
         private object EvaluateLiteralExpression(BoundLiteralExpression node)

@@ -204,6 +204,38 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundMemberDeclaration BindMemberDeclaration(MemberDeclarationSyntax syntax)
         {
+            switch (syntax)
+            {
+                case FieldDeclarationSyntax f:
+                    return BindFieldDeclaration(f);
+                case MethodDeclarationSyntax m:
+                    return BindMethodDeclaration(m);
+                default:
+                    throw new Exception($"Unexpected node {syntax.GetType()}");
+            }
+        }
+
+        private BoundMemberDeclaration BindMethodDeclaration(MethodDeclarationSyntax syntax)
+        {
+            var method = BindPrototype2(syntax.Prototype);
+            _scope = new BoundScope(_scope);
+
+            var parameters = syntax.Prototype.Parameters.OfType<ParameterSyntax>().ToArray();
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                var parameter = parameters[i];
+                var symbol = method.Parameters[i];
+                DeclareSymbol(symbol, parameter.IdentifierToken);
+            }
+
+            var body = BindBlockStatement(syntax.Body);
+            _scope = _scope.Parent;
+
+            return new BoundMethodDeclaration(method, body);
+        }
+
+        private BoundMemberDeclaration BindFieldDeclaration(FieldDeclarationSyntax syntax)
+        {
             BoundExpression initializer = null;
             if (syntax.Initializer != null)
             {
@@ -225,9 +257,9 @@ namespace Repl.CodeAnalysis.Binding
                 type = initializer.Type;
             }
 
-            var member = new MemberSymbol(syntax.IdentifierToken.Text, type);
+            var field = new FieldSymbol(syntax.IdentifierToken.Text, type);
 
-            return new BoundMemberDeclaration(member, initializer);
+            return new BoundFieldDeclaration(field, initializer);
         }
 
         private BoundFunctionDeclaration BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
@@ -266,6 +298,22 @@ namespace Repl.CodeAnalysis.Binding
             var parameters = syntax.Parameters.OfType<ParameterSyntax>().Select(BindParameter).ToArray();
 
             var function = new FunctionSymbol(type, name, parameters);
+
+            return function;
+        }
+
+        private MethodSymbol BindPrototype2(PrototypeSyntax syntax)
+        {
+            var typeSyntax = syntax.ReturnType;
+
+            var type = typeSyntax != null ? BindTypeAnnotation(typeSyntax) : TypeSymbol.Void;
+
+            var identifierToken = syntax.IdentifierToken;
+            var name = identifierToken.Text;
+
+            var parameters = syntax.Parameters.OfType<ParameterSyntax>().Select(BindParameter).ToArray();
+
+            var function = new MethodSymbol(type, name, parameters);
 
             return function;
         }
@@ -658,34 +706,38 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
         {
-            var name = syntax.IdentifierToken.Text;
-            var value = BindExpression(syntax.Expression);
+            var target = BindExpression(syntax.Target);
+            var expression = BindExpression(syntax.Expression);
+            return new BoundAssignmentExpression(target, expression);
 
-            if (!_scope.TryLookup(name, out var symbol))
-            {
-                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
-                return value;
-            }
+            //var name = syntax.IdentifierToken.Text;
+            //var value = BindExpression(syntax.Expression);
 
-            if (!(symbol is VariableSymbol variable))
-            {
-                Diagnostics.ReportUnexpectedSymbol(syntax.IdentifierToken.Span, symbol.GetType().Name, nameof(VariableSymbol));
-                return value;
-            }
+            //if (!_scope.TryLookup(name, out var symbol))
+            //{
+            //    Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
+            //    return value;
+            //}
 
-            if (variable.IsReadOnly)
-            {
-                Diagnostics.ReportCannotAssign(syntax.EqualsToken.Span, name);
-                return value;
-            }
+            //if (!(symbol is VariableSymbol variable))
+            //{
+            //    Diagnostics.ReportUnexpectedSymbol(syntax.IdentifierToken.Span, symbol.GetType().Name, nameof(VariableSymbol));
+            //    return value;
+            //}
 
-            if (value.Type != variable.Type)
-            {
-                Diagnostics.ReportCannotConvert(syntax.Expression.Span, value.Type, variable.Type);
-                return value;
-            }
+            //if (variable.IsReadOnly)
+            //{
+            //    Diagnostics.ReportCannotAssign(syntax.EqualsToken.Span, name);
+            //    return value;
+            //}
 
-            return new BoundAssignmentExpression(variable, value);
+            //if (value.Type != variable.Type)
+            //{
+            //    Diagnostics.ReportCannotConvert(syntax.Expression.Span, value.Type, variable.Type);
+            //    return value;
+            //}
+
+            //return new BoundAssignmentExpression(variable, value);
         }
 
         private BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
@@ -701,13 +753,13 @@ namespace Repl.CodeAnalysis.Binding
                     value = token.Kind == TokenKind.TrueKeyword;
                     type = TypeSymbol.Bool;
                     break;
-                case TokenKind.Number:
+                case TokenKind.NumberLiteral:
                     if (!int.TryParse(token.Text, out var number))
                         Diagnostics.ReportInvalidNumber(token.Span, token.Text);
                     value = number;
                     type = TypeSymbol.I32;
                     break;
-                case TokenKind.String:
+                case TokenKind.StringLiteral:
                     value = token.Text.Substring(1, token.Text.Length - 2)
                         .Replace(@"\t", "\t")
                         .Replace(@"\r", "\r")

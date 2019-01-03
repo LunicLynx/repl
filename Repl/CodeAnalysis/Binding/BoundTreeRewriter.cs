@@ -263,10 +263,11 @@ namespace Repl.CodeAnalysis.Binding
 
         protected virtual BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node)
         {
+            var target = RewriteExpression(node.Target);
             var expression = RewriteExpression(node.Expression);
-            if (expression == node.Expression)
+            if (target == node.Target && expression == node.Expression)
                 return node;
-            return new BoundAssignmentExpression(node.Variable, expression);
+            return new BoundAssignmentExpression(target, expression);
         }
     }
 }

@@ -90,7 +90,7 @@ namespace Repl.CodeAnalysis.Syntax
                 while (char.IsDigit(Current))
                     Next();
 
-                kind = TokenKind.Number;
+                kind = TokenKind.NumberLiteral;
             }
             else if (c == '"')
             {
@@ -100,7 +100,7 @@ namespace Repl.CodeAnalysis.Syntax
                 if (Current == '"')
                     Next();
 
-                kind = TokenKind.String;
+                kind = TokenKind.StringLiteral;
             }
             else if (IsIdentifierStart(c))
             {
@@ -172,6 +172,10 @@ namespace Repl.CodeAnalysis.Syntax
                     case '=' when Current == '=':
                         Next();
                         kind = TokenKind.EqualsEquals;
+                        break;
+                    case '=' when Current == '>':
+                        Next();
+                        kind = TokenKind.EqualsGreater;
                         break;
                     case '=':
                         kind = TokenKind.Equals;

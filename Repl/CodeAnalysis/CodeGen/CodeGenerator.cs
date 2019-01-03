@@ -270,14 +270,15 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private Value GenerateAssignmentExpression(BoundAssignmentExpression node)
         {
-            var variable = node.Variable;
-            if (!_symbols.TryGetValue(variable, out var ptr))
-                throw new Exception("variable does not exist");
+            throw new NotImplementedException();
+            //var variable = node.Variable;
+            //if (!_symbols.TryGetValue(variable, out var ptr))
+            //    throw new Exception("variable does not exist");
 
-            var value = GenerateExpression(node.Expression);
-            _builder.Store(value, ptr);
+            //var value = GenerateExpression(node.Expression);
+            //_builder.Store(value, ptr);
 
-            return value;
+            //return value;
         }
 
         private XType GetXType(TypeSymbol type)

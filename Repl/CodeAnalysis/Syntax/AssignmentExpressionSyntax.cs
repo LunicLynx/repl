@@ -4,20 +4,20 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class AssignmentExpressionSyntax : ExpressionSyntax
     {
-        public Token IdentifierToken { get; }
+        public ExpressionSyntax Target { get; }
         public Token EqualsToken { get; }
         public ExpressionSyntax Expression { get; }
 
-        public AssignmentExpressionSyntax(Token identifierToken, Token equalsToken, ExpressionSyntax expression)
+        public AssignmentExpressionSyntax(ExpressionSyntax target, Token equalsToken, ExpressionSyntax expression)
         {
-            IdentifierToken = identifierToken;
+            Target = target;
             EqualsToken = equalsToken;
             Expression = expression;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return IdentifierToken;
+            yield return Target;
             yield return EqualsToken;
             yield return Expression;
         }

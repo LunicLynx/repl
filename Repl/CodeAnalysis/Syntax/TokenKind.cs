@@ -15,6 +15,7 @@
         Equals,
         LessEquals,
         Less,
+        EqualsGreater,
         GreaterEquals,
         Greater,
         EqualsEquals,
@@ -54,6 +55,10 @@
         ToKeyword,
         ExternKeyword,
         StructKeyword,
+        NewKeyword,
+        AliasKeyword,
+        FuncKeyword,
+        ConstKeyword,
 
         // Types
         VoidKeyword,
@@ -75,13 +80,9 @@
         // Literals
         TrueKeyword,
         FalseKeyword,
-        Number,
-        String,
+        NumberLiteral,
+        StringLiteral,
 
         Identifier,
-        NewKeyword,
-        AliasKeyword,
-        FuncKeyword,
-        ConstKeyword
     }
 }

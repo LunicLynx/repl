@@ -138,8 +138,23 @@ namespace Repl.CodeAnalysis.Syntax
 
         private MemberDeclarationSyntax ParseMemberDeclaration()
         {
+            if (Peek(1).Kind == TokenKind.OpenParenthesis)
+            {
+                // Method
+                var prototype = ParsePrototype();
+                var body = ParseBlockStatement();
+                return new MethodDeclarationSyntax(prototype, body);
+            }
+
             var identifierToken = MatchToken(TokenKind.Identifier);
 
+            if (Current.Kind == TokenKind.OpenBrace ||
+                Current.Kind == TokenKind.EqualsGreater)
+            {
+                // Property
+            }
+
+            // field
             TypeAnnotationSyntax typeAnnotation = null;
             if (Current.Kind == TokenKind.Colon)
             {
@@ -152,7 +167,7 @@ namespace Repl.CodeAnalysis.Syntax
                 initializer = ParseExpression();
             }
 
-            return new MemberDeclarationSyntax(identifierToken, typeAnnotation, initializer);
+            return new FieldDeclarationSyntax(identifierToken, typeAnnotation, initializer);
         }
 
         private SyntaxNode ParseExternDeclaration()
@@ -371,16 +386,23 @@ namespace Repl.CodeAnalysis.Syntax
 
         public ExpressionSyntax ParseAssignmentExpression()
         {
-            if (Peek(0).Kind == TokenKind.Identifier &&
-                Peek(1).Kind == TokenKind.Equals)
-            {
-                var identifierToken = MatchToken(TokenKind.Identifier);
-                var operatorToken = MatchToken(TokenKind.Equals);
-                var right = ParseAssignmentExpression();
-                return new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
-            }
+            //if (Peek(0).Kind == TokenKind.Identifier &&
+            //    Peek(1).Kind == TokenKind.Equals)
+            //{
+            //    var identifierToken = MatchToken(TokenKind.Identifier);
+            //    var operatorToken = MatchToken(TokenKind.Equals);
+            //    var right = ParseAssignmentExpression();
+            //    return new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
+            //}
 
-            return ParseBinaryExpression();
+            var syntax = ParseBinaryExpression();
+            if (Current.Kind == TokenKind.Equals)
+            {
+                var equalsToken = MatchToken(TokenKind.Equals);
+                var right = ParseAssignmentExpression();
+                return new AssignmentExpressionSyntax(syntax, equalsToken, right);
+            }
+            return syntax;
         }
 
         //  void x() {6}
@@ -462,9 +484,9 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.TrueKeyword:
                 case TokenKind.FalseKeyword:
                     return ParseBooleanLiteralExpression(Current.Kind);
-                case TokenKind.Number:
+                case TokenKind.NumberLiteral:
                     return ParseNumberLiteralExpression();
-                case TokenKind.String:
+                case TokenKind.StringLiteral:
                     return ParseStringLiteralExpression();
                 case TokenKind.NewKeyword:
                     return ParseNewExpression();
@@ -484,7 +506,7 @@ namespace Repl.CodeAnalysis.Syntax
 
         private ExpressionSyntax ParseStringLiteralExpression()
         {
-            var token = MatchToken(TokenKind.String);
+            var token = MatchToken(TokenKind.StringLiteral);
             return new LiteralExpressionSyntax(token);
         }
 
@@ -641,7 +663,7 @@ namespace Repl.CodeAnalysis.Syntax
 
         public LiteralExpressionSyntax ParseNumberLiteralExpression()
         {
-            var token = MatchToken(TokenKind.Number);
+            var token = MatchToken(TokenKind.NumberLiteral);
             return new LiteralExpressionSyntax(token);
         }
     }

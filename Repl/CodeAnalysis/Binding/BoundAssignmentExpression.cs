@@ -1,22 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Repl.CodeAnalysis.Binding
 {
     public class BoundAssignmentExpression : BoundExpression
     {
-        public VariableSymbol Variable { get; }
+        public BoundExpression Target { get; }
         public BoundExpression Expression { get; }
         public override TypeSymbol Type => Expression.Type;
 
-        public BoundAssignmentExpression(VariableSymbol variable, BoundExpression expression)
+        public BoundAssignmentExpression(BoundExpression target, BoundExpression expression)
         {
-            Variable = variable;
+            Target = target;
             Expression = expression;
         }
 
         public override IEnumerable<BoundNode> GetChildren()
         {
+            yield return Target;
             yield return Expression;
         }
     }

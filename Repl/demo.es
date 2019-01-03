@@ -25,12 +25,14 @@ func Print(text: string) {
 }
 
 struct Person {
-    Age:i32
+    Name: string
+    Age: i32
     //i32 Age
 
-//	Tell() {
-//		Print("")
-//	}
+	Tell() {
+		Print(Name)
+		Print("\n")
+	}
 }
 
 let p1 = Person
@@ -44,7 +46,11 @@ p2
 //p3
 //p4
 
-//p1.Tell()
+p1.Name = "Peter"
+Print(p1.Name)
+Print("\n")
+
+p1.Tell()
 //p2.Tell()
 //p3.Tell()
 //p4.Tell()
