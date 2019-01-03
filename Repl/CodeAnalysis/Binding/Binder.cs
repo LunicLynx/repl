@@ -41,10 +41,45 @@ namespace Repl.CodeAnalysis.Binding
                            builtInSymbols, null);
             var parent = CreateParentScopes(previous);
             var binder = new Binder(parent);
+
+            // create symbols
+            binder.DeclareNodes(syntax.Nodes);
+
             var nodes = binder.BindNodes(syntax.Nodes);
             var diagnostics = binder.Diagnostics.ToImmutableArray();
             var symbols = binder._scope.GetDeclaredSymbols();
             return new BoundGlobalScope(previous, diagnostics, symbols, new BoundScriptUnit(nodes));
+        }
+
+        private void DeclareNodes(ImmutableArray<SyntaxNode> nodes)
+        {
+            foreach (var node in nodes)
+            {
+                DeclareNode(node);
+            }
+        }
+
+        private bool TryDeclareNode(SyntaxNode node)
+        {
+            switch (node)
+            {
+                case AliasDeclarationSyntax a:
+                    DeclareAlias(a);
+                    break;
+                case ExternDeclarationSyntax e:
+                    DeclareExtern(e);
+                    break;
+                case FunctionDeclarationSyntax f:
+                    DeclareFunction(f);
+                    break;
+                case StructDeclarationSyntax s:
+                    DeclareStruct(s);
+                    break;
+                case ConstDeclarationSyntax c:
+                    DeclareConst(c);
+                    break;
+            }
+            return true;
         }
 
         private static BoundScope CreateParentScopes(BoundGlobalScope previous)
