@@ -24,7 +24,7 @@ func Print(text: string) {
 	WriteFile(handle, text, text.Length, 0, 0)
 }
 
-//struct A : A {}
+struct A : A {}
 
 //struct B : C {}
 //struct C : B {}

@@ -128,5 +128,11 @@ namespace Repl.CodeAnalysis
             var message = "Either annotate the member with a type or initialize it.";
             Report(span, message);
         }
+
+        public void ReportCyclicDependency(TextSpan span)
+        {
+            var message = "Cyclic dependency.";
+            Report(span, message);
+        }
     }
 }

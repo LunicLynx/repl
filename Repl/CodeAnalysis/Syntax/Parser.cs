@@ -117,9 +117,10 @@ namespace Repl.CodeAnalysis.Syntax
             var structKeyword = MatchToken(TokenKind.StructKeyword);
             var identifierToken = MatchToken(TokenKind.Identifier);
 
+            BaseTypeSyntax baseType = null;
             if (Current.Kind == TokenKind.Colon)
             {
-                var baseType = ParseBaseType();
+                baseType = ParseBaseType();
             }
 
             var openBraceToken = MatchToken(TokenKind.OpenBrace);
@@ -139,7 +140,7 @@ namespace Repl.CodeAnalysis.Syntax
                 startToken = Current;
             }
             var closeBraceToken = MatchToken(TokenKind.CloseBrace);
-            return new StructDeclarationSyntax(structKeyword, identifierToken, openBraceToken, builder.ToImmutable(), closeBraceToken);
+            return new StructDeclarationSyntax(structKeyword, identifierToken, baseType, openBraceToken, builder.ToImmutable(), closeBraceToken);
         }
 
         private BaseTypeSyntax ParseBaseType()

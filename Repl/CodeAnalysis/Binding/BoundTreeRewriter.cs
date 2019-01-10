@@ -51,7 +51,53 @@ namespace Repl.CodeAnalysis.Binding
 
         protected virtual BoundStructDeclaration RewriteStructDeclaration(BoundStructDeclaration node)
         {
-            return node;
+            var changed = false;
+            var result = ImmutableArray.CreateBuilder<BoundMemberDeclaration>();
+            foreach (var boundMember in node.Members)
+            {
+                var member = RewriteMember(boundMember);
+                if (member != boundMember)
+                    changed = true;
+                result.Add(member);
+            }
+
+            return changed ? new BoundStructDeclaration(node.Type, result.ToImmutable()) : node;
+        }
+
+        private BoundMemberDeclaration RewriteMember(BoundMemberDeclaration node)
+        {
+            switch (node)
+            {
+                case BoundFieldDeclaration f: return RewriteFieldDeclaration(f);
+                case BoundPropertyDeclaration p: return RewritePropertyDeclaration(p);
+                case BoundMethodDeclaration m: return RewriteMethodDeclaration(m);
+                default:
+                    throw new Exception($"Unexpected node {node.GetType()}");
+            }
+        }
+
+        private BoundMemberDeclaration RewriteMethodDeclaration(BoundMethodDeclaration node)
+        {
+            var body = RewriteBlockStatement(node.Body);
+            if (body == node.Body)
+                return node;
+            return new BoundMethodDeclaration(node.Method, body);
+        }
+
+        private BoundMemberDeclaration RewritePropertyDeclaration(BoundPropertyDeclaration node)
+        {
+            var initializer = node.Initializer == null ? null : RewriteExpression(node.Initializer);
+            if (initializer == node.Initializer)
+                return node;
+            return new BoundPropertyDeclaration(node.Property, initializer);
+        }
+
+        private BoundMemberDeclaration RewriteFieldDeclaration(BoundFieldDeclaration node)
+        {
+            var initializer = node.Initializer == null ? null : RewriteExpression(node.Initializer);
+            if (initializer == node.Initializer)
+                return node;
+            return new BoundFieldDeclaration(node.Field, initializer);
         }
 
         protected virtual BoundFunctionDeclaration RewriteFunctionDeclaration(BoundFunctionDeclaration node)

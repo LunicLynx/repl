@@ -7,14 +7,16 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token StructKeyword { get; }
         public Token IdentifierToken { get; }
+        public BaseTypeSyntax BaseType { get; }
         public Token OpenBraceToken { get; }
         public ImmutableArray<MemberDeclarationSyntax> Members { get; }
         public Token CloseBraceToken { get; }
 
-        public StructDeclarationSyntax(Token structKeyword, Token identifierToken, Token openBraceToken, ImmutableArray<MemberDeclarationSyntax> members, Token closeBraceToken)
+        public StructDeclarationSyntax(Token structKeyword, Token identifierToken, BaseTypeSyntax baseType, Token openBraceToken, ImmutableArray<MemberDeclarationSyntax> members, Token closeBraceToken)
         {
             StructKeyword = structKeyword;
             IdentifierToken = identifierToken;
+            BaseType = baseType;
             OpenBraceToken = openBraceToken;
             Members = members;
             CloseBraceToken = closeBraceToken;

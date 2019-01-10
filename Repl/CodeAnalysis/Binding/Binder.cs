@@ -73,7 +73,7 @@ namespace Repl.CodeAnalysis.Binding
             {
                 case StructDeclarationSyntax s:
                     identifierToken = s.IdentifierToken;
-                    symbol = new TypeSymbol(identifierToken.Text, typeof(object), ImmutableArray<MemberSymbol>.Empty);
+                    symbol = new TypeSymbol(identifierToken.Text, typeof(object), default, default);
                     break;
                 case AliasDeclarationSyntax a:
                     identifierToken = a.IdentifierToken;
@@ -224,7 +224,7 @@ namespace Repl.CodeAnalysis.Binding
         {
             var typeSymbol = BindType(syntax.Type);
             //var identifierToken = syntax.IdentifierToken;
-            var aliasSymbol = (AliasSymbol) _syntaxToSymbolMap[syntax];
+            var aliasSymbol = (AliasSymbol)_syntaxToSymbolMap[syntax];
             aliasSymbol.Type = typeSymbol;
             aliasSymbol.Lock();
             //var aliasSymbol = new AliasSymbol(identifierToken.Text, typeSymbol);
@@ -261,13 +261,35 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundStructDeclaration BindStructDeclaration(StructDeclarationSyntax syntax)
         {
-            var members = syntax.Members.Select(this.BindMemberDeclaration).ToList();
-            var symbol = (TypeSymbol) _syntaxToSymbolMap[syntax];
+            ImmutableArray<TypeSymbol> baseType;
+            if (syntax.BaseType != null)
+                baseType = BindBaseType(syntax.BaseType);
+
+            var members = syntax.Members.Select(BindMemberDeclaration).ToList();
+            var symbol = (TypeSymbol)_syntaxToSymbolMap[syntax];
+
+            // check for cyclic dependency
+            if (IsCyclicDependency(baseType, symbol))
+            {
+                Diagnostics.ReportCyclicDependency(syntax.BaseType.Span);
+            }
+
+            symbol.BaseType = baseType;
             symbol.Members = members.Select(m => m.Member).ToImmutableArray();
             symbol.Lock();
             //var symbol = new TypeSymbol(syntax.IdentifierToken.Text, typeof(object), members.Select(m => m.Member).ToArray());
             //DeclareSymbol(symbol, syntax.IdentifierToken);
             return new BoundStructDeclaration(symbol, members.ToImmutableArray());
+        }
+
+        private bool IsCyclicDependency(ImmutableArray<TypeSymbol> baseType, TypeSymbol symbol)
+        {
+            return false;
+        }
+
+        private ImmutableArray<TypeSymbol> BindBaseType(BaseTypeSyntax syntax)
+        {
+            return syntax.Types.OfType<TypeSyntax>().Select(BindType).ToImmutableArray();
         }
 
         private BoundMemberDeclaration BindMemberDeclaration(MemberDeclarationSyntax syntax)
