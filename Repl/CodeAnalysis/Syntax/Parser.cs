@@ -116,6 +116,12 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var structKeyword = MatchToken(TokenKind.StructKeyword);
             var identifierToken = MatchToken(TokenKind.Identifier);
+
+            if (Current.Kind == TokenKind.Colon)
+            {
+                var baseType = ParseBaseType();
+            }
+
             var openBraceToken = MatchToken(TokenKind.OpenBrace);
 
             var builder = ImmutableArray.CreateBuilder<MemberDeclarationSyntax>();
@@ -134,6 +140,29 @@ namespace Repl.CodeAnalysis.Syntax
             }
             var closeBraceToken = MatchToken(TokenKind.CloseBrace);
             return new StructDeclarationSyntax(structKeyword, identifierToken, openBraceToken, builder.ToImmutable(), closeBraceToken);
+        }
+
+        private BaseTypeSyntax ParseBaseType()
+        {
+            var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+            var colonToken = MatchToken(TokenKind.Colon);
+            var first = true;
+            do
+            {
+                if (!first)
+                {
+                    var commaToken = MatchToken(TokenKind.Comma);
+                    builder.Add(commaToken);
+                }
+                first = false;
+
+                var type = ParseType();
+                builder.Add(type);
+            } while (
+                Current.Kind == TokenKind.Comma &&
+                Current.Kind != TokenKind.EndOfFile);
+
+            return new BaseTypeSyntax(colonToken, builder.ToImmutable());
         }
 
         private MemberDeclarationSyntax ParseMemberDeclaration()
@@ -240,6 +269,7 @@ namespace Repl.CodeAnalysis.Syntax
 
         private Token MatchTypeOrIdentifierToken()
         {
+            // TODO Parse qualified types
             if (!IsTypeOrIdentifierToken(Current.Kind))
                 Diagnostics.ReportExpectedTypeOrIdentifier(Current.Span);
 

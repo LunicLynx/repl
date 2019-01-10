@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Repl.CodeAnalysis.Syntax;
 using Repl.CodeAnalysis.Text;
 
@@ -21,6 +22,7 @@ namespace Repl.CodeAnalysis
 
         public void Report(TextSpan span, string message)
         {
+            if (_diagnostics.Any(d => d.Span == span)) return;
             _diagnostics.Add(new Diagnostic(span, message));
         }
 

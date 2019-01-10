@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Repl
+﻿namespace Repl
 {
     internal class Program
     {

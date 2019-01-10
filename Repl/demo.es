@@ -24,13 +24,18 @@ func Print(text: string) {
 	WriteFile(handle, text, text.Length, 0, 0)
 }
 
+//struct A : A {}
+
+//struct B : C {}
+//struct C : B {}
+
 struct Person {
     Name: string
     Age: i32
     //i32 Age
 
 	Tell() {
-		Print(Name)
+		//Print(Name)
 		Print("\n")
 	}
 }
@@ -50,7 +55,7 @@ p1.Name = "Peter"
 Print(p1.Name)
 Print("\n")
 
-p1.Tell()
+//p1.Tell()
 //p2.Tell()
 //p3.Tell()
 //p4.Tell()

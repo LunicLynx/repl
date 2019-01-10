@@ -5,15 +5,42 @@ namespace Repl.CodeAnalysis
 {
     public class TypeSymbol : Symbol
     {
+        private bool _locked;
+        private ImmutableArray<MemberSymbol> _members;
         public override string Name { get; }
         public Type ClrType { get; }
-        public ImmutableArray<MemberSymbol> Members { get; }
+
+        public ImmutableArray<MemberSymbol> Members
+        {
+            get => _members;
+            set
+            {
+                ThrowIfLocked();
+                _members = value;
+            }
+        }
+
+        //private readonly List<MemberSymbol> _members = new List<MemberSymbol>();
+
+        //public MemberSymbol[] Members => _members.ToArray();
 
         public TypeSymbol(string name, Type clrType, ImmutableArray<MemberSymbol> members)
         {
             Name = name;
             ClrType = clrType;
             Members = members;
+            //_members.AddRange(members);
+        }
+
+        public void Lock()
+        {
+            _locked = true;
+        }
+
+        private void ThrowIfLocked()
+        {
+            if (_locked)
+                throw new Exception("Locked");
         }
 
         public override string ToString()

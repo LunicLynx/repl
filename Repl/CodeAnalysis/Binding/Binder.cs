@@ -11,6 +11,7 @@ namespace Repl.CodeAnalysis.Binding
     {
         private bool _inLoop;
         private BoundScope _scope;
+        private readonly Dictionary<SyntaxNode, Symbol> _syntaxToSymbolMap = new Dictionary<SyntaxNode, Symbol>();
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
@@ -43,7 +44,7 @@ namespace Repl.CodeAnalysis.Binding
             var binder = new Binder(parent);
 
             // create symbols
-            binder.DeclareNodes(syntax.Nodes);
+            binder.DeclareTypes(syntax.Nodes);
 
             var nodes = binder.BindNodes(syntax.Nodes);
             var diagnostics = binder.Diagnostics.ToImmutableArray();
@@ -51,36 +52,62 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundGlobalScope(previous, diagnostics, symbols, new BoundScriptUnit(nodes));
         }
 
-        private void DeclareNodes(ImmutableArray<SyntaxNode> nodes)
+        private void DeclareTypes(ImmutableArray<SyntaxNode> nodes)
         {
-            foreach (var node in nodes)
+            var structs = nodes.OfType<StructDeclarationSyntax>().Cast<SyntaxNode>();
+            var aliases = nodes.OfType<AliasDeclarationSyntax>();
+
+            var types = structs.Concat(aliases);
+
+            foreach (var type in types)
             {
-                DeclareNode(node);
+                DeclareType(type);
             }
         }
 
-        private bool TryDeclareNode(SyntaxNode node)
+        private void DeclareType(SyntaxNode type)
         {
-            switch (node)
+            Symbol symbol;
+            Token identifierToken;
+            switch (type)
             {
-                case AliasDeclarationSyntax a:
-                    DeclareAlias(a);
-                    break;
-                case ExternDeclarationSyntax e:
-                    DeclareExtern(e);
-                    break;
-                case FunctionDeclarationSyntax f:
-                    DeclareFunction(f);
-                    break;
                 case StructDeclarationSyntax s:
-                    DeclareStruct(s);
+                    identifierToken = s.IdentifierToken;
+                    symbol = new TypeSymbol(identifierToken.Text, typeof(object), ImmutableArray<MemberSymbol>.Empty);
                     break;
-                case ConstDeclarationSyntax c:
-                    DeclareConst(c);
+                case AliasDeclarationSyntax a:
+                    identifierToken = a.IdentifierToken;
+                    symbol = new AliasSymbol(a.IdentifierToken.Text, null);
                     break;
+                default:
+                    throw new Exception($"Unexpected syntax {type.GetType()}");
             }
-            return true;
+            DeclareSymbol(symbol, identifierToken);
+            _syntaxToSymbolMap[type] = symbol;
         }
+
+        //private bool TryDeclareNode(SyntaxNode node)
+        //{
+        //    switch (node)
+        //    {
+        //        case AliasDeclarationSyntax a:
+        //            DeclareAlias(a);
+        //            break;
+        //        case ExternDeclarationSyntax e:
+        //            DeclareExtern(e);
+        //            break;
+        //        case FunctionDeclarationSyntax f:
+        //            DeclareFunction(f);
+        //            break;
+        //        case StructDeclarationSyntax s:
+        //            DeclareStruct(s);
+        //            break;
+        //        case ConstDeclarationSyntax c:
+        //            DeclareConst(c);
+        //            break;
+        //    }
+        //    return true;
+        //}
 
         private static BoundScope CreateParentScopes(BoundGlobalScope previous)
         {
@@ -196,9 +223,12 @@ namespace Repl.CodeAnalysis.Binding
         private BoundNode BindAliasDeclaration(AliasDeclarationSyntax syntax)
         {
             var typeSymbol = BindType(syntax.Type);
-            var identifierToken = syntax.IdentifierToken;
-            var aliasSymbol = new AliasSymbol(identifierToken.Text, typeSymbol);
-            DeclareSymbol(aliasSymbol, identifierToken);
+            //var identifierToken = syntax.IdentifierToken;
+            var aliasSymbol = (AliasSymbol) _syntaxToSymbolMap[syntax];
+            aliasSymbol.Type = typeSymbol;
+            aliasSymbol.Lock();
+            //var aliasSymbol = new AliasSymbol(identifierToken.Text, typeSymbol);
+            //DeclareSymbol(aliasSymbol, identifierToken);
             return new BoundAliasDeclaration(aliasSymbol);
         }
 
@@ -232,8 +262,11 @@ namespace Repl.CodeAnalysis.Binding
         private BoundStructDeclaration BindStructDeclaration(StructDeclarationSyntax syntax)
         {
             var members = syntax.Members.Select(this.BindMemberDeclaration).ToList();
-            var symbol = new TypeSymbol(syntax.IdentifierToken.Text, typeof(object), members.Select(m => m.Member).ToImmutableArray());
-            DeclareSymbol(symbol, syntax.IdentifierToken);
+            var symbol = (TypeSymbol) _syntaxToSymbolMap[syntax];
+            symbol.Members = members.Select(m => m.Member).ToImmutableArray();
+            symbol.Lock();
+            //var symbol = new TypeSymbol(syntax.IdentifierToken.Text, typeof(object), members.Select(m => m.Member).ToArray());
+            //DeclareSymbol(symbol, syntax.IdentifierToken);
             return new BoundStructDeclaration(symbol, members.ToImmutableArray());
         }
 
