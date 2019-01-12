@@ -230,7 +230,7 @@ namespace Repl.CodeAnalysis.CodeGen
                     return GenerateAssignmentExpression(a);
                 case BoundVariableExpression v:
                     return GenerateVariableExpression(v);
-                case BoundCallExpression i:
+                case BoundFunctionCallExpression i:
                     return GenerateInvokeExpression(i);
                 case BoundParameterExpression p:
                     return GenerateParameterExpression(p);
@@ -253,7 +253,7 @@ namespace Repl.CodeAnalysis.CodeGen
             return _builder.GetInsertBlock().GetParent().AsFunction().GetParam(node.Parameter.Index);
         }
 
-        private Value GenerateInvokeExpression(BoundCallExpression node)
+        private Value GenerateInvokeExpression(BoundFunctionCallExpression node)
         {
             var function = _symbols[node.Function];
             var args = node.Arguments.Select(GenerateExpression).ToArray();

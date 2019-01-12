@@ -218,15 +218,39 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundUnaryExpression u: return RewriteUnaryExpression(u);
                 case BoundLiteralExpression l: return RewriteLiteralExpression(l);
                 case BoundVariableExpression v: return RewriteVariableExpression(v);
-                case BoundCallExpression i: return RewriteCallExpression(i);
+                case BoundFunctionCallExpression i: return RewriteCallExpression(i);
                 case BoundParameterExpression p: return RewriteParameterExpression(p);
                 case BoundCastExpression c: return RewriteCastExpression(c);
                 case BoundTypeExpression t: return RewriteTypeExpression(t);
                 case BoundNewExpression n: return RewriteNewExpression(n);
                 case BoundMemberAccessExpression m: return RewriteMemberAccessExpression(m);
                 case BoundConstExpression c: return RewriteConstExpression(c);
+                case BoundFieldExpression f: return RewriteFieldExpression(f);
+                case BoundMethodCallExpression m: return RewriteMethodCallExpression(m);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundExpression RewriteMethodCallExpression(BoundMethodCallExpression node)
+        {
+            var target = RewriteExpression(node.Target);
+
+            var changed = false;
+            var result = ImmutableArray.CreateBuilder<BoundExpression>();
+            foreach (var boundExpression in node.Arguments)
+            {
+                var expression = RewriteExpression(boundExpression);
+                if (expression != boundExpression)
+                    changed = true;
+                result.Add(expression);
+            }
+
+            return target != node.Target || changed ? new BoundMethodCallExpression(target, node.Method, result.ToImmutable()) : node;
+        }
+
+        private BoundExpression RewriteFieldExpression(BoundFieldExpression node)
+        {
+            return node;
         }
 
         private BoundExpression RewriteConstExpression(BoundConstExpression node)
@@ -265,7 +289,7 @@ namespace Repl.CodeAnalysis.Binding
             return node;
         }
 
-        private BoundExpression RewriteCallExpression(BoundCallExpression node)
+        private BoundExpression RewriteCallExpression(BoundFunctionCallExpression node)
         {
             var changed = false;
             var result = ImmutableArray.CreateBuilder<BoundExpression>();
@@ -277,7 +301,7 @@ namespace Repl.CodeAnalysis.Binding
                 result.Add(expression);
             }
 
-            return changed ? new BoundCallExpression(node.Function, result.ToImmutable()) : node;
+            return changed ? new BoundFunctionCallExpression(node.Function, result.ToImmutable()) : node;
         }
 
         protected virtual BoundExpression RewriteVariableExpression(BoundVariableExpression node)

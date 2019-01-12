@@ -171,22 +171,29 @@ namespace Repl.CodeAnalysis.Syntax
             if (Peek(1).Kind == TokenKind.OpenParenthesis)
             {
                 // Method
-                var prototype = ParsePrototype();
-                var body = ParseBlockStatement();
-                return new MethodDeclarationSyntax(prototype, body);
+                return ParseMethodDeclaration();
             }
 
-            var identifierToken = MatchToken(TokenKind.Identifier);
+            
 
             if (Current.Kind == TokenKind.OpenBrace ||
                 Current.Kind == TokenKind.EqualsGreater)
             {
                 // Property
+                return ParsePropertyDeclaration();
             }
 
             // field
+            return ParseFieldDeclaration();
+        }
+
+        private MemberDeclarationSyntax ParseFieldDeclaration()
+        {
+            var identifierToken = MatchToken(TokenKind.Identifier);
+
             TypeAnnotationSyntax typeAnnotation = null;
-            if (Current.Kind == TokenKind.Colon)
+            // For now types must be specified
+            //if (Current.Kind == TokenKind.Colon)
             {
                 typeAnnotation = ParseTypeAnnotation();
             }
@@ -198,6 +205,19 @@ namespace Repl.CodeAnalysis.Syntax
             }
 
             return new FieldDeclarationSyntax(identifierToken, typeAnnotation, initializer);
+        }
+
+        private MemberDeclarationSyntax ParsePropertyDeclaration()
+        {
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            return new PropertyDeclarationSyntax(identifierToken, null);
+        }
+
+        private MemberDeclarationSyntax ParseMethodDeclaration()
+        {
+            var prototype = ParsePrototype();
+            var body = ParseBlockStatement();
+            return new MethodDeclarationSyntax(prototype, body);
         }
 
         private SyntaxNode ParseExternDeclaration()

@@ -35,7 +35,7 @@ struct Person {
     //i32 Age
 
 	Tell() {
-		//Print(Name)
+		Print(Name)
 		Print("\n")
 	}
 }
@@ -55,8 +55,8 @@ p1.Name = "Peter"
 Print(p1.Name)
 Print("\n")
 
-//p1.Tell()
-//p2.Tell()
+p1.Tell()
+p2.Tell()
 //p3.Tell()
 //p4.Tell()
 

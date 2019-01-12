@@ -165,7 +165,7 @@ namespace Repl.CodeAnalysis
                     return EvaluateAssignmentExpression(a);
                 case BoundVariableExpression v:
                     return EvaluateVariableExpression(v);
-                case BoundCallExpression i:
+                case BoundFunctionCallExpression i:
                     return EvaluateCallExpression(i);
                 case BoundParameterExpression p:
                     return EvaluateParameterExpression(p);
@@ -179,9 +179,18 @@ namespace Repl.CodeAnalysis
                     return EvaluateConstExpression(c);
                 case BoundMemberAccessExpression m:
                     return EvaluateMemberAccessExpression(m);
+                case BoundMethodCallExpression m:
+                    return EvaluateMethodCallExpression(m);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private object EvaluateMethodCallExpression(BoundMethodCallExpression node)
+        {
+            var target = EvaluateExpression(node.Target);
+            var args = node.Arguments.Select(EvaluateExpression).ToArray();
+            return null;
         }
 
         private object EvaluateMemberAccessExpression(BoundMemberAccessExpression node)
@@ -221,7 +230,7 @@ namespace Repl.CodeAnalysis
             return _arguments[node.Parameter];
         }
 
-        private object EvaluateCallExpression(BoundCallExpression node)
+        private object EvaluateCallExpression(BoundFunctionCallExpression node)
         {
             var args = node.Arguments.Select(EvaluateExpression).ToArray();
             return _functions[node.Function].DynamicInvoke(new object[] { args });

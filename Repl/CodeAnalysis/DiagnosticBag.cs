@@ -134,5 +134,11 @@ namespace Repl.CodeAnalysis
             var message = "Cyclic dependency.";
             Report(span, message);
         }
+
+        public void ReportTypeDoesNotHaveMember(TextSpan span, TypeSymbol type, string memberName)
+        {
+            var message = $"Type '{type}' doesn't have a member called '{memberName}'.";
+            Report(span, message);
+        }
     }
 }

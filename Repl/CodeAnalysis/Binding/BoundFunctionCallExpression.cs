@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Binding
 {
-    internal class BoundCallExpression : BoundExpression
+    internal class BoundFunctionCallExpression : BoundExpression
     {
         public FunctionSymbol Function { get; }
         public ImmutableArray<BoundExpression> Arguments { get; }
 
-        public BoundCallExpression(FunctionSymbol function, ImmutableArray<BoundExpression> arguments)
+        public BoundFunctionCallExpression(FunctionSymbol function, ImmutableArray<BoundExpression> arguments)
         {
             Function = function;
             Arguments = arguments;

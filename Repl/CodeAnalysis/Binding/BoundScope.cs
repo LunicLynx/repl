@@ -3,12 +3,12 @@ using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Binding
 {
-    public class BoundScope
+    public class BoundScope : IScope
     {
-        public BoundScope Parent { get; }
+        public IScope Parent { get; }
         private readonly Dictionary<string, Symbol> _symbols = new Dictionary<string, Symbol>();
 
-        public BoundScope(BoundScope parent)
+        public BoundScope(IScope parent)
         {
             Parent = parent;
         }

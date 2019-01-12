@@ -10,8 +10,7 @@ namespace Repl.CodeAnalysis.Binding
     public class Binder
     {
         private bool _inLoop;
-        private BoundScope _scope;
-        private readonly Dictionary<SyntaxNode, Symbol> _syntaxToSymbolMap = new Dictionary<SyntaxNode, Symbol>();
+        private IScope _scope;
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
@@ -43,26 +42,103 @@ namespace Repl.CodeAnalysis.Binding
             var parent = CreateParentScopes(previous);
             var binder = new Binder(parent);
 
-            // create symbols
+            // create types
             binder.DeclareTypes(syntax.Nodes);
+            // create members
+            binder.DeclareMembers(syntax.Nodes);
 
+            // bind together
             var nodes = binder.BindNodes(syntax.Nodes);
             var diagnostics = binder.Diagnostics.ToImmutableArray();
             var symbols = binder._scope.GetDeclaredSymbols();
             return new BoundGlobalScope(previous, diagnostics, symbols, new BoundScriptUnit(nodes));
         }
 
+        private void DeclareMembers(ImmutableArray<SyntaxNode> nodes)
+        {
+            var functions = nodes.OfType<FunctionDeclarationSyntax>();
+
+            foreach (var function in functions)
+            {
+                DeclareFunction(function);
+            }
+
+            var structs = nodes.OfType<StructDeclarationSyntax>();
+            foreach (var @struct in structs)
+            {
+                DeclareTypeMembers(@struct);
+            }
+        }
+
+        private void DeclareTypeMembers(StructDeclarationSyntax syntax)
+        {
+            var symbol = GetSymbol<TypeSymbol>(syntax.IdentifierToken);
+            _scope = new TypeScope(_scope, symbol);
+
+            foreach (var member in syntax.Members)
+            {
+                DeclareTypeMember(member);
+            }
+
+            _scope = _scope.Parent;
+        }
+
+        private void DeclareTypeMember(MemberDeclarationSyntax syntax)
+        {
+            switch (syntax)
+            {
+                case FieldDeclarationSyntax f:
+                    DeclareField(f);
+                    break;
+                case MethodDeclarationSyntax m:
+                    DeclareMethod(m);
+                    break;
+                default:
+                    throw new Exception($"Unexpected syntax {syntax.GetType()}");
+            }
+        }
+
+        private void DeclareMethod(MethodDeclarationSyntax syntax)
+        {
+            var method = BindPrototype2(syntax.Prototype);
+            DeclareSymbol(method, syntax.Prototype.IdentifierToken);
+        }
+
+        private void DeclareField(FieldDeclarationSyntax syntax)
+        {
+            var type = LookupTypeAnnotation(syntax.TypeAnnotation);
+            var field = new FieldSymbol(syntax.IdentifierToken.Text, type);
+            DeclareSymbol(field, syntax.IdentifierToken);
+        }
+
+        private void DeclareFunction(FunctionDeclarationSyntax syntax)
+        {
+            var function = BindPrototype(syntax.Prototype);
+            DeclareSymbol(function, syntax.Prototype.IdentifierToken);
+        }
+
         private void DeclareTypes(ImmutableArray<SyntaxNode> nodes)
         {
-            var structs = nodes.OfType<StructDeclarationSyntax>().Cast<SyntaxNode>();
-            var aliases = nodes.OfType<AliasDeclarationSyntax>();
-
-            var types = structs.Concat(aliases);
+            var structs = nodes.OfType<StructDeclarationSyntax>();
+            var types = structs;
 
             foreach (var type in types)
             {
                 DeclareType(type);
             }
+
+            var aliases = nodes.OfType<AliasDeclarationSyntax>();
+            foreach (var alias in aliases)
+            {
+                DeclareAlias(alias);
+            }
+        }
+
+        private void DeclareAlias(AliasDeclarationSyntax alias)
+        {
+            var identifierToken = alias.IdentifierToken;
+            var symbol = new AliasSymbol(alias.IdentifierToken.Text, null);
+            DeclareSymbol(symbol, identifierToken);
         }
 
         private void DeclareType(SyntaxNode type)
@@ -73,17 +149,12 @@ namespace Repl.CodeAnalysis.Binding
             {
                 case StructDeclarationSyntax s:
                     identifierToken = s.IdentifierToken;
-                    symbol = new TypeSymbol(identifierToken.Text, typeof(object), default, default);
-                    break;
-                case AliasDeclarationSyntax a:
-                    identifierToken = a.IdentifierToken;
-                    symbol = new AliasSymbol(a.IdentifierToken.Text, null);
+                    symbol = new TypeSymbol(identifierToken.Text, typeof(object), ImmutableArray<TypeSymbol>.Empty, ImmutableArray<MemberSymbol>.Empty);
                     break;
                 default:
                     throw new Exception($"Unexpected syntax {type.GetType()}");
             }
             DeclareSymbol(symbol, identifierToken);
-            _syntaxToSymbolMap[type] = symbol;
         }
 
         //private bool TryDeclareNode(SyntaxNode node)
@@ -168,7 +239,7 @@ namespace Repl.CodeAnalysis.Binding
 
             if (syntax.TypeAnnotation != null)
             {
-                type = BindTypeAnnotation(syntax.TypeAnnotation);
+                type = LookupTypeAnnotation(syntax.TypeAnnotation);
             }
 
             var identifierToken = syntax.IdentifierToken;
@@ -222,9 +293,9 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundNode BindAliasDeclaration(AliasDeclarationSyntax syntax)
         {
-            var typeSymbol = BindType(syntax.Type);
+            var typeSymbol = LookupType(syntax.Type);
             //var identifierToken = syntax.IdentifierToken;
-            var aliasSymbol = (AliasSymbol)_syntaxToSymbolMap[syntax];
+            var aliasSymbol = GetSymbol<AliasSymbol>(syntax.IdentifierToken);
             aliasSymbol.Type = typeSymbol;
             aliasSymbol.Lock();
             //var aliasSymbol = new AliasSymbol(identifierToken.Text, typeSymbol);
@@ -265,8 +336,12 @@ namespace Repl.CodeAnalysis.Binding
             if (syntax.BaseType != null)
                 baseType = BindBaseType(syntax.BaseType);
 
+            var symbol = GetSymbol<TypeSymbol>(syntax.IdentifierToken);
+
+            _scope = new TypeScope(_scope, symbol);
+
             var members = syntax.Members.Select(BindMemberDeclaration).ToList();
-            var symbol = (TypeSymbol)_syntaxToSymbolMap[syntax];
+            _scope = _scope.Parent;
 
             // check for cyclic dependency
             if (IsCyclicDependency(baseType, symbol))
@@ -289,7 +364,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private ImmutableArray<TypeSymbol> BindBaseType(BaseTypeSyntax syntax)
         {
-            return syntax.Types.OfType<TypeSyntax>().Select(BindType).ToImmutableArray();
+            return syntax.Types.OfType<TypeSyntax>().Select(LookupType).ToImmutableArray();
         }
 
         private BoundMemberDeclaration BindMemberDeclaration(MemberDeclarationSyntax syntax)
@@ -326,16 +401,19 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundMemberDeclaration BindFieldDeclaration(FieldDeclarationSyntax syntax)
         {
+            var field = GetSymbol<FieldSymbol>(syntax.IdentifierToken);
+            //_syntaxToSymbolMap[syntax];
+
             BoundExpression initializer = null;
             if (syntax.Initializer != null)
             {
                 initializer = BindExpression(syntax.Initializer);
             }
 
-            TypeSymbol type;
+            TypeSymbol type = null;
             if (syntax.TypeAnnotation != null)
             {
-                type = BindTypeAnnotation(syntax.TypeAnnotation);
+                type = LookupTypeAnnotation(syntax.TypeAnnotation);
             }
             else if (initializer == null)
             {
@@ -347,19 +425,13 @@ namespace Repl.CodeAnalysis.Binding
                 type = initializer.Type;
             }
 
-            var field = new FieldSymbol(syntax.IdentifierToken.Text, type);
 
             return new BoundFieldDeclaration(field, initializer);
         }
 
         private BoundFunctionDeclaration BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
         {
-            var function = BindPrototype(syntax.Prototype);
-            if (function == null)
-                return null;// new BoundExpressionStatement(new BoundLiteralExpression(0));
-
-            DeclareSymbol(function, syntax.Prototype.IdentifierToken);
-
+            var function = GetSymbol<FunctionSymbol>(syntax.Prototype.IdentifierToken);
             _scope = new BoundScope(_scope);
 
             var parameters = syntax.Prototype.Parameters.OfType<ParameterSyntax>().ToArray();
@@ -380,7 +452,7 @@ namespace Repl.CodeAnalysis.Binding
         {
             var typeSyntax = syntax.ReturnType;
 
-            var type = typeSyntax != null ? BindTypeAnnotation(typeSyntax) : TypeSymbol.Void;
+            var type = typeSyntax != null ? LookupTypeAnnotation(typeSyntax) : TypeSymbol.Void;
 
             var identifierToken = syntax.IdentifierToken;
             var name = identifierToken.Text;
@@ -396,7 +468,7 @@ namespace Repl.CodeAnalysis.Binding
         {
             var typeSyntax = syntax.ReturnType;
 
-            var type = typeSyntax != null ? BindTypeAnnotation(typeSyntax) : TypeSymbol.Void;
+            var type = typeSyntax != null ? LookupTypeAnnotation(typeSyntax) : TypeSymbol.Void;
 
             var identifierToken = syntax.IdentifierToken;
             var name = identifierToken.Text;
@@ -410,19 +482,19 @@ namespace Repl.CodeAnalysis.Binding
 
         private ParameterSymbol BindParameter(ParameterSyntax syntax, int index)
         {
-            var type = BindTypeAnnotation(syntax.Type);
+            var type = LookupTypeAnnotation(syntax.Type);
             var name = syntax.IdentifierToken.Text;
             var parameter = new ParameterSymbol(type, name, index);
 
             return parameter;
         }
 
-        private TypeSymbol BindTypeAnnotation(TypeAnnotationSyntax syntax)
+        private TypeSymbol LookupTypeAnnotation(TypeAnnotationSyntax syntax)
         {
-            return BindType(syntax.Type);
+            return LookupType(syntax.Type);
         }
 
-        private TypeSymbol BindType(TypeSyntax syntax)
+        private TypeSymbol LookupType(TypeSyntax syntax)
         {
             var typeIdentifierToken = syntax.TypeOrIdentifierToken;
             var type = GetSymbol<AliasSymbol, TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int;
@@ -636,7 +708,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundExpression BindCastExpression(CastExpressionSyntax syntax)
         {
-            var type = BindType(syntax.Type);
+            var type = LookupType(syntax.Type);
             var expression = BindExpression(syntax.Expression);
             return new BoundCastExpression(type, expression);
         }
@@ -649,7 +721,7 @@ namespace Repl.CodeAnalysis.Binding
             var memberSymbol = target.Type.Members.Single(m => m.Name == name);
             if (memberSymbol == null)
             {
-                Diagnostics.ReportUndefinedName(identifierToken.Span, name);
+                Diagnostics.ReportTypeDoesNotHaveMember(identifierToken.Span, target.Type, name);
                 return new BoundLiteralExpression(TypeSymbol.I32, 0);
             }
             return new BoundMemberAccessExpression(target, memberSymbol);
@@ -664,6 +736,37 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundExpression BindInvokeExpression(InvokeExpressionSyntax syntax)
         {
+            if (syntax.Target is MemberAccessExpressionSyntax m)
+            {
+                var t = BindExpression(m.Target);
+                if (!(t.Type.Members.FirstOrDefault(me => me.Name == m.IdentifierToken.Text) is MethodSymbol method))
+                {
+                    Diagnostics.ReportTypeDoesNotHaveMember(m.IdentifierToken.Span, t.Type, m.IdentifierToken.Text);
+                    return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                }
+
+                var arguments1 = syntax.Arguments.OfType<ExpressionSyntax>().ToArray();
+
+                if (method.Parameters.Length != arguments1.Length)
+                {
+                    var start = syntax.Arguments.First().Span.Start;
+                    var end = syntax.Arguments.Last().Span.End;
+
+                    Diagnostics.ReportParameterCount(TextSpan.FromBounds(start, end), method.Name, method.Parameters.Length, syntax.Arguments.Length);
+                    return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                }
+
+                var builder1 = ImmutableArray.CreateBuilder<BoundExpression>();
+                for (int i = 0; i < method.Parameters.Length; i++)
+                {
+                    var parameter = method.Parameters[i];
+                    var argument = BindExpression(arguments1[i], parameter.Type);
+                    builder1.Add(argument);
+                }
+
+                return new BoundMethodCallExpression(t, method, builder1.ToImmutable());
+            }
+
             if (!(syntax.Target is NameExpressionSyntax n))
             {
                 Diagnostics.ReportFunctionNameExpected(syntax.Target.Span);
@@ -693,7 +796,7 @@ namespace Repl.CodeAnalysis.Binding
                 builder.Add(argument);
             }
 
-            return new BoundCallExpression(function, builder.ToImmutable());
+            return new BoundFunctionCallExpression(function, builder.ToImmutable());
         }
 
         private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax, bool allowTypes)
@@ -788,6 +891,7 @@ namespace Repl.CodeAnalysis.Binding
                 case ParameterSymbol p: return new BoundParameterExpression(p);
                 case TypeSymbol t when allowTypes: return new BoundTypeExpression(t);
                 case ConstSymbol c: return new BoundConstExpression(c);
+                case FieldSymbol f: return new BoundFieldExpression(f);
                 default:
                     Diagnostics.ReportNotSupported(syntax.IdentifierToken.Span);
                     return new BoundLiteralExpression(TypeSymbol.I32, 0);
