@@ -25,7 +25,7 @@ namespace Repl.CodeAnalysis.CodeGen
             _basicBlock = _function.AppendBasicBlock();
         }
 
-        public void CompileAndRun(Compilation compilation, Dictionary<VariableSymbol, object> variables)
+        public void CompileAndRun(Compilation compilation, Dictionary<Symbol, object> variables)
         {
             var globalScope = compilation.GlobalScope;
 

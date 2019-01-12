@@ -9,21 +9,33 @@ namespace Repl.CodeAnalysis
     {
         private object _lastValue;
         private readonly BoundUnit _root;
-        private readonly Dictionary<ConstSymbol, object> _constants;
-        private readonly Dictionary<VariableSymbol, object> _variables;
-        private readonly Dictionary<FunctionSymbol, Delegate> _functions;
-        private Dictionary<ParameterSymbol, object> _arguments = new Dictionary<ParameterSymbol, object>();
+        //private readonly Dictionary<ConstSymbol, object> _constants;
+        //private readonly Dictionary<VariableSymbol, object> _variables;
+        //private readonly Dictionary<FunctionSymbol, Delegate> _functions;
+        //private readonly Dictionary<MethodSymbol, Delegate> _methods;
+        //private Dictionary<ParameterSymbol, object> _arguments = new Dictionary<ParameterSymbol, object>();
+
+        private readonly Dictionary<Symbol, object> _globals;
+
+        private LocalContext _locals = null;
+        private readonly Stack<LocalContext> _stack = new Stack<LocalContext>();
 
         public Evaluator(
             BoundUnit root,
-            Dictionary<ConstSymbol, object> constants,
-            Dictionary<VariableSymbol, object> variables,
-            Dictionary<FunctionSymbol, Delegate> functions)
+            //Dictionary<ConstSymbol, object> constants,
+            Dictionary<Symbol, object> globals
+            //,
+            //Dictionary<VariableSymbol, object> variables,
+            //Dictionary<FunctionSymbol, Delegate> functions,
+            //Dictionary<MethodSymbol, Delegate> methods
+            )
         {
             _root = root;
-            _constants = constants;
-            _variables = variables;
-            _functions = functions;
+            _globals = globals;
+            //_constants = constants;
+            //_variables = variables;
+            //_functions = functions;
+            //_methods = methods;
         }
 
         public object Evaluate()
@@ -41,7 +53,7 @@ namespace Repl.CodeAnalysis
             switch (node)
             {
                 case BoundBlockStatement b:
-                    EvaluateBlock(b, new Dictionary<ParameterSymbol, object>());
+                    EvaluateBlock(b);
                     break;
                 case BoundFunctionDeclaration f:
                     EvaluateFunctionDeclaration(f);
@@ -64,18 +76,64 @@ namespace Repl.CodeAnalysis
 
         private void EvaluateStructDeclaration(BoundStructDeclaration node)
         {
+            foreach (var member in node.Members)
+            {
+                EvaluateMemberDeclaration(member);
+            }
+        }
 
+        private void EvaluateMemberDeclaration(BoundMemberDeclaration node)
+        {
+            switch (node)
+            {
+                case BoundFieldDeclaration f:
+                    EvaluateFieldDeclaration(f);
+                    break;
+                case BoundPropertyDeclaration p:
+                    EvaluatePropertyDeclaration(p);
+                    break;
+                case BoundMethodDeclaration m:
+                    EvaluateMethodDeclaration(m);
+                    break;
+                default:
+                    throw new Exception($"Unexpected node {node.GetType()}");
+            }
+        }
+
+        private void EvaluateMethodDeclaration(BoundMethodDeclaration node)
+        {
+            var body = node.Body;
+
+            var value = node.Body;
+
+            _globals[node.Method] = (Func<object, object[], object>)((target, args) =>
+           {
+               for (var i = 0; i < node.Method.Parameters.Length; i++)
+               {
+                   var parameter = node.Method.Parameters[i];
+                   SetSymbolValue(parameter, args[i]);
+               }
+
+               return EvaluateBlock(body);
+           });
+            _lastValue = value;
+        }
+
+        private void EvaluatePropertyDeclaration(BoundPropertyDeclaration node)
+        {
+        }
+
+        private void EvaluateFieldDeclaration(BoundFieldDeclaration node)
+        {
         }
 
         private void EvaluateConstDeclaration(BoundConstDeclaration node)
         {
-            _constants[node.Const] = node.Value;
+            _globals[node.Const] = node.Value;
         }
 
-        public object EvaluateBlock(BoundBlockStatement block, Dictionary<ParameterSymbol, object> arguments)
+        public object EvaluateBlock(BoundBlockStatement block)
         {
-            _arguments = arguments;
-
             var labelToIndex = new Dictionary<LabelSymbol, int>();
 
             var statements = block.Statements;
@@ -128,7 +186,7 @@ namespace Repl.CodeAnalysis
             if (method == null)
                 throw new Exception($"Extern function {node.Function} was not found.");
 
-            _functions[node.Function] = (Func<object[], object>)(args => method.Invoke(null, args));
+            _globals[node.Function] = (Func<object[], object>)(args => method.Invoke(null, args));
         }
 
         private void EvaluateFunctionDeclaration(BoundFunctionDeclaration node)
@@ -137,16 +195,15 @@ namespace Repl.CodeAnalysis
             //var evaluator = new Evaluator(body, _variables, _functions);
 
             var value = node.Body;
-            _functions[node.Function] = (Func<object[], object>)(args =>
+            _globals[node.Function] = (Func<object[], object>)(args =>
            {
-               var arguments = new Dictionary<ParameterSymbol, object>();
                for (var i = 0; i < node.Function.Parameters.Length; i++)
                {
                    var parameter = node.Function.Parameters[i];
-                   arguments[parameter] = args[i];
+                   SetSymbolValue(parameter, args[i]);
                }
 
-               return EvaluateBlock(body, arguments);
+               return EvaluateBlock(body);
            });
             _lastValue = value;
         }
@@ -166,7 +223,7 @@ namespace Repl.CodeAnalysis
                 case BoundVariableExpression v:
                     return EvaluateVariableExpression(v);
                 case BoundFunctionCallExpression i:
-                    return EvaluateCallExpression(i);
+                    return EvaluateFunctionCallExpression(i);
                 case BoundParameterExpression p:
                     return EvaluateParameterExpression(p);
                 case BoundCastExpression c:
@@ -181,16 +238,57 @@ namespace Repl.CodeAnalysis
                     return EvaluateMemberAccessExpression(m);
                 case BoundMethodCallExpression m:
                     return EvaluateMethodCallExpression(m);
+                case BoundFieldExpression f:
+                    return EvaluateFieldExpression(f);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+
+
+        private object EvaluateFieldExpression(BoundFieldExpression node)
+        {
+            object target = null;
+            if (node.Target != null)
+            {
+                target = EvaluateExpression(node.Target);
+            }
+
+            target = target ?? _locals.This;
+
+            var dic = (Dictionary<string, object>)target;
+
+            return dic[node.Field.Name];
         }
 
         private object EvaluateMethodCallExpression(BoundMethodCallExpression node)
         {
             var target = EvaluateExpression(node.Target);
             var args = node.Arguments.Select(EvaluateExpression).ToArray();
-            return null;
+
+            using (StackFrame(target))
+            {
+                return ((Delegate)_globals[node.Method]).DynamicInvoke(target, args);
+            }
+        }
+
+        private IDisposable StackFrame(object @this)
+        {
+            PushStackFrame(@this);
+            return new DelegateDisposable(PopStackFrame);
+        }
+
+        private void PushStackFrame(object @this)
+        {
+            if (_locals != null)
+                _stack.Push(_locals);
+            _locals = new LocalContext(@this);
+        }
+
+        private void PopStackFrame()
+        {
+            _locals = _stack.Count > 0 ? _stack.Pop() : null;
         }
 
         private object EvaluateMemberAccessExpression(BoundMemberAccessExpression node)
@@ -207,17 +305,19 @@ namespace Repl.CodeAnalysis
 
         private object EvaluateConstExpression(BoundConstExpression node)
         {
-            return _constants[node.Const];
+            return _globals[node.Const];
         }
 
         private object EvaluateNewExpression(BoundNewExpression node)
         {
             return new Dictionary<string, object>();
+            // TODO call all initializer
         }
 
         private object EvaluateTypeExpression(BoundTypeExpression node)
         {
             return new Dictionary<string, object>();
+            // TODO call all initializer
         }
 
         private object EvaluateCastExpression(BoundCastExpression node)
@@ -227,20 +327,40 @@ namespace Repl.CodeAnalysis
 
         private object EvaluateParameterExpression(BoundParameterExpression node)
         {
-            return _arguments[node.Parameter];
+            return GetSymbolValue(node.Parameter);
         }
 
-        private object EvaluateCallExpression(BoundFunctionCallExpression node)
+        private object EvaluateFunctionCallExpression(BoundFunctionCallExpression node)
         {
             var args = node.Arguments.Select(EvaluateExpression).ToArray();
-            return _functions[node.Function].DynamicInvoke(new object[] { args });
+            using (StackFrame(null))
+            {
+                return ((Delegate)_globals[node.Function]).DynamicInvoke(new object[] { args });
+            }
         }
 
         private void EvaluateVariableDeclaration(BoundVariableDeclaration node)
         {
             var value = EvaluateExpression(node.Initializer);
-            _variables[node.Variable] = value;
+            SetSymbolValue(node.Variable, value);
             _lastValue = value;
+        }
+
+        private Dictionary<Symbol, object> GetValueStore()
+        {
+            return _locals?.Store ?? _globals;
+        }
+
+        private void SetSymbolValue(Symbol symbol, object value)
+        {
+            var store = GetValueStore();
+            store[symbol] = value;
+        }
+
+        private object GetSymbolValue(Symbol symbol)
+        {
+            var store = GetValueStore();
+            return store[symbol];
         }
 
         private void EvaluateExpressionStatement(BoundExpressionStatement node)
@@ -250,8 +370,7 @@ namespace Repl.CodeAnalysis
 
         private object EvaluateVariableExpression(BoundVariableExpression node)
         {
-            var value = _variables[node.Variable];
-            return value;
+            return GetSymbolValue(node.Variable);
         }
 
         private object EvaluateAssignmentExpression(BoundAssignmentExpression node)
@@ -259,7 +378,7 @@ namespace Repl.CodeAnalysis
             if (node.Target is BoundVariableExpression v)
             {
                 var value = EvaluateExpression(node.Expression);
-                _variables[v.Variable] = value;
+                SetSymbolValue(v.Variable, value);
                 return value;
             }
             else if (node.Target is BoundMemberAccessExpression m)

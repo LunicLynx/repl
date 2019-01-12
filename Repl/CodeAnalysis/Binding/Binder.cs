@@ -891,7 +891,7 @@ namespace Repl.CodeAnalysis.Binding
                 case ParameterSymbol p: return new BoundParameterExpression(p);
                 case TypeSymbol t when allowTypes: return new BoundTypeExpression(t);
                 case ConstSymbol c: return new BoundConstExpression(c);
-                case FieldSymbol f: return new BoundFieldExpression(f);
+                case FieldSymbol f: return new BoundFieldExpression(null, f);
                 default:
                     Diagnostics.ReportNotSupported(syntax.IdentifierToken.Span);
                     return new BoundLiteralExpression(TypeSymbol.I32, 0);

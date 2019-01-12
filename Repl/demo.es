@@ -51,12 +51,13 @@ p2
 //p3
 //p4
 
-p1.Name = "Peter"
+p1.Name = "Kathrin"
+p2.Name = "Florian"
 Print(p1.Name)
 Print("\n")
 
-p1.Tell()
 p2.Tell()
+p1.Tell()
 //p3.Tell()
 //p4.Tell()
 

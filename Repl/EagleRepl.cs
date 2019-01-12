@@ -18,7 +18,7 @@ namespace Repl
 
         private readonly Dictionary<ConstSymbol, object> _constants = new Dictionary<ConstSymbol, object>();
 
-        private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
+        private readonly Dictionary<Symbol, object> _globals = new Dictionary<Symbol, object>();
 
         private readonly Dictionary<FunctionSymbol, Delegate> _functions =
             new Dictionary<FunctionSymbol, Delegate>();
@@ -109,7 +109,7 @@ namespace Repl
                 printer.Print(compilation);
             }
 
-            var result = compilation.Evaluate(_constants, _variables, _functions);
+            var result = compilation.Evaluate(_globals);
 
             if (!result.Diagnostics.Any())
             {
@@ -119,7 +119,7 @@ namespace Repl
 
                 // TODO if (compile) - if activated we would need to re-emit the whole module
                 if (_compile)
-                    _compiler.CompileAndRun(compilation, _variables);
+                    _compiler.CompileAndRun(compilation, _globals);
 
                 _previous = compilation;
             }
