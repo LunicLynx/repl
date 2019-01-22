@@ -227,8 +227,24 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundConstExpression c: return RewriteConstExpression(c);
                 case BoundFieldExpression f: return RewriteFieldExpression(f);
                 case BoundMethodCallExpression m: return RewriteMethodCallExpression(m);
+                case BoundConstructorCallExpression c: return RewriteConstructorCallExpression(c);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundExpression RewriteConstructorCallExpression(BoundConstructorCallExpression node)
+        {
+            var changed = false;
+            var result = ImmutableArray.CreateBuilder<BoundExpression>();
+            foreach (var boundExpression in node.Arguments)
+            {
+                var expression = RewriteExpression(boundExpression);
+                if (expression != boundExpression)
+                    changed = true;
+                result.Add(expression);
+            }
+
+            return changed ? new BoundConstructorCallExpression(node.Constructor, result.ToImmutable()) : node;
         }
 
         private BoundExpression RewriteMethodCallExpression(BoundMethodCallExpression node)

@@ -51,7 +51,7 @@ p2
 //p3
 //p4
 
-p1.Name = "Kathrin"
+p1.Name = "Peter"
 p2.Name = "Florian"
 Print(p1.Name)
 Print("\n")

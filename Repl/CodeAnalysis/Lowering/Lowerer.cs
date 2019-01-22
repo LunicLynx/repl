@@ -206,5 +206,31 @@ namespace Repl.CodeAnalysis.Lowering
 
             return RewriteBlockStatement(result);
         }
+
+        protected override BoundStructDeclaration RewriteStructDeclaration(BoundStructDeclaration node)
+        {
+            node = base.RewriteStructDeclaration(node);
+
+            var changed = false;
+            // 1. define default constructor
+            
+            var type = node.Type;
+
+            var boundMembers = node.Members.Select(m => m.Member).ToList();
+            var defaultCtor = type.Members.OfType<ConstructorSymbol>().FirstOrDefault(c => boundMembers.All(m => m != c));
+
+            var members = node.Members;
+            if (defaultCtor != null)
+            {
+                changed = true;
+                var body = new BoundBlockStatement(ImmutableArray<BoundStatement>.Empty);
+                var constructorDeclaration = new BoundConstructorDeclaration(defaultCtor, body);
+                members = members.Add(constructorDeclaration);
+            }
+
+            // 2. prepend initializers to every constructor that does not call another constructor
+
+            return changed ? new BoundStructDeclaration(node.Type, members) : node;
+        }
     }
 }

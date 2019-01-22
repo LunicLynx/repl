@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Repl.CodeAnalysis.Binding;
 
 namespace Repl.CodeAnalysis
@@ -95,9 +96,31 @@ namespace Repl.CodeAnalysis
                 case BoundMethodDeclaration m:
                     EvaluateMethodDeclaration(m);
                     break;
+                case BoundConstructorDeclaration c:
+                    EvaluateConstructorDeclaration(c);
+                    break;
                 default:
                     throw new Exception($"Unexpected node {node.GetType()}");
             }
+        }
+
+        private void EvaluateConstructorDeclaration(BoundConstructorDeclaration node)
+        {
+            var body = node.Body;
+
+            var value = node.Body;
+
+            _globals[node.Constructor] = (Func<object, object[], object>)((target, args) =>
+            {
+                for (var i = 0; i < node.Constructor.Parameters.Length; i++)
+                {
+                    var parameter = node.Constructor.Parameters[i];
+                    SetSymbolValue(parameter, args[i]);
+                }
+
+                return EvaluateBlock(body);
+            });
+            _lastValue = value;
         }
 
         private void EvaluateMethodDeclaration(BoundMethodDeclaration node)
@@ -240,12 +263,40 @@ namespace Repl.CodeAnalysis
                     return EvaluateMethodCallExpression(m);
                 case BoundFieldExpression f:
                     return EvaluateFieldExpression(f);
+                case BoundConstructorCallExpression c:
+                    return EvaluateConstructorCallExpression(c);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
         }
 
+        private object EvaluateConstructorCallExpression(BoundConstructorCallExpression node)
+        {
+            var args = node.Arguments.Select(EvaluateExpression).ToArray();
 
+            var target = new Dictionary<string, object>();
+            var fields = node.Type.Members.OfType<FieldSymbol>();
+            foreach (var field in fields)
+            {
+                target[field.Name] = GetDefaultValue(field.Type);
+            }
+            using (StackFrame(target))
+            {
+                ((Delegate)_globals[node.Constructor]).DynamicInvoke(target, args);
+                return target;
+            }
+        }
+
+        private static T GetDefaultValue<T>()
+        {
+            return default;
+        }
+
+        private object GetDefaultValue(TypeSymbol type)
+        {
+            var m = GetType().GetMethod(nameof(GetDefaultValue), BindingFlags.Static | BindingFlags.NonPublic);
+            return m.MakeGenericMethod(type.ClrType).Invoke(null, new object[0]);
+        }
 
         private object EvaluateFieldExpression(BoundFieldExpression node)
         {
