@@ -4,9 +4,9 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class FieldDeclarationSyntax : MemberDeclarationSyntax
     {
-        public ExpressionSyntax Initializer { get; }
+        public InitializerSyntax Initializer { get; }
 
-        public FieldDeclarationSyntax(Token identifierToken, TypeAnnotationSyntax typeAnnotation, ExpressionSyntax initializer)
+        public FieldDeclarationSyntax(Token identifierToken, TypeAnnotationSyntax typeAnnotation, InitializerSyntax initializer)
             : base(identifierToken, typeAnnotation)
         {
             Initializer = initializer;

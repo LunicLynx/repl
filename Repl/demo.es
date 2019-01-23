@@ -40,8 +40,8 @@ struct Person {
 	}
 }
 
-let p1 = Person
-let p2 = new Person
+let p1 = Person()
+let p2 = new Person()
 
 //let p3: Person# = Person
 //let p4: Person = new Person

@@ -45,7 +45,7 @@ struct A {
 A().GetValue()
 ";
             var result = Evaluate(source);
-            Assert.Equal(100, (int)result);
+            Assert.Equal(100, (long)result);
         }
 
         [Fact]
@@ -58,7 +58,7 @@ struct A {
 A().b
 ";
             var result = Evaluate(source);
-            Assert.Equal(100, (int)result);
+            Assert.Equal(100, (long)result);
         }
 
         [Fact]

@@ -174,7 +174,7 @@ namespace Repl.CodeAnalysis.Syntax
                 return ParseMethodDeclaration();
             }
 
-            
+
 
             if (Current.Kind == TokenKind.OpenBrace ||
                 Current.Kind == TokenKind.EqualsGreater)
@@ -198,13 +198,21 @@ namespace Repl.CodeAnalysis.Syntax
                 typeAnnotation = ParseTypeAnnotation();
             }
 
-            ExpressionSyntax initializer = null;
+            InitializerSyntax initializer = null;
             if (Current.Kind == TokenKind.Equals)
             {
-                initializer = ParseExpression();
+                initializer = ParseInitializer();
+
             }
 
             return new FieldDeclarationSyntax(identifierToken, typeAnnotation, initializer);
+        }
+
+        private InitializerSyntax ParseInitializer()
+        {
+            var equalsToken = MatchToken(TokenKind.Equals);
+            var expression = ParseExpression();
+            return new InitializerSyntax(equalsToken, expression);
         }
 
         private MemberDeclarationSyntax ParsePropertyDeclaration()

@@ -391,7 +391,7 @@ namespace Repl.CodeAnalysis.Binding
             BoundExpression initializer = null;
             if (syntax.Initializer != null)
             {
-                initializer = BindExpression(syntax.Initializer);
+                initializer = BindExpression(syntax.Initializer.Expression);
             }
 
             TypeSymbol type = null;
