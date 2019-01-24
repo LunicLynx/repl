@@ -229,6 +229,20 @@ namespace Repl.CodeAnalysis.Lowering
             }
 
             // 2. prepend initializers to every constructor that does not call another constructor
+            //var ctors = members.OfType<BoundConstructorDeclaration>();
+            //foreach (var ctor in ctors)
+            //{
+            //    var fields = members.OfType<BoundFieldDeclaration>();
+            //    foreach (var field in fields)
+            //    {
+            //        if (field.Initializer != null)
+            //        {
+            //            new BoundAssignmentExpression(new BoundFieldExpression(new Bound), )
+
+            //            ctor.Body.Statements.
+            //        }
+            //    }
+            //}
 
             return changed ? new BoundStructDeclaration(node.Type, members) : node;
         }
