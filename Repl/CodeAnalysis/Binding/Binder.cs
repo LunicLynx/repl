@@ -366,7 +366,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundMemberDeclaration BindMethodDeclaration(MethodDeclarationSyntax syntax)
         {
-            var method = BindPrototype2(syntax.Prototype);
+            var method = GetSymbol<MethodSymbol>(syntax.IdentifierToken);
             _scope = new BoundScope(_scope);
 
             var parameters = syntax.Prototype.Parameters.OfType<ParameterSyntax>().ToArray();
@@ -386,7 +386,6 @@ namespace Repl.CodeAnalysis.Binding
         private BoundMemberDeclaration BindFieldDeclaration(FieldDeclarationSyntax syntax)
         {
             var field = GetSymbol<FieldSymbol>(syntax.IdentifierToken);
-            //_syntaxToSymbolMap[syntax];
 
             BoundExpression initializer = null;
             if (syntax.Initializer != null)
