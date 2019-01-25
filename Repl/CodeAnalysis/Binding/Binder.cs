@@ -94,7 +94,7 @@ namespace Repl.CodeAnalysis.Binding
                 DeclareTypeMember(member);
             }
 
-            var hasConstructor = false;
+            var hasConstructor = symbol.Members.OfType<ConstructorSymbol>().Any();
             if (!hasConstructor)
             {
                 var constructorSymbol = new ConstructorSymbol(symbol, Array.Empty<ParameterSymbol>());
@@ -115,14 +115,25 @@ namespace Repl.CodeAnalysis.Binding
                 case MethodDeclarationSyntax m:
                     DeclareMethod(m);
                     break;
+                case ConstructorDeclarationSyntax c:
+                    DeclareConstructor(c);
+                    break;
                 default:
                     throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
         }
 
+        private void DeclareConstructor(ConstructorDeclarationSyntax syntax)
+        {
+            var type = ((TypeScope)_scope).Type;
+            var parameters = LookupParameterList(syntax.ParameterList);
+            var constructor = new ConstructorSymbol(type, parameters);
+            DeclareSymbol(constructor, syntax.IdentifierToken);
+        }
+
         private void DeclareMethod(MethodDeclarationSyntax syntax)
         {
-            var method = BindPrototype2(syntax.Prototype);
+            var method = LookupPrototype2(syntax.Prototype);
             DeclareSymbol(method, syntax.Prototype.IdentifierToken);
         }
 
@@ -135,7 +146,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private void DeclareFunction(FunctionDeclarationSyntax syntax)
         {
-            var function = BindPrototype(syntax.Prototype);
+            var function = LookupPrototype(syntax.Prototype);
             DeclareSymbol(function, syntax.Prototype.IdentifierToken);
         }
 
@@ -178,7 +189,7 @@ namespace Repl.CodeAnalysis.Binding
             }
             DeclareSymbol(symbol, identifierToken);
         }
-        
+
         private static BoundScope CreateParentScopes(BoundGlobalScope previous)
         {
             var stack = new Stack<BoundGlobalScope>();
@@ -359,9 +370,28 @@ namespace Repl.CodeAnalysis.Binding
                     return BindFieldDeclaration(f);
                 case MethodDeclarationSyntax m:
                     return BindMethodDeclaration(m);
+                case ConstructorDeclarationSyntax c:
+                    return BindConstructorDeclaration(c);
                 default:
                     throw new Exception($"Unexpected node {syntax.GetType()}");
             }
+        }
+
+        private BoundMemberDeclaration BindConstructorDeclaration(ConstructorDeclarationSyntax syntax)
+        {
+            var constructor = GetSymbol<ConstructorSymbol>(syntax.IdentifierToken);
+
+            _scope = new BoundScope(_scope);
+
+            var parameterList = syntax.ParameterList;
+            var parameterSymbols = constructor.Parameters;
+
+            DeclareParameters(parameterList, parameterSymbols);
+            var body = BindBlockStatement(syntax.Body);
+
+            _scope = _scope.Parent;
+
+            return new BoundConstructorDeclaration(constructor, body);
         }
 
         private BoundMemberDeclaration BindMethodDeclaration(MethodDeclarationSyntax syntax)
@@ -369,13 +399,10 @@ namespace Repl.CodeAnalysis.Binding
             var method = GetSymbol<MethodSymbol>(syntax.IdentifierToken);
             _scope = new BoundScope(_scope);
 
-            var parameters = syntax.Prototype.Parameters.OfType<ParameterSyntax>().ToArray();
-            for (var i = 0; i < parameters.Length; i++)
-            {
-                var parameter = parameters[i];
-                var symbol = method.Parameters[i];
-                DeclareSymbol(symbol, parameter.IdentifierToken);
-            }
+            var parameterList = syntax.Prototype.ParameterList;
+            var parameterSymbols = method.Parameters;
+
+            DeclareParameters(parameterList, parameterSymbols);
 
             var body = BindBlockStatement(syntax.Body);
             _scope = _scope.Parent;
@@ -417,13 +444,10 @@ namespace Repl.CodeAnalysis.Binding
             var function = GetSymbol<FunctionSymbol>(syntax.Prototype.IdentifierToken);
             _scope = new BoundScope(_scope);
 
-            var parameters = syntax.Prototype.Parameters.OfType<ParameterSyntax>().ToArray();
-            for (var i = 0; i < parameters.Length; i++)
-            {
-                var parameter = parameters[i];
-                var symbol = function.Parameters[i];
-                DeclareSymbol(symbol, parameter.IdentifierToken);
-            }
+            var parameterList = syntax.Prototype.ParameterList;
+            var parameterSymbols = function.Parameters;
+
+            DeclareParameters(parameterList, parameterSymbols);
 
             var body = BindBlockStatement(syntax.Body);
             _scope = _scope.Parent;
@@ -431,7 +455,18 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundFunctionDeclaration(function, body);
         }
 
-        private FunctionSymbol BindPrototype(PrototypeSyntax syntax)
+        private void DeclareParameters(ParameterListSyntax parameterList, ParameterSymbol[] parameterSymbols)
+        {
+            var parameters = parameterList.Parameters.OfType<ParameterSyntax>().ToArray();
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                var parameter = parameters[i];
+                var symbol = parameterSymbols[i];
+                DeclareSymbol(symbol, parameter.IdentifierToken);
+            }
+        }
+
+        private FunctionSymbol LookupPrototype(PrototypeSyntax syntax)
         {
             var typeSyntax = syntax.ReturnType;
 
@@ -440,14 +475,15 @@ namespace Repl.CodeAnalysis.Binding
             var identifierToken = syntax.IdentifierToken;
             var name = identifierToken.Text;
 
-            var parameters = syntax.Parameters.OfType<ParameterSyntax>().Select(BindParameter).ToArray();
+            var parameterList = syntax.ParameterList;
+            var parameters = LookupParameterList(parameterList);
 
             var function = new FunctionSymbol(type, name, parameters);
 
             return function;
         }
 
-        private MethodSymbol BindPrototype2(PrototypeSyntax syntax)
+        private MethodSymbol LookupPrototype2(PrototypeSyntax syntax)
         {
             var typeSyntax = syntax.ReturnType;
 
@@ -456,11 +492,17 @@ namespace Repl.CodeAnalysis.Binding
             var identifierToken = syntax.IdentifierToken;
             var name = identifierToken.Text;
 
-            var parameters = syntax.Parameters.OfType<ParameterSyntax>().Select(BindParameter).ToArray();
+            var parameterList = syntax.ParameterList;
+            var parameters = LookupParameterList(parameterList);
 
             var function = new MethodSymbol(type, name, parameters);
 
             return function;
+        }
+
+        private ParameterSymbol[] LookupParameterList(ParameterListSyntax parameterList)
+        {
+            return parameterList.Parameters.OfType<ParameterSyntax>().Select(BindParameter).ToArray();
         }
 
         private ParameterSymbol BindParameter(ParameterSyntax syntax, int index)
@@ -490,7 +532,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundExternDeclaration BindExternDeclaration(ExternDeclarationSyntax syntax)
         {
-            var function = BindPrototype(syntax.Prototype);
+            var function = LookupPrototype(syntax.Prototype);
             DeclareSymbol(function, syntax.Prototype.IdentifierToken);
             return new BoundExternDeclaration(function);
         }

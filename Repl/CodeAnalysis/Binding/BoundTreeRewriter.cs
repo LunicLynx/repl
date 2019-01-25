@@ -71,9 +71,18 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundFieldDeclaration f: return RewriteFieldDeclaration(f);
                 case BoundPropertyDeclaration p: return RewritePropertyDeclaration(p);
                 case BoundMethodDeclaration m: return RewriteMethodDeclaration(m);
+                case BoundConstructorDeclaration c: return RewriteConstructorDeclaration(c);
                 default:
                     throw new Exception($"Unexpected node {node.GetType()}");
             }
+        }
+
+        private BoundMemberDeclaration RewriteConstructorDeclaration(BoundConstructorDeclaration node)
+        {
+            var body = RewriteBlockStatement(node.Body);
+            if (body == node.Body)
+                return node;
+            return new BoundConstructorDeclaration(node.Constructor, body);
         }
 
         private BoundMemberDeclaration RewriteMethodDeclaration(BoundMethodDeclaration node)

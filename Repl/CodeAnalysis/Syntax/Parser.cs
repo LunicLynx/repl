@@ -112,10 +112,14 @@ namespace Repl.CodeAnalysis.Syntax
             }
         }
 
+
+        private Token _structIdentifier;
         private SyntaxNode ParseStructDeclaration()
         {
             var structKeyword = MatchToken(TokenKind.StructKeyword);
             var identifierToken = MatchToken(TokenKind.Identifier);
+
+            _structIdentifier = identifierToken;
 
             BaseTypeSyntax baseType = null;
             if (Current.Kind == TokenKind.Colon)
@@ -168,6 +172,13 @@ namespace Repl.CodeAnalysis.Syntax
 
         private MemberDeclarationSyntax ParseMemberDeclaration()
         {
+            if (Current.Kind == TokenKind.Identifier && Current.Text == _structIdentifier.Text &&
+                Peek(1).Kind == TokenKind.OpenParenthesis)
+            {
+                // ctor
+                return ParseConstructorDeclaration();
+            }
+
             if (Peek(1).Kind == TokenKind.OpenParenthesis)
             {
                 // Method
@@ -175,7 +186,7 @@ namespace Repl.CodeAnalysis.Syntax
             }
 
 
-
+            // TODO THIS IS WRONG
             if (Current.Kind == TokenKind.OpenBrace ||
                 Current.Kind == TokenKind.EqualsGreater)
             {
@@ -185,6 +196,14 @@ namespace Repl.CodeAnalysis.Syntax
 
             // field
             return ParseFieldDeclaration();
+        }
+
+        private MemberDeclarationSyntax ParseConstructorDeclaration()
+        {
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            var parameterList = ParseParameterList();
+            var body = ParseBlockStatement();
+            return new ConstructorDeclarationSyntax(identifierToken, parameterList, body);
         }
 
         private MemberDeclarationSyntax ParseFieldDeclaration()
@@ -246,6 +265,19 @@ namespace Repl.CodeAnalysis.Syntax
         private PrototypeSyntax ParsePrototype()
         {
             var identifierToken = MatchToken(TokenKind.Identifier);
+            var parameterList = ParseParameterList();
+
+            TypeAnnotationSyntax returnTypeAnnotation = null;
+            if (Current.Kind == TokenKind.Colon)
+            {
+                returnTypeAnnotation = ParseTypeAnnotation();
+            }
+
+            return new PrototypeSyntax(identifierToken, parameterList, returnTypeAnnotation);
+        }
+
+        private ParameterListSyntax ParseParameterList()
+        {
             var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
 
             var parameters = ImmutableArray.CreateBuilder<SyntaxNode>();
@@ -259,6 +291,7 @@ namespace Repl.CodeAnalysis.Syntax
                     var commaToken = MatchToken(TokenKind.Comma);
                     parameters.Add(commaToken);
                 }
+
                 first = false;
 
                 var parameter = ParseParameter();
@@ -266,14 +299,7 @@ namespace Repl.CodeAnalysis.Syntax
             }
 
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
-
-            TypeAnnotationSyntax returnTypeAnnotation = null;
-            if (Current.Kind == TokenKind.Colon)
-            {
-                returnTypeAnnotation = ParseTypeAnnotation();
-            }
-
-            return new PrototypeSyntax(identifierToken, openParenthesisToken, parameters.ToImmutable(), closeParenthesisToken, returnTypeAnnotation);
+            return new ParameterListSyntax(openParenthesisToken, parameters.ToImmutable(), closeParenthesisToken);
         }
 
         private TypeAnnotationSyntax ParseTypeAnnotation()

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
 using Repl.CodeAnalysis.Binding;
@@ -426,23 +427,33 @@ namespace Repl.CodeAnalysis
 
         private object EvaluateAssignmentExpression(BoundAssignmentExpression node)
         {
+            Dictionary<string, object> target;
+            string name;
             if (node.Target is BoundVariableExpression v)
             {
-                var value = EvaluateExpression(node.Expression);
+                target = GetValueStore();
                 SetSymbolValue(v.Variable, value);
                 return value;
             }
+            else if (node.Target is BoundFieldExpression f)
+            {
+                target = (Dictionary<string, object>)_locals.This;
+                name = f.Field.Name;
+            }
             else if (node.Target is BoundMemberAccessExpression m)
             {
-                var target = (IDictionary<string, object>)EvaluateExpression(m.Target);
-                var value = EvaluateExpression(node.Expression);
-                target[m.Member.Name] = value;
-                return value;
+                target = (IDictionary<string, object>)EvaluateExpression(m.Target);
+                name = m.Member.Name;
             }
             else
             {
                 throw new Exception("Unsupported assignment target.");
             }
+
+            var value = EvaluateExpression(node.Expression);
+            target[name] = value;
+
+            return value;
         }
 
         private object EvaluateLiteralExpression(BoundLiteralExpression node)

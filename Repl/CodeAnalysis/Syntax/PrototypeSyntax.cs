@@ -1,34 +1,25 @@
 ﻿using System.Collections.Generic;
-using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Syntax
 {
     public class PrototypeSyntax : SyntaxNode
     {
         public Token IdentifierToken { get; }
-        public Token OpenParenthesisToken { get; }
-        public ImmutableArray<SyntaxNode> Parameters { get; }
-        public Token CloseParenthesisToken { get; }
+        public ParameterListSyntax ParameterList { get; }
+
         public TypeAnnotationSyntax ReturnType { get; }
 
-        public PrototypeSyntax(Token identifierToken, Token openParenthesisToken, ImmutableArray<SyntaxNode> parameters, Token closeParenthesisToken, TypeAnnotationSyntax returnType)
+        public PrototypeSyntax(Token identifierToken, ParameterListSyntax parameterList, TypeAnnotationSyntax returnType)
         {
             IdentifierToken = identifierToken;
-            OpenParenthesisToken = openParenthesisToken;
-            Parameters = parameters;
-            CloseParenthesisToken = closeParenthesisToken;
+            ParameterList = parameterList;
             ReturnType = returnType;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return IdentifierToken;
-            yield return OpenParenthesisToken;
-            foreach (var parameter in Parameters)
-            {
-                yield return parameter;
-            }
-            yield return CloseParenthesisToken;
+            yield return ParameterList;
             if (ReturnType != null)
             {
                 yield return ReturnType;
