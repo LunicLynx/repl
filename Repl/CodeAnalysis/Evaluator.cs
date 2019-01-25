@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
 using Repl.CodeAnalysis.Binding;
@@ -275,11 +274,11 @@ namespace Repl.CodeAnalysis
         {
             var args = node.Arguments.Select(EvaluateExpression).ToArray();
 
-            var target = new Dictionary<string, object>();
+            var target = new Dictionary<Symbol, object>();
             var fields = node.Type.Members.OfType<FieldSymbol>();
             foreach (var field in fields)
             {
-                target[field.Name] = GetDefaultValue(field.Type);
+                target[field] = GetDefaultValue(field.Type);
             }
             using (StackFrame(target))
             {
@@ -309,9 +308,9 @@ namespace Repl.CodeAnalysis
 
             target = target ?? _locals.This;
 
-            var dic = (Dictionary<string, object>)target;
+            var dic = (Dictionary<Symbol, object>)target;
 
-            return dic[node.Field.Name];
+            return dic[node.Field];
         }
 
         private object EvaluateMethodCallExpression(BoundMethodCallExpression node)
@@ -351,8 +350,8 @@ namespace Repl.CodeAnalysis
                 return typeof(string).GetProperty(node.Member.Name).GetValue(value, null);
             }
 
-            var target = (IDictionary<string, object>)EvaluateExpression(node.Target);
-            return target[node.Member.Name];
+            var target = (IDictionary<Symbol, object>)EvaluateExpression(node.Target);
+            return target[node.Member];
         }
 
         private object EvaluateConstExpression(BoundConstExpression node)
@@ -362,13 +361,13 @@ namespace Repl.CodeAnalysis
 
         private object EvaluateNewExpression(BoundNewExpression node)
         {
-            return new Dictionary<string, object>();
+            return new Dictionary<Symbol, object>();
             // TODO call all initializer
         }
 
         private object EvaluateTypeExpression(BoundTypeExpression node)
         {
-            return new Dictionary<string, object>();
+            return new Dictionary<Symbol, object>();
             // TODO call all initializer
         }
 
@@ -427,31 +426,37 @@ namespace Repl.CodeAnalysis
 
         private object EvaluateAssignmentExpression(BoundAssignmentExpression node)
         {
-            Dictionary<string, object> target;
-            string name;
+            Dictionary<Symbol, object> target;
+            Symbol symbol;
+            Type t;
             if (node.Target is BoundVariableExpression v)
             {
                 target = GetValueStore();
-                SetSymbolValue(v.Variable, value);
-                return value;
+                symbol = v.Variable;
+                t = v.Variable.Type.ClrType;
+                //SetSymbolValue(v.Variable, value);
+                //return value;
             }
             else if (node.Target is BoundFieldExpression f)
             {
-                target = (Dictionary<string, object>)_locals.This;
-                name = f.Field.Name;
+                target = (Dictionary<Symbol, object>)_locals.This;
+                symbol = f.Field;
+                t = f.Field.Type.ClrType;
             }
             else if (node.Target is BoundMemberAccessExpression m)
             {
-                target = (IDictionary<string, object>)EvaluateExpression(m.Target);
-                name = m.Member.Name;
+                target = (Dictionary<Symbol, object>)EvaluateExpression(m.Target);
+                symbol = m.Member;
+                t = m.Member.Type.ClrType;
             }
             else
             {
+                //int x = 5L;
                 throw new Exception("Unsupported assignment target.");
             }
 
             var value = EvaluateExpression(node.Expression);
-            target[name] = value;
+            target[symbol] = Convert.ChangeType(value, t);
 
             return value;
         }

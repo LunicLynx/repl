@@ -213,7 +213,7 @@ namespace Repl.CodeAnalysis.Lowering
 
             var changed = false;
             // 1. define default constructor
-            
+
             var type = node.Type;
 
             var boundMembers = node.Members.Select(m => m.Member).ToList();
@@ -229,20 +229,33 @@ namespace Repl.CodeAnalysis.Lowering
             }
 
             // 2. prepend initializers to every constructor that does not call another constructor
-            //var ctors = members.OfType<BoundConstructorDeclaration>();
-            //foreach (var ctor in ctors)
-            //{
-            //    var fields = members.OfType<BoundFieldDeclaration>();
-            //    foreach (var field in fields)
-            //    {
-            //        if (field.Initializer != null)
-            //        {
-            //            new BoundAssignmentExpression(new BoundFieldExpression(new Bound), )
+            //var newCtors = new List<>
+            var ctors = members.OfType<BoundConstructorDeclaration>().ToList();
+            foreach (var ctor in ctors)
+            {
+                var initializerStatements = new List<BoundStatement>();
 
-            //            ctor.Body.Statements.
-            //        }
-            //    }
-            //}
+                var fields = members.OfType<BoundFieldDeclaration>();
+                foreach (var field in fields)
+                {
+                    if (field.Initializer != null)
+                    {
+                        var fieldExpression = new BoundFieldExpression(null, field.Field);
+                        var assign = new BoundAssignmentExpression(fieldExpression, field.Initializer);
+                        var assignStatement = new BoundExpressionStatement(assign);
+                        initializerStatements.Add(assignStatement);
+                    }
+                }
+
+                if (initializerStatements.Any())
+                {
+                    changed = true;
+                    var newStatements = ctor.Body.Statements.InsertRange(0, initializerStatements);
+                    var newBody = new BoundBlockStatement(newStatements);
+                    var newCtor = new BoundConstructorDeclaration(ctor.Constructor, newBody);
+                    members = members.Replace(ctor, newCtor);
+                }
+            }
 
             return changed ? new BoundStructDeclaration(node.Type, members) : node;
         }

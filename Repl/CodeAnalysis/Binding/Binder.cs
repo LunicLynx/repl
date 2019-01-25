@@ -1027,10 +1027,10 @@ namespace Repl.CodeAnalysis.Binding
                     type = TypeSymbol.Bool;
                     break;
                 case TokenKind.NumberLiteral:
-                    if (!int.TryParse(token.Text, out var number))
+                    if (!long.TryParse(token.Text, out var number))
                         Diagnostics.ReportInvalidNumber(token.Span, token.Text);
                     value = number;
-                    type = TypeSymbol.I32;
+                    type = TypeSymbol.I64;
                     break;
                 case TokenKind.StringLiteral:
                     value = token.Text.Substring(1, token.Text.Length - 2)
