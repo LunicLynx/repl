@@ -16,7 +16,7 @@ namespace Repl.Tests
         {
             var source = "struct A { B(){} C(){ B() } }";
 
-            var text = new SourceText(source);
+            var text = SourceText.From(source);
 
             var parser = new Parser(text);
             var compilationUnit = parser.ParseCompilationUnit();

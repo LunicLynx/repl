@@ -720,7 +720,8 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundExpression BindInvokeExpression(InvokeExpressionSyntax syntax)
         {
-            if (syntax.Target is MemberAccessExpressionSyntax m)
+            var target = syntax.Target;
+            if (target is MemberAccessExpressionSyntax m)
             {
                 var t = BindExpression(m.Target);
                 if (!(t.Type.Members.FirstOrDefault(me => me.Name == m.IdentifierToken.Text) is MethodSymbol method))
@@ -738,13 +739,24 @@ namespace Repl.CodeAnalysis.Binding
                 return new BoundMethodCallExpression(t, method, boundArguments);
             }
 
-            if (!(syntax.Target is NameExpressionSyntax n))
+            if (target is NewExpressionSyntax ne)
             {
-                Diagnostics.ReportFunctionNameExpected(syntax.Target.Span);
+                target = ne.TypeName;
+            }
+
+            if (!(target is NameExpressionSyntax n))
+            {
+                Diagnostics.ReportFunctionNameExpected(target.Span);
                 return new BoundLiteralExpression(TypeSymbol.I32, 0);
             }
 
-            var symbol = GetSymbol(new[] { typeof(TypeSymbol), typeof(FunctionSymbol) }, n.IdentifierToken);
+            var allowedTypes = new[]
+            {
+                typeof(TypeSymbol),
+                typeof(FunctionSymbol),
+                typeof(MethodSymbol)
+            };
+            var symbol = GetSymbol(allowedTypes, n.IdentifierToken);
 
             if (symbol is FunctionSymbol function)
             {
@@ -768,6 +780,19 @@ namespace Repl.CodeAnalysis.Binding
                     return new BoundLiteralExpression(TypeSymbol.I32, 0);
 
                 return new BoundConstructorCallExpression(constructor, boundArguments);
+            }
+
+            if (symbol is MethodSymbol method1)
+            {
+
+                //syntax.Target
+                var arguments = syntax.Arguments.OfType<ExpressionSyntax>().ToArray();
+                var parameters = method1.Parameters;
+
+                if (!TryBindArguments(method1.Name, parameters, arguments, out var boundArguments))
+                    return new BoundLiteralExpression(TypeSymbol.I32, 0);
+
+                return new BoundMethodCallExpression(null, method1, boundArguments);
             }
 
             return new BoundLiteralExpression(TypeSymbol.I32, 0);
