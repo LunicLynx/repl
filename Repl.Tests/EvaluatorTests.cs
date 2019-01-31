@@ -14,7 +14,7 @@ namespace Repl.Tests
         {
             var source = "100";
             var result = Evaluate(source);
-            Assert.Equal(100, (int)result);
+            Assert.Equal(100L, result);
         }
 
         [Fact]
@@ -22,7 +22,7 @@ namespace Repl.Tests
         {
             var source = "-100";
             var result = Evaluate(source);
-            Assert.Equal(-100, result);
+            Assert.Equal(-100L, result);
         }
 
         [Fact]
@@ -30,7 +30,7 @@ namespace Repl.Tests
         {
             var source = "49 + 51";
             var result = Evaluate(source);
-            Assert.Equal(100, result);
+            Assert.Equal(100L, result);
         }
 
         [Fact]

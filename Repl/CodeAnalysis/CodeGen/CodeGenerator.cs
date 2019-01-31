@@ -313,9 +313,9 @@ namespace Repl.CodeAnalysis.CodeGen
                     return _builder.SDiv(left, right);
                 case BoundBinaryOperatorKind.Modulo:
                     return _builder.SRem(left, right);
-                case BoundBinaryOperatorKind.Equals:
+                case BoundBinaryOperatorKind.Equal:
                     return _builder.ICmpEq(left, right);
-                case BoundBinaryOperatorKind.NotEquals:
+                case BoundBinaryOperatorKind.NotEqual:
                     return _builder.ICmpNe(left, right);
                 case BoundBinaryOperatorKind.LogicalAnd:
                 case BoundBinaryOperatorKind.BitwiseAnd:
@@ -325,11 +325,11 @@ namespace Repl.CodeAnalysis.CodeGen
                     return _builder.Or(left, right);
                 case BoundBinaryOperatorKind.LessThan:
                     return _builder.ICmpSlt(left, right);
-                case BoundBinaryOperatorKind.LessOrEquals:
+                case BoundBinaryOperatorKind.LessOrEqual:
                     return _builder.ICmpSle(left, right);
                 case BoundBinaryOperatorKind.GreaterThan:
                     return _builder.ICmpSgt(left, right);
-                case BoundBinaryOperatorKind.GreaterOrEquals:
+                case BoundBinaryOperatorKind.GreaterOrEqual:
                     return _builder.ICmpSge(left, right);
                 case BoundBinaryOperatorKind.BitwiseXor:
                     return _builder.Xor(left, right);

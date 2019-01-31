@@ -36,16 +36,16 @@ namespace Repl.CodeAnalysis.Binding
             yield return new BoundBinaryOperator(TokenKind.Ampersand, BoundBinaryOperatorKind.BitwiseAnd, type);
             yield return new BoundBinaryOperator(TokenKind.Pipe, BoundBinaryOperatorKind.BitwiseOr, type);
             yield return new BoundBinaryOperator(TokenKind.Hat, BoundBinaryOperatorKind.BitwiseXor, type);
-            yield return new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equals, type,
+            yield return new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equal, type,
                 boolType);
-            yield return new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, type,
+            yield return new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEqual, type,
                 boolType);
             yield return new BoundBinaryOperator(TokenKind.Less, BoundBinaryOperatorKind.LessThan, type, boolType);
-            yield return new BoundBinaryOperator(TokenKind.LessEquals, BoundBinaryOperatorKind.LessOrEquals, type,
+            yield return new BoundBinaryOperator(TokenKind.LessEquals, BoundBinaryOperatorKind.LessOrEqual, type,
                 boolType);
             yield return new BoundBinaryOperator(TokenKind.Greater, BoundBinaryOperatorKind.GreaterThan, type,
                 boolType);
-            yield return new BoundBinaryOperator(TokenKind.GreaterEquals, BoundBinaryOperatorKind.GreaterOrEquals, type, boolType);
+            yield return new BoundBinaryOperator(TokenKind.GreaterEquals, BoundBinaryOperatorKind.GreaterOrEqual, type, boolType);
         }
 
         private static IEnumerable<BoundBinaryOperator> BooleanOperators(TypeSymbol type)
@@ -56,18 +56,26 @@ namespace Repl.CodeAnalysis.Binding
             yield return new BoundBinaryOperator(TokenKind.Ampersand, BoundBinaryOperatorKind.BitwiseAnd, type);
             yield return new BoundBinaryOperator(TokenKind.Pipe, BoundBinaryOperatorKind.BitwiseOr, type);
             yield return new BoundBinaryOperator(TokenKind.Hat, BoundBinaryOperatorKind.BitwiseXor, type);
-            yield return new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equals, type);
-            yield return new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEquals, type);
+            yield return new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equal, type);
+            yield return new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEqual, type);
 
         }
 
-        private static readonly BoundBinaryOperator[] Operators = BoundOperators.GetOperators(NumericalOperators, BooleanOperators);
+        public static readonly BoundBinaryOperator[] Operators =
+            BoundOperators.GetOperators(
+                NumericalOperators,
+                NumericalOperators,
+                BooleanOperators);
 
 
         public static BoundBinaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol leftType, TypeSymbol rightType)
         {
+
+
             foreach (var @operator in Operators)
             {
+
+
                 if (@operator.TokenKind == operatorTokenKind && @operator.LeftType == leftType &&
                     @operator.RightType == rightType)
                     return @operator;

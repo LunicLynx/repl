@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using Repl.CodeAnalysis.Binding;
 
@@ -8,6 +9,108 @@ namespace Repl.CodeAnalysis
 {
     public class Evaluator
     {
+        private readonly Dictionary<BoundUnaryOperator, Delegate> UnaryOperators = new Dictionary<BoundUnaryOperator, Delegate>();
+        private readonly Dictionary<BoundBinaryOperator, Delegate> BinaryOperators = new Dictionary<BoundBinaryOperator, Delegate>();
+
+        private void InitOperators()
+        {
+            foreach (var @operator in BoundUnaryOperator.Operators)
+            {
+                var i = (uint)1;
+                //var x = -i;
+                var x = i + i;
+                var p = Expression.Parameter(@operator.OperandType.ClrType);
+                Expression e = p;
+                switch (@operator.Kind)
+                {
+                    case BoundUnaryOperatorKind.Negation:
+                        e = Expression.Negate(p);
+                        break;
+                    case BoundUnaryOperatorKind.LogicalNot:
+                        e = Expression.Not(p);
+                        break;
+                    case BoundUnaryOperatorKind.BitwiseComplement:
+                        e = Expression.OnesComplement(p);
+                        break;
+                    case BoundUnaryOperatorKind.Identity:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
+                var l = Expression.Lambda(e, p);
+
+                var @delegate = l.Compile();
+                UnaryOperators[@operator] = @delegate;
+            }
+
+            foreach (var @operator in BoundBinaryOperator.Operators)
+            {
+
+                var pl = Expression.Parameter(@operator.LeftType.ClrType);
+                var pr = Expression.Parameter(@operator.RightType.ClrType);
+                Expression e;
+                switch (@operator.Kind)
+                {
+                    case BoundBinaryOperatorKind.Addition:
+                        e = Expression.Add(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.Multiplication:
+                        e = Expression.Multiply(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.Subtraction:
+                        e = Expression.Subtract(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.Division:
+                        e = Expression.Divide(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.LogicalAnd:
+                        e = Expression.AndAlso(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.LogicalOr:
+                        e = Expression.OrElse(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.Equal:
+                        e = Expression.Equal(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.NotEqual:
+                        e = Expression.NotEqual(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.LessThan:
+                        e = Expression.LessThan(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.LessOrEqual:
+                        e = Expression.LessThanOrEqual(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.GreaterThan:
+                        e = Expression.GreaterThan(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.GreaterOrEqual:
+                        e = Expression.GreaterThanOrEqual(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.BitwiseAnd:
+                        e = Expression.And(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.BitwiseOr:
+                        e = Expression.Or(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.BitwiseXor:
+                        e = Expression.ExclusiveOr(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.Modulo:
+                        e = Expression.Modulo(pl, pr);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
+                var l = Expression.Lambda(e, pl, pr);
+
+                var @delegate = l.Compile();
+                BinaryOperators[@operator] = @delegate;
+            }
+        }
+
         private object _lastValue;
         private readonly BoundUnit _root;
         //private readonly Dictionary<ConstSymbol, object> _constants;
@@ -37,6 +140,10 @@ namespace Repl.CodeAnalysis
             //_variables = variables;
             //_functions = functions;
             //_methods = methods;
+            //sbyte s1 = 4;
+            //sbyte s2 = 4;
+            //var i = s1 + s2;
+            InitOperators();
         }
 
         public object Evaluate()
@@ -470,14 +577,8 @@ namespace Repl.CodeAnalysis
         {
             var operand = EvaluateExpression(node.Operand);
 
-            switch (node.Operator.Kind)
-            {
-                case BoundUnaryOperatorKind.Identity: return (int)operand;
-                case BoundUnaryOperatorKind.Negation: return -(int)operand;
-                case BoundUnaryOperatorKind.LogicalNot: return !(bool)operand;
-                case BoundUnaryOperatorKind.BitwiseComplement: return ~(int)operand;
-                default: throw new Exception("Operator not implemented");
-            }
+            var @delegate = UnaryOperators[node.Operator];
+            return @delegate.DynamicInvoke(operand);
         }
 
         private object EvaluateBinaryExpression(BoundBinaryExpression node)
@@ -485,30 +586,8 @@ namespace Repl.CodeAnalysis
             var left = EvaluateExpression(node.Left);
             var right = EvaluateExpression(node.Right);
 
-            switch (node.Operator.Kind)
-            {
-                case BoundBinaryOperatorKind.Addition: return (int)left + (int)right;
-                case BoundBinaryOperatorKind.Subtraction: return (int)left - (int)right;
-                case BoundBinaryOperatorKind.Multiplication: return (int)left * (int)right;
-                case BoundBinaryOperatorKind.Division: return (int)left / (int)right;
-                case BoundBinaryOperatorKind.Modulo: return (int)left % (int)right;
-                case BoundBinaryOperatorKind.LogicalAnd: return (bool)left && (bool)right;
-                case BoundBinaryOperatorKind.LogicalOr: return (bool)left || (bool)right;
-                case BoundBinaryOperatorKind.Equals: return left == right;
-                case BoundBinaryOperatorKind.NotEquals: return left != right;
-                case BoundBinaryOperatorKind.LessThan: return (int)left < (int)right;
-                case BoundBinaryOperatorKind.LessOrEquals: return (int)left <= (int)right;
-                case BoundBinaryOperatorKind.GreaterThan: return (int)left > (int)right;
-                case BoundBinaryOperatorKind.GreaterOrEquals: return (int)left >= (int)right;
-                case BoundBinaryOperatorKind.BitwiseAnd when left is bool l && right is bool r: return l & r;
-                case BoundBinaryOperatorKind.BitwiseAnd when left is int l && right is int r: return l & r;
-                case BoundBinaryOperatorKind.BitwiseOr when left is bool l && right is bool r: return l | r;
-                case BoundBinaryOperatorKind.BitwiseOr when left is int l && right is int r: return l | r;
-                case BoundBinaryOperatorKind.BitwiseXor when left is bool l && right is bool r: return l ^ r;
-                case BoundBinaryOperatorKind.BitwiseXor when left is int l && right is int r: return l ^ r;
-                default: throw new Exception("Operator not implemented");
-
-            }
+            var @delegate = BinaryOperators[node.Operator];
+            return @delegate.DynamicInvoke(left, right);
         }
     }
 }

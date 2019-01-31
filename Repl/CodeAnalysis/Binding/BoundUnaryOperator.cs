@@ -26,10 +26,15 @@ namespace Repl.CodeAnalysis.Binding
 
         }
 
-        private static IEnumerable<BoundUnaryOperator> NumericalOperators(TypeSymbol type, TypeSymbol _)
+        private static IEnumerable<BoundUnaryOperator> NumericalOperatorsSigned(TypeSymbol type, TypeSymbol _)
         {
             yield return new BoundUnaryOperator(TokenKind.Plus, BoundUnaryOperatorKind.Identity, type);
             yield return new BoundUnaryOperator(TokenKind.Minus, BoundUnaryOperatorKind.Negation, type);
+            yield return new BoundUnaryOperator(TokenKind.Tilde, BoundUnaryOperatorKind.BitwiseComplement, type);
+        }
+        private static IEnumerable<BoundUnaryOperator> NumericalOperatorsUnsigned(TypeSymbol type, TypeSymbol _)
+        {
+            yield return new BoundUnaryOperator(TokenKind.Plus, BoundUnaryOperatorKind.Identity, type);
             yield return new BoundUnaryOperator(TokenKind.Tilde, BoundUnaryOperatorKind.BitwiseComplement, type);
         }
 
@@ -38,7 +43,11 @@ namespace Repl.CodeAnalysis.Binding
             yield return new BoundUnaryOperator(TokenKind.Bang, BoundUnaryOperatorKind.LogicalNot, type);
         }
 
-        private static readonly BoundUnaryOperator[] Operators = BoundOperators.GetOperators(NumericalOperators, BooleanOperators);
+        public static readonly BoundUnaryOperator[] Operators =
+            BoundOperators.GetOperators(
+                NumericalOperatorsSigned,
+                NumericalOperatorsUnsigned,
+                BooleanOperators);
 
         public static BoundUnaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol operandType)
         {
