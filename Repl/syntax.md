@@ -3,8 +3,15 @@
 Remove BoundBlockStatement at root of ScriptUnit.
 Also dont change the order.
 
+# casts
+having casts as unary expressions gets ugly quickly. It would be nice to have a suffix cast.
+
+10.<long>
+10.(long)
+
+
 # semicolons
-yes
+no
 
 # types
 after identifiers
