@@ -61,7 +61,7 @@ p1.Tell()
 //p3.Tell()
 //p4.Tell()
 
-let handle = GetStdHandle(-11)
-WriteFile(handle, "Hello Alma\n", 11, 0, 0)
+let handle = GetStdHandle((i32)-11)
+WriteFile(handle, "Hello Alma\n", (i32)11, 0, 0)
 
 Print("Hello World!\n")

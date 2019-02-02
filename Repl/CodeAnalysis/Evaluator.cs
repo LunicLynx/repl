@@ -7,12 +7,16 @@ using Repl.CodeAnalysis.Binding;
 
 namespace Repl.CodeAnalysis
 {
-    public class Evaluator
+    public class EvalOperators
     {
-        private readonly Dictionary<BoundUnaryOperator, Delegate> UnaryOperators = new Dictionary<BoundUnaryOperator, Delegate>();
-        private readonly Dictionary<BoundBinaryOperator, Delegate> BinaryOperators = new Dictionary<BoundBinaryOperator, Delegate>();
+        private static readonly Dictionary<BoundUnaryOperator, Delegate> _unaryOperators = new Dictionary<BoundUnaryOperator, Delegate>();
+        private static readonly Dictionary<BoundBinaryOperator, Delegate> _binaryOperators = new Dictionary<BoundBinaryOperator, Delegate>();
 
-        private void InitOperators()
+        public static IReadOnlyDictionary<BoundUnaryOperator, Delegate> UnaryOperators => _unaryOperators;
+
+        public static IReadOnlyDictionary<BoundBinaryOperator, Delegate> BinaryOperators => _binaryOperators;
+
+        static EvalOperators()
         {
             foreach (var @operator in BoundUnaryOperator.Operators)
             {
@@ -41,7 +45,7 @@ namespace Repl.CodeAnalysis
                 var l = Expression.Lambda(e, p);
 
                 var @delegate = l.Compile();
-                UnaryOperators[@operator] = @delegate;
+                _unaryOperators[@operator] = @delegate;
             }
 
             foreach (var @operator in BoundBinaryOperator.Operators)
@@ -107,9 +111,13 @@ namespace Repl.CodeAnalysis
                 var l = Expression.Lambda(e, pl, pr);
 
                 var @delegate = l.Compile();
-                BinaryOperators[@operator] = @delegate;
+                _binaryOperators[@operator] = @delegate;
             }
         }
+
+    }
+    public class Evaluator
+    {
 
         private object _lastValue;
         private readonly BoundUnit _root;
@@ -143,7 +151,6 @@ namespace Repl.CodeAnalysis
             //sbyte s1 = 4;
             //sbyte s2 = 4;
             //var i = s1 + s2;
-            InitOperators();
         }
 
         public object Evaluate()
@@ -480,7 +487,8 @@ namespace Repl.CodeAnalysis
 
         private object EvaluateCastExpression(BoundCastExpression node)
         {
-            return EvaluateExpression(node.Expression);
+            var value = EvaluateExpression(node.Expression);
+            return Convert.ChangeType(value, node.Type.ClrType);
         }
 
         private object EvaluateParameterExpression(BoundParameterExpression node)
@@ -577,7 +585,7 @@ namespace Repl.CodeAnalysis
         {
             var operand = EvaluateExpression(node.Operand);
 
-            var @delegate = UnaryOperators[node.Operator];
+            var @delegate = EvalOperators.UnaryOperators[node.Operator];
             return @delegate.DynamicInvoke(operand);
         }
 
@@ -586,7 +594,7 @@ namespace Repl.CodeAnalysis
             var left = EvaluateExpression(node.Left);
             var right = EvaluateExpression(node.Right);
 
-            var @delegate = BinaryOperators[node.Operator];
+            var @delegate = EvalOperators.BinaryOperators[node.Operator];
             return @delegate.DynamicInvoke(left, right);
         }
     }

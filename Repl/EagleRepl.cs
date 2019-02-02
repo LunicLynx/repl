@@ -14,7 +14,7 @@ namespace Repl
         private Compilation _previous;
         private bool _showTree = false;
         private bool _showProgram = true;
-        private bool _compile = false;
+        private bool _compile = true;
 
         private readonly Dictionary<ConstSymbol, object> _constants = new Dictionary<ConstSymbol, object>();
 

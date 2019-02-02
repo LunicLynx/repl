@@ -267,30 +267,35 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundCastExpression c:
                     if (!TryEvalConstExpression(c.Expression, out var t1, out var v1)) return false;
                     type = c.Type;
-                    value = v1;
+                    value = Convert.ChangeType(v1, type.ClrType);
                     return true;
                 case BoundUnaryExpression u:
                     if (!TryEvalConstExpression(u.Operand, out var t2, out var v2)) return false;
                     type = t2;
-                    switch (u.Operator.Kind)
-                    {
-                        case BoundUnaryOperatorKind.Identity:
-                            value = +(int)v2;
-                            break;
-                        case BoundUnaryOperatorKind.Negation:
-                            value = -(int)v2;
-                            break;
-                        case BoundUnaryOperatorKind.LogicalNot:
-                            value = !(bool)v2;
-                            break;
-                        case BoundUnaryOperatorKind.BitwiseComplement:
-                            value = ~(int)v2;
-                            break;
-                    }
+                    var @delegate = EvalOperators.UnaryOperators[u.Operator];
+                    //switch (u.Operator.Kind)
+                    //{
+                    //    case BoundUnaryOperatorKind.Identity:
+                    //        value = +(int)v2;
+                    //        break;
+                    //    case BoundUnaryOperatorKind.Negation:
+                    //        value = -(int)v2;
+                    //        break;
+                    //    case BoundUnaryOperatorKind.LogicalNot:
+                    //        value = !(bool)v2;
+                    //        break;
+                    //    case BoundUnaryOperatorKind.BitwiseComplement:
+                    //        value = ~(int)v2;
+                    //        break;
+                    //}
+                    value = @delegate.DynamicInvoke(v2);
                     return true;
                 case BoundBinaryExpression b:
                     if (!TryEvalConstExpression(b.Left, out var lt, out var lv)) return false;
                     if (!TryEvalConstExpression(b.Right, out var rt, out var rv)) return false;
+                    var binaryOperator = EvalOperators.BinaryOperators[b.Operator];
+                    type = b.Operator.ResultType;
+                    value = binaryOperator.DynamicInvoke(lv, rv);
                     return true;
                 case BoundLiteralExpression l:
                     type = l.Type;
