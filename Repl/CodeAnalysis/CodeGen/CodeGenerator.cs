@@ -58,24 +58,31 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private void GenerateConstDeclaration(BoundConstDeclaration node)
         {
-            Value value = null;
             var type = node.Const.Type;
-            if (type == TypeSymbol.Bool) value = Value.Int1((bool)node.Value);
-            if (type == TypeSymbol.I16) value = Value.Int16((short)node.Value);
-            if (type == TypeSymbol.I32) value = Value.Int32((int)node.Value);
-            if (type == TypeSymbol.I64) value = Value.Int64((long)node.Value);
-            if (type == TypeSymbol.I8) value = Value.Int8((sbyte)node.Value);
-            if (type == TypeSymbol.Int) value = Value.Int64((long)node.Value);
-            if (type == TypeSymbol.String) value = Value.String((string)node.Value);
-            if (type == TypeSymbol.U16) value = Value.UInt16((ushort) node.Value);
-            if (type == TypeSymbol.U32) value = Value.UInt32((uint) node.Value);
-            if (type == TypeSymbol.U64) value = Value.UInt64((ulong) node.Value);
-            if (type == TypeSymbol.U8) value = Value.UInt8((byte) node.Value);
-            if (type == TypeSymbol.Uint) value = Value.UInt64((ulong) node.Value);
-
-            if (value == null) throw new Exception("");
+            var nodeValue = node.Value;
+            var value = GetAsValue(type, nodeValue);
 
             _symbols[node.Const] = value;
+        }
+
+        private static Value GetAsValue(TypeSymbol type, object nodeValue)
+        {
+            Value value = null;
+            if (type == TypeSymbol.Bool) value = Value.Int1((bool)nodeValue);
+            if (type == TypeSymbol.I16) value = Value.Int16((short)nodeValue);
+            if (type == TypeSymbol.I32) value = Value.Int32((int)nodeValue);
+            if (type == TypeSymbol.I64) value = Value.Int64((long)nodeValue);
+            if (type == TypeSymbol.I8) value = Value.Int8((sbyte)nodeValue);
+            if (type == TypeSymbol.Int) value = Value.Int64((long)nodeValue);
+            if (type == TypeSymbol.String) value = Value.String((string)nodeValue);
+            if (type == TypeSymbol.U16) value = Value.UInt16((ushort)nodeValue);
+            if (type == TypeSymbol.U32) value = Value.UInt32((uint)nodeValue);
+            if (type == TypeSymbol.U64) value = Value.UInt64((ulong)nodeValue);
+            if (type == TypeSymbol.U8) value = Value.UInt8((byte)nodeValue);
+            if (type == TypeSymbol.Uint) value = Value.UInt64((ulong)nodeValue);
+
+            if (value == null) throw new Exception("");
+            return value;
         }
 
         private void GenerateStatement(BoundBlockStatement node)
@@ -260,7 +267,7 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundVariableExpression v:
                     return GenerateVariableExpression(v);
                 case BoundFunctionCallExpression i:
-                    return GenerateInvokeExpression(i);
+                    return GenerateFunctionCallExpression(i);
                 case BoundParameterExpression p:
                     return GenerateParameterExpression(p);
                 case BoundCastExpression c:
@@ -268,13 +275,13 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundConstExpression c:
                     return GenerateConstExpression(c);
                 case BoundPropertyExpression m:
-                    return GenerateMemberAccessExpression(m);
+                    return GeneratePropertyExpression(m);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
         }
 
-        private Value GenerateMemberAccessExpression(BoundPropertyExpression node)
+        private Value GeneratePropertyExpression(BoundPropertyExpression node)
         {
             return null;
         }
@@ -297,7 +304,7 @@ namespace Repl.CodeAnalysis.CodeGen
             return _builder.GetInsertBlock().GetParent().AsFunction().GetParam(node.Parameter.Index);
         }
 
-        private Value GenerateInvokeExpression(BoundFunctionCallExpression node)
+        private Value GenerateFunctionCallExpression(BoundFunctionCallExpression node)
         {
             var function = _symbols[node.Function];
             var args = node.Arguments.Select(GenerateExpression).ToArray();
@@ -405,12 +412,11 @@ namespace Repl.CodeAnalysis.CodeGen
         {
             var type = node.Type;
             var value = node.Value;
-            if (type == TypeSymbol.Bool)
-                return Value.Int1((bool)value);
+
             if (type == TypeSymbol.String)
                 //return Value.String((string)value);
                 return _builder.GlobalStringPtr((string)value);
-            return Value.Int32((int)value);
+            return GetAsValue(type, value);
         }
     }
 }
