@@ -371,8 +371,8 @@ namespace Repl.CodeAnalysis
                     return EvaluateNewExpression(n);
                 case BoundConstExpression c:
                     return EvaluateConstExpression(c);
-                case BoundMemberAccessExpression m:
-                    return EvaluateMemberAccessExpression(m);
+                case BoundPropertyExpression m:
+                    return EvaluatePropertyExpression(m);
                 case BoundMethodCallExpression m:
                     return EvaluateMethodCallExpression(m);
                 case BoundFieldExpression f:
@@ -456,16 +456,16 @@ namespace Repl.CodeAnalysis
             _locals = _stack.Count > 0 ? _stack.Pop() : null;
         }
 
-        private object EvaluateMemberAccessExpression(BoundMemberAccessExpression node)
+        private object EvaluatePropertyExpression(BoundPropertyExpression node)
         {
             if (node.Target.Type == TypeSymbol.String)
             {
                 var value = (string)EvaluateExpression(node.Target);
-                return typeof(string).GetProperty(node.Member.Name).GetValue(value, null);
+                return typeof(string).GetProperty(node.Property.Name).GetValue(value, null);
             }
 
             var target = (IDictionary<Symbol, object>)EvaluateExpression(node.Target);
-            return target[node.Member];
+            return target[node.Property];
         }
 
         private object EvaluateConstExpression(BoundConstExpression node)
@@ -549,24 +549,22 @@ namespace Repl.CodeAnalysis
                 target = GetValueStore();
                 symbol = v.Variable;
                 t = v.Variable.Type.ClrType;
-                //SetSymbolValue(v.Variable, value);
-                //return value;
             }
             else if (node.Target is BoundFieldExpression f)
             {
-                target = (Dictionary<Symbol, object>)_locals.This;
+                //target = (Dictionary<Symbol, object>)_locals.This;
+                target = (Dictionary<Symbol, object>)EvaluateExpression(f.Target);
                 symbol = f.Field;
                 t = f.Field.Type.ClrType;
             }
-            else if (node.Target is BoundMemberAccessExpression m)
+            else if (node.Target is BoundPropertyExpression m)
             {
                 target = (Dictionary<Symbol, object>)EvaluateExpression(m.Target);
-                symbol = m.Member;
-                t = m.Member.Type.ClrType;
+                symbol = m.Property;
+                t = m.Property.Type.ClrType;
             }
             else
             {
-                //int x = 5L;
                 throw new Exception("Unsupported assignment target.");
             }
 

@@ -232,13 +232,18 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundCastExpression c: return RewriteCastExpression(c);
                 case BoundTypeExpression t: return RewriteTypeExpression(t);
                 case BoundNewExpression n: return RewriteNewExpression(n);
-                case BoundMemberAccessExpression m: return RewriteMemberAccessExpression(m);
+                case BoundPropertyExpression m: return RewritePropertyExpression(m);
                 case BoundConstExpression c: return RewriteConstExpression(c);
                 case BoundFieldExpression f: return RewriteFieldExpression(f);
                 case BoundMethodCallExpression m: return RewriteMethodCallExpression(m);
                 case BoundConstructorCallExpression c: return RewriteConstructorCallExpression(c);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundExpression RewritePropertyExpression(BoundPropertyExpression node)
+        {
+            return node;
         }
 
         private BoundExpression RewriteConstructorCallExpression(BoundConstructorCallExpression node)
@@ -281,14 +286,6 @@ namespace Repl.CodeAnalysis.Binding
         private BoundExpression RewriteConstExpression(BoundConstExpression node)
         {
             return node;
-        }
-
-        private BoundExpression RewriteMemberAccessExpression(BoundMemberAccessExpression node)
-        {
-            var target = RewriteExpression(node.Target);
-            if (target == node.Target)
-                return node;
-            return new BoundMemberAccessExpression(target, node.Member);
         }
 
         private BoundExpression RewriteNewExpression(BoundNewExpression node)

@@ -3,16 +3,16 @@ using System.Collections.Generic;
 
 namespace Repl.CodeAnalysis.Binding
 {
-    public class BoundMemberAccessExpression : BoundExpression
+    public class BoundPropertyExpression : BoundExpression
     {
-        public override TypeSymbol Type => Member.Type;
+        public override TypeSymbol Type => Property.Type;
         public BoundExpression Target { get; }
-        public MemberSymbol Member { get; }
+        public PropertySymbol Property { get; }
 
-        public BoundMemberAccessExpression(BoundExpression target, MemberSymbol member)
+        public BoundPropertyExpression(BoundExpression target, PropertySymbol property)
         {
             Target = target;
-            Member = member;
+            Property = property;
         }
 
         public override IEnumerable<BoundNode> GetChildren()

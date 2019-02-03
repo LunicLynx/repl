@@ -754,7 +754,13 @@ namespace Repl.CodeAnalysis.Binding
                 Diagnostics.ReportTypeDoesNotHaveMember(identifierToken.Span, target.Type, name);
                 return new BoundLiteralExpression(TypeSymbol.I32, 0);
             }
-            return new BoundMemberAccessExpression(target, memberSymbol);
+
+            if (memberSymbol is FieldSymbol f)
+                return new BoundFieldExpression(target, f);
+            if(memberSymbol is PropertySymbol p)
+                return new BoundPropertyExpression(target, p);
+
+            throw new Exception();
         }
 
         private BoundExpression BindNewExpression(NewExpressionSyntax syntax)

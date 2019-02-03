@@ -14,6 +14,6 @@ namespace Repl.CodeAnalysis
         public static extern int GetStdHandle(int x);
 
         [DllImport("kernel32.dll")]
-        public static extern bool WriteFile(int handle, string text, int len, int p, int p2);
+        public static extern bool WriteFile(long handle, string text, int len, long p, long p2);
     }
 }

@@ -37,6 +37,8 @@ namespace Repl.CodeAnalysis.CodeGen
         {
             switch (node)
             {
+                case BoundAliasDeclaration s:
+                    break;
                 case BoundBlockStatement s:
                     GenerateStatement(s);
                     break;
@@ -46,7 +48,34 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundExternDeclaration e:
                     GenerateExternDeclaration(e);
                     break;
+                case BoundConstDeclaration c:
+                    GenerateConstDeclaration(c);
+                    break;
+                default:
+                    throw new Exception($"Unexpected node {node.GetType()}");
             }
+        }
+
+        private void GenerateConstDeclaration(BoundConstDeclaration node)
+        {
+            Value value = null;
+            var type = node.Const.Type;
+            if (type == TypeSymbol.Bool) value = Value.Int1((bool)node.Value);
+            if (type == TypeSymbol.I16) value = Value.Int16((short)node.Value);
+            if (type == TypeSymbol.I32) value = Value.Int32((int)node.Value);
+            if (type == TypeSymbol.I64) value = Value.Int64((long)node.Value);
+            if (type == TypeSymbol.I8) value = Value.Int8((sbyte)node.Value);
+            if (type == TypeSymbol.Int) value = Value.Int64((long)node.Value);
+            if (type == TypeSymbol.String) value = Value.String((string)node.Value);
+            if (type == TypeSymbol.U16) value = Value.UInt16((ushort) node.Value);
+            if (type == TypeSymbol.U32) value = Value.UInt32((uint) node.Value);
+            if (type == TypeSymbol.U64) value = Value.UInt64((ulong) node.Value);
+            if (type == TypeSymbol.U8) value = Value.UInt8((byte) node.Value);
+            if (type == TypeSymbol.Uint) value = Value.UInt64((ulong) node.Value);
+
+            if (value == null) throw new Exception("");
+
+            _symbols[node.Const] = value;
         }
 
         private void GenerateStatement(BoundBlockStatement node)
@@ -236,9 +265,24 @@ namespace Repl.CodeAnalysis.CodeGen
                     return GenerateParameterExpression(p);
                 case BoundCastExpression c:
                     return GenerateCastExpression(c);
+                case BoundConstExpression c:
+                    return GenerateConstExpression(c);
+                case BoundPropertyExpression m:
+                    return GenerateMemberAccessExpression(m);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private Value GenerateMemberAccessExpression(BoundPropertyExpression node)
+        {
+            return null;
+        }
+
+        private Value GenerateConstExpression(BoundConstExpression node)
+        {
+            var value = _symbols[node.Const];
+            return value;
         }
 
         private Value GenerateCastExpression(BoundCastExpression node)
@@ -293,6 +337,9 @@ namespace Repl.CodeAnalysis.CodeGen
             if (type == TypeSymbol.U32) return XType.Int32;
             if (type == TypeSymbol.U64) return XType.Int64;
             if (type == TypeSymbol.String) return XType.Int64;
+            if (type == TypeSymbol.Int) return XType.Int64;
+            if (type == TypeSymbol.Uint) return XType.Int64;
+            if (type == TypeSymbol.Void) return XType.Void;
             throw new Exception("Unsupported type");
         }
 

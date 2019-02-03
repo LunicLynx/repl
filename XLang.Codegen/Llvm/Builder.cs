@@ -113,7 +113,6 @@ namespace XLang.Codegen.Llvm
 
         public Value Store(Value val, Value ptr)
         {
-
             return new Value(LLVM.BuildStore(BuilderRef, val.ValueRef, ptr.ValueRef));
         }
 
