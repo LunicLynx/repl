@@ -1,4 +1,9 @@
-﻿//alias HANDLE = void*
+﻿
+struct String {
+    Length { get; }
+}
+
+//alias HANDLE = void*
 alias HANDLE = i64
 alias DWORD = i32
 //alias LPDWORD = DWORD*

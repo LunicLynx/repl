@@ -283,6 +283,8 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private Value GeneratePropertyExpression(BoundPropertyExpression node)
         {
+            var value = GenerateExpression(node.Target);
+            string x;
             return null;
         }
 
