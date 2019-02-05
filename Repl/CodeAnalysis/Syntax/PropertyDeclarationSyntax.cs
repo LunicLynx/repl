@@ -4,8 +4,14 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class PropertyDeclarationSyntax : MemberDeclarationSyntax
     {
-        public PropertyDeclarationSyntax(Token identifierToken, TypeAnnotationSyntax typeAnnotation) : base(identifierToken, typeAnnotation)
+        public ExpressionBodySyntax ExpressionBody { get; }
+        //public PropertyDeclarationSyntax(Token identifierToken, TypeAnnotationSyntax typeAnnotation) : base(identifierToken, typeAnnotation)
+        //{
+        //}
+
+        public PropertyDeclarationSyntax(Token identifierToken, TypeAnnotationSyntax typeAnnotation, ExpressionBodySyntax expressionBody) : base(identifierToken, typeAnnotation)
         {
+            ExpressionBody = expressionBody;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()

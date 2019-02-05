@@ -1,6 +1,10 @@
 ﻿
+//namespace Standard;
+
+extern StringLength(str: string): int
+
 struct String {
-    Length { get; }
+    Length => StringLength(this)
 }
 
 //alias HANDLE = void*

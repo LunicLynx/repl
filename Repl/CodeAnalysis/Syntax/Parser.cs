@@ -172,23 +172,23 @@ namespace Repl.CodeAnalysis.Syntax
 
         private MemberDeclarationSyntax ParseMemberDeclaration()
         {
+            var peek = Peek(1);
             if (Current.Kind == TokenKind.Identifier && Current.Text == _structIdentifier.Text &&
-                Peek(1).Kind == TokenKind.OpenParenthesis)
+                peek.Kind == TokenKind.OpenParenthesis)
             {
                 // ctor
                 return ParseConstructorDeclaration();
             }
 
-            if (Peek(1).Kind == TokenKind.OpenParenthesis)
+            if (peek.Kind == TokenKind.OpenParenthesis)
             {
                 // Method
                 return ParseMethodDeclaration();
             }
 
 
-            // TODO THIS IS WRONG
-            if (Current.Kind == TokenKind.OpenBrace ||
-                Current.Kind == TokenKind.EqualsGreater)
+            if (peek.Kind == TokenKind.OpenBrace ||
+                peek.Kind == TokenKind.EqualsGreater)
             {
                 // Property
                 return ParsePropertyDeclaration();
@@ -237,7 +237,26 @@ namespace Repl.CodeAnalysis.Syntax
         private MemberDeclarationSyntax ParsePropertyDeclaration()
         {
             var identifierToken = MatchToken(TokenKind.Identifier);
-            return new PropertyDeclarationSyntax(identifierToken, null);
+
+            TypeAnnotationSyntax typeAnnotation = null;
+            if (Current.Kind == TokenKind.Colon)
+                typeAnnotation = ParseTypeAnnotation();
+
+            // get expression ?
+            if (Current.Kind == TokenKind.EqualsGreater)
+            {
+                var expressionBody = ParseExpressionBody();
+                return new PropertyDeclarationSyntax(identifierToken, typeAnnotation, expressionBody);
+            }
+
+            return new PropertyDeclarationSyntax(identifierToken, typeAnnotation, null);
+        }
+
+        private ExpressionBodySyntax ParseExpressionBody()
+        {
+            var equalsGreaterToken = MatchToken(TokenKind.EqualsGreater);
+            var expression = ParseExpression();
+            return new ExpressionBodySyntax(equalsGreaterToken, expression);
         }
 
         private MemberDeclarationSyntax ParseMethodDeclaration()
@@ -564,6 +583,8 @@ namespace Repl.CodeAnalysis.Syntax
         {
             switch (Current.Kind)
             {
+                case TokenKind.ThisKeyword:
+                    return ParseThisExpression();
                 case TokenKind.OpenParenthesis:
                     return ParseCastOrParenthesizedExpression();
                 case TokenKind.TrueKeyword:
@@ -575,11 +596,16 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseStringLiteralExpression();
                 case TokenKind.NewKeyword:
                     return ParseNewExpression();
-
                 case TokenKind.Identifier:
                 default:
                     return ParseNameExpression();
             }
+        }
+
+        private ExpressionSyntax ParseThisExpression()
+        {
+            var thisKeyword = MatchToken(TokenKind.ThisKeyword);
+            return new ThisExpressionSyntax(thisKeyword);
         }
 
         private ExpressionSyntax ParseNewExpression()

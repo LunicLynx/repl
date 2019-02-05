@@ -140,5 +140,11 @@ namespace Repl.CodeAnalysis
             var message = $"Type '{type}' doesn't have a member called '{memberName}'.";
             Report(span, message);
         }
+
+        public void ReportThisNotAllowed(TextSpan span)
+        {
+            var message = "This is not allowed in this scope";
+            Report(span, message);
+        }
     }
 }

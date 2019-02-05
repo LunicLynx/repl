@@ -34,7 +34,9 @@ namespace Repl.CodeAnalysis.Binding
                 TypeSymbol.U64,
                 TypeSymbol.Int,
                 TypeSymbol.Uint,
-                TypeSymbol.String
+                //TypeSymbol.String
+
+                new AliasSymbol("string", TypeSymbol.String)
             );
 
             previous = previous ?? new BoundGlobalScope(null, ImmutableArray<Diagnostic>.Empty,
@@ -118,9 +120,21 @@ namespace Repl.CodeAnalysis.Binding
                 case ConstructorDeclarationSyntax c:
                     DeclareConstructor(c);
                     break;
+                case PropertyDeclarationSyntax p:
+                    DeclareProperty(p);
+                    break;
                 default:
                     throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
+        }
+
+        private void DeclareProperty(PropertyDeclarationSyntax syntax)
+        {
+            TypeSymbol type = null;
+            if (syntax.TypeAnnotation != null)
+                type = LookupTypeAnnotation(syntax.TypeAnnotation);
+            var property = new PropertySymbol(syntax.IdentifierToken.Text, type);
+            DeclareSymbol(property, syntax.IdentifierToken);
         }
 
         private void DeclareConstructor(ConstructorDeclarationSyntax syntax)
@@ -377,9 +391,33 @@ namespace Repl.CodeAnalysis.Binding
                     return BindMethodDeclaration(m);
                 case ConstructorDeclarationSyntax c:
                     return BindConstructorDeclaration(c);
+                case PropertyDeclarationSyntax p:
+                    return BindPropertyDeclaration(p);
                 default:
                     throw new Exception($"Unexpected node {syntax.GetType()}");
             }
+        }
+
+        private BoundMemberDeclaration BindPropertyDeclaration(PropertyDeclarationSyntax syntax)
+        {
+            var property = GetSymbol<PropertySymbol>(syntax.IdentifierToken);
+
+
+            if (syntax.ExpressionBody != null)
+            {
+                //_scope = new BoundScope(_scope);
+                var expression = BindExpression(syntax.ExpressionBody.Expression);
+                //_scope = _scope.Parent;
+                var expressionStatement = new BoundExpressionStatement(expression);
+                var boundStatements = ImmutableArray.Create<BoundStatement>(expressionStatement);
+                var boundBlockStatement = new BoundBlockStatement(boundStatements);
+                return new BoundPropertyDeclaration(property, boundBlockStatement);
+            }
+
+
+            //_scope = new BoundScope(_scope);
+
+            return null;
         }
 
         private BoundMemberDeclaration BindConstructorDeclaration(ConstructorDeclarationSyntax syntax)
@@ -731,9 +769,28 @@ namespace Repl.CodeAnalysis.Binding
                     return BindMemberAccessExpression(m);
                 case CastExpressionSyntax c:
                     return BindCastExpression(c);
+                case ThisExpressionSyntax t:
+                    return BindThisExpression(t);
                 default:
                     throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
+        }
+
+        private BoundExpression BindThisExpression(ThisExpressionSyntax syntax)
+        {
+            var s = _scope;
+            while (s != null && !(s is TypeScope))
+                s = s.Parent;
+
+            if (s == null)
+            {
+                Diagnostics.ReportThisNotAllowed(syntax.Span);
+                return new BoundLiteralExpression(TypeSymbol.Int, 0);
+            }
+
+            var scope = (TypeScope)s;
+
+            return new BoundThisExpression(scope.Type);
         }
 
         private BoundExpression BindCastExpression(CastExpressionSyntax syntax)
@@ -757,7 +814,7 @@ namespace Repl.CodeAnalysis.Binding
 
             if (memberSymbol is FieldSymbol f)
                 return new BoundFieldExpression(target, f);
-            if(memberSymbol is PropertySymbol p)
+            if (memberSymbol is PropertySymbol p)
                 return new BoundPropertyExpression(target, p);
 
             throw new Exception();

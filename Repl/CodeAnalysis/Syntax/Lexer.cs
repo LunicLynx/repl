@@ -25,6 +25,7 @@ namespace Repl.CodeAnalysis.Syntax
             {"alias", TokenKind.AliasKeyword },
             {"func", TokenKind.FuncKeyword },
             {"const", TokenKind.ConstKeyword },
+            {"this", TokenKind.ThisKeyword },
 
             {"void", TokenKind.VoidKeyword},
             {"bool", TokenKind.BoolKeyword},

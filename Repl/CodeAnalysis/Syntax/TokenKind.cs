@@ -59,6 +59,7 @@
         AliasKeyword,
         FuncKeyword,
         ConstKeyword,
+        ThisKeyword,
 
         // Types
         VoidKeyword,
@@ -83,6 +84,6 @@
         NumberLiteral,
         StringLiteral,
 
-        Identifier,
+        Identifier
     }
 }

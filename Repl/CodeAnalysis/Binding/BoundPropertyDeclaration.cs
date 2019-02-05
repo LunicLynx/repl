@@ -4,6 +4,7 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class BoundPropertyDeclaration : BoundMemberDeclaration
     {
+        public BoundBlockStatement GetBody { get; }
         public PropertySymbol Property { get; }
         public BoundExpression Initializer { get; }
 
@@ -11,6 +12,11 @@ namespace Repl.CodeAnalysis.Binding
         {
             Property = property;
             Initializer = initializer;
+        }
+
+        public BoundPropertyDeclaration(PropertySymbol property, BoundBlockStatement getBody) : base(property)
+        {
+            GetBody = getBody;
         }
 
         public override IEnumerable<BoundNode> GetChildren()
