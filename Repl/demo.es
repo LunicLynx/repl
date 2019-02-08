@@ -4,7 +4,37 @@
 extern StringLength(str: string): int
 
 struct String {
-    Length => StringLength(this)
+    Length:int => StringLength(this)
+}
+
+struct Int32 {
+}
+
+struct Int64 {
+}
+
+struct UInt32 {
+}
+
+struct UInt64 {
+}
+
+struct Int16 {
+}
+
+struct UInt16 {
+}
+
+struct Int8 {
+}
+
+struct UInt8 {
+}
+
+struct Void {
+}
+
+struct Boolean {
 }
 
 //alias HANDLE = void*

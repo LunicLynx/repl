@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Repl.CodeAnalysis.Binding;
 using XLang.Codegen.Llvm;
@@ -20,9 +21,36 @@ namespace Repl.CodeAnalysis.CodeGen
         }
 
         private Value _lastValue = Value.Int32(0);
+        private TypeSymbol _i32Type;
+        private TypeSymbol _i64Type;
+        private TypeSymbol _i16Type;
+        private TypeSymbol _i8Type;
+        private TypeSymbol _u64Type;
+        private TypeSymbol _u32Type;
+        private TypeSymbol _u16Type;
+        private TypeSymbol _u8Type;
+        private TypeSymbol _stringType;
+        private TypeSymbol _boolType;
+        private TypeSymbol _voidType;
+        private TypeSymbol _intType;
+        private TypeSymbol _uintType;
 
-        public Value Generate(BoundUnit unit)
+        public Value Generate(BoundUnit unit, ImmutableArray<Symbol> symbols)
         {
+            _i64Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int64");
+            _i32Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int32");
+            _i16Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int16");
+            _i8Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int8");
+            _u64Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt64");
+            _u32Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt32");
+            _u16Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt16");
+            _u8Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt8");
+            _stringType = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "String");
+            _boolType = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Boolean");
+            _voidType = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Void");
+            _intType = _i64Type;
+            _uintType = _u64Type;
+
             _lastValue = Value.Int32(0);
 
             foreach (var node in unit.GetChildren())
@@ -65,21 +93,19 @@ namespace Repl.CodeAnalysis.CodeGen
             _symbols[node.Const] = value;
         }
 
-        private static Value GetAsValue(TypeSymbol type, object nodeValue)
+        private Value GetAsValue(TypeSymbol type, object nodeValue)
         {
             Value value = null;
-            if (type == TypeSymbol.Bool) value = Value.Int1((bool)nodeValue);
-            if (type == TypeSymbol.I16) value = Value.Int16((short)nodeValue);
-            if (type == TypeSymbol.I32) value = Value.Int32((int)nodeValue);
-            if (type == TypeSymbol.I64) value = Value.Int64((long)nodeValue);
-            if (type == TypeSymbol.I8) value = Value.Int8((sbyte)nodeValue);
-            if (type == TypeSymbol.Int) value = Value.Int64((long)nodeValue);
-            if (type == TypeSymbol.String) value = Value.String((string)nodeValue);
-            if (type == TypeSymbol.U16) value = Value.UInt16((ushort)nodeValue);
-            if (type == TypeSymbol.U32) value = Value.UInt32((uint)nodeValue);
-            if (type == TypeSymbol.U64) value = Value.UInt64((ulong)nodeValue);
-            if (type == TypeSymbol.U8) value = Value.UInt8((byte)nodeValue);
-            if (type == TypeSymbol.Uint) value = Value.UInt64((ulong)nodeValue);
+            if (type == _boolType) value = Value.Int1((bool)nodeValue);
+            if (type == _i16Type) value = Value.Int16((short)nodeValue);
+            if (type == _i32Type) value = Value.Int32((int)nodeValue);
+            if (type == _i64Type) value = Value.Int64((long)nodeValue);
+            if (type == _i8Type) value = Value.Int8((sbyte)nodeValue);
+            if (type == _stringType) value = Value.String((string)nodeValue);
+            if (type == _u16Type) value = Value.UInt16((ushort)nodeValue);
+            if (type == _u32Type) value = Value.UInt32((uint)nodeValue);
+            if (type == _u64Type) value = Value.UInt64((ulong)nodeValue);
+            if (type == _u8Type) value = Value.UInt8((byte)nodeValue);
 
             if (value == null) throw new Exception("");
             return value;
@@ -336,19 +362,17 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private XType GetXType(TypeSymbol type)
         {
-            if (type == TypeSymbol.Bool) return XType.Int1;
-            if (type == TypeSymbol.I8) return XType.Int8;
-            if (type == TypeSymbol.I16) return XType.Int16;
-            if (type == TypeSymbol.I32) return XType.Int32;
-            if (type == TypeSymbol.I64) return XType.Int64;
-            if (type == TypeSymbol.U8) return XType.Int8;
-            if (type == TypeSymbol.U16) return XType.Int16;
-            if (type == TypeSymbol.U32) return XType.Int32;
-            if (type == TypeSymbol.U64) return XType.Int64;
-            if (type == TypeSymbol.String) return XType.Int64;
-            if (type == TypeSymbol.Int) return XType.Int64;
-            if (type == TypeSymbol.Uint) return XType.Int64;
-            if (type == TypeSymbol.Void) return XType.Void;
+            if (type == _boolType) return XType.Int1;
+            if (type == _i8Type) return XType.Int8;
+            if (type == _i16Type) return XType.Int16;
+            if (type == _i32Type) return XType.Int32;
+            if (type == _i64Type) return XType.Int64;
+            if (type == _u8Type) return XType.Int8;
+            if (type == _u16Type) return XType.Int16;
+            if (type == _u32Type) return XType.Int32;
+            if (type == _u64Type) return XType.Int64;
+            if (type == _stringType) return XType.Int64;
+            if (type == _voidType) return XType.Void;
             throw new Exception("Unsupported type");
         }
 
@@ -415,7 +439,7 @@ namespace Repl.CodeAnalysis.CodeGen
             var type = node.Type;
             var value = node.Value;
 
-            if (type == TypeSymbol.String)
+            if (type == _stringType)
                 //return Value.String((string)value);
                 return _builder.GlobalStringPtr((string)value);
             return GetAsValue(type, value);

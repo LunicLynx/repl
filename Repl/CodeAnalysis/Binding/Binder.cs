@@ -9,6 +9,36 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class Binder
     {
+        private readonly TypeSymbol _i8Type;
+        private readonly TypeSymbol _i16Type;
+        private TypeSymbol _i32Type;
+        private TypeSymbol _i64Type;
+        private TypeSymbol _intType;
+        private readonly TypeSymbol _u8Type;
+        private readonly TypeSymbol _u16Type;
+        private readonly TypeSymbol _u32Type;
+        private readonly TypeSymbol _u64Type;
+        private readonly TypeSymbol _uintType;
+        private TypeSymbol _stringType;
+        private TypeSymbol _voidType;
+        private TypeSymbol _boolType;
+
+        private readonly Dictionary<TypeSymbol, Type> _clrTypes = new Dictionary<TypeSymbol, Type>();
+
+        private Type GetClrType(TypeSymbol typeSymbol)
+        {
+            if (_clrTypes.TryGetValue(typeSymbol, out var type))
+                return type;
+            return typeof(object);
+        }
+
+        private bool IsClrAssignable(TypeSymbol from, TypeSymbol to)
+        {
+            var fromType = GetClrType(from);
+            var toType = GetClrType(to);
+            return toType.IsAssignableFrom(fromType);
+        }
+
         private bool _inLoop;
         private IScope _scope;
 
@@ -22,21 +52,21 @@ namespace Repl.CodeAnalysis.Binding
         public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax syntax)
         {
             var builtInSymbols = ImmutableArray.Create<Symbol>(
-                TypeSymbol.Void,
-                TypeSymbol.Bool,
-                TypeSymbol.I8,
-                TypeSymbol.I16,
-                TypeSymbol.I32,
-                TypeSymbol.I64,
-                TypeSymbol.U8,
-                TypeSymbol.U16,
-                TypeSymbol.U32,
-                TypeSymbol.U64,
-                TypeSymbol.Int,
-                TypeSymbol.Uint,
-                //TypeSymbol.String
+            //TypeSymbol.Void,
+            //TypeSymbol.Bool,
+            //TypeSymbol.I8,
+            //TypeSymbol.I16,
+            //TypeSymbol.I32,
+            //TypeSymbol.I64,
+            //TypeSymbol.U8,
+            //TypeSymbol.U16,
+            //TypeSymbol.U32,
+            //TypeSymbol.U64,
+            //TypeSymbol.Int,
+            //TypeSymbol.Uint,
+            ////TypeSymbol.String
 
-                new AliasSymbol("string", TypeSymbol.String)
+            //new AliasSymbol("string", TypeSymbol.String)
             );
 
             previous = previous ?? new BoundGlobalScope(null, ImmutableArray<Diagnostic>.Empty,
@@ -46,6 +76,9 @@ namespace Repl.CodeAnalysis.Binding
 
             // create types
             binder.DeclareTypes(syntax.Nodes);
+
+            //parent.TryLookup("String", out _stringType);
+
             // create members
             binder.DeclareMembers(syntax.Nodes);
 
@@ -179,6 +212,23 @@ namespace Repl.CodeAnalysis.Binding
             {
                 DeclareAlias(alias);
             }
+
+            Symbol s;
+            _scope.TryLookup("String", out s);
+            _stringType = (TypeSymbol)s;
+            _scope.TryLookup("Int32", out s);
+            _i32Type = (TypeSymbol)s;
+            _scope.TryLookup("Int64", out s);
+            _i64Type = (TypeSymbol)s;
+            _scope.TryLookup("Void", out s);
+            _voidType = (TypeSymbol)s;
+            _scope.TryLookup("Boolean", out s);
+            _boolType = (TypeSymbol)s;
+
+            _intType = _i64Type;
+
+            BoundBinaryOperator.Initialize(_scope);
+            BoundUnaryOperator.Initialize(_scope);
         }
 
         private void DeclareAlias(AliasDeclarationSyntax alias)
@@ -196,7 +246,7 @@ namespace Repl.CodeAnalysis.Binding
             {
                 case StructDeclarationSyntax s:
                     identifierToken = s.IdentifierToken;
-                    symbol = new TypeSymbol(identifierToken.Text, typeof(object), ImmutableArray<TypeSymbol>.Empty, ImmutableArray<MemberSymbol>.Empty);
+                    symbol = new TypeSymbol(identifierToken.Text, ImmutableArray<TypeSymbol>.Empty, ImmutableArray<MemberSymbol>.Empty);
                     break;
                 default:
                     throw new Exception($"Unexpected syntax {type.GetType()}");
@@ -257,7 +307,7 @@ namespace Repl.CodeAnalysis.Binding
             if (!TryEvalConstExpression(initializer, out var type, out var value))
             {
                 Diagnostics.ReportExpressionIsNotCompileTimeConstant(syntax.Initializer.Span);
-                type = TypeSymbol.I32;
+                type = _intType;
                 value = 0;
             }
 
@@ -281,7 +331,7 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundCastExpression c:
                     if (!TryEvalConstExpression(c.Expression, out var t1, out var v1)) return false;
                     type = c.Type;
-                    value = Convert.ChangeType(v1, type.ClrType);
+                    value = Convert.ChangeType(v1, GetClrType(type));
                     return true;
                 case BoundUnaryExpression u:
                     if (!TryEvalConstExpression(u.Operand, out var t2, out var v2)) return false;
@@ -471,7 +521,7 @@ namespace Repl.CodeAnalysis.Binding
             else if (initializer == null)
             {
                 Diagnostics.ReportMemberMustBeTyped(syntax.IdentifierToken.Span);
-                type = TypeSymbol.I32;
+                type = _intType;
             }
             else
             {
@@ -513,7 +563,7 @@ namespace Repl.CodeAnalysis.Binding
         {
             var typeSyntax = syntax.ReturnType;
 
-            var type = typeSyntax != null ? LookupTypeAnnotation(typeSyntax) : TypeSymbol.Void;
+            var type = typeSyntax != null ? LookupTypeAnnotation(typeSyntax) : _voidType;
 
             var identifierToken = syntax.IdentifierToken;
             var name = identifierToken.Text;
@@ -530,7 +580,7 @@ namespace Repl.CodeAnalysis.Binding
         {
             var typeSyntax = syntax.ReturnType;
 
-            var type = typeSyntax != null ? LookupTypeAnnotation(typeSyntax) : TypeSymbol.Void;
+            var type = typeSyntax != null ? LookupTypeAnnotation(typeSyntax) : _voidType;
 
             var identifierToken = syntax.IdentifierToken;
             var name = identifierToken.Text;
@@ -565,7 +615,7 @@ namespace Repl.CodeAnalysis.Binding
         private TypeSymbol LookupType(TypeSyntax syntax)
         {
             var typeIdentifierToken = syntax.TypeOrIdentifierToken;
-            var type = GetSymbol<AliasSymbol, TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int;
+            var type = GetSymbol<AliasSymbol, TypeSymbol>(typeIdentifierToken) ?? _intType;
 
             while (type is AliasSymbol a)
                 type = a.Type;
@@ -582,8 +632,8 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundStatement BindForStatement(ForStatementSyntax syntax)
         {
-            var lowerBound = BindExpression(syntax.LowerBound, TypeSymbol.I32);
-            var upperBound = BindExpression(syntax.UpperBound, TypeSymbol.I32);
+            var lowerBound = BindExpression(syntax.LowerBound, _intType);
+            var upperBound = BindExpression(syntax.UpperBound, _intType);
 
             _scope = new BoundScope(_scope);
 
@@ -621,7 +671,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
         {
-            var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
+            var condition = BindExpression(syntax.Condition, _boolType);
             var oldInLoop = _inLoop;
             _inLoop = true;
             var body = BindBlockStatement(syntax.Body);
@@ -640,7 +690,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)
         {
-            var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
+            var condition = BindExpression(syntax.Condition, _boolType);
 
             var thenBlock = BindBlockStatement(syntax.ThenBlock);
 
@@ -717,7 +767,7 @@ namespace Repl.CodeAnalysis.Binding
         private bool IsAssignable(TypeSymbol to, TypeSymbol from)
         {
             if (from == to) return true;
-            if (to.IsAssignableFrom(from)) return true;
+            if (IsClrAssignable(from, to)) return true;
 
             try
             {
@@ -734,14 +784,14 @@ namespace Repl.CodeAnalysis.Binding
 
         private (bool signed, int size) GetIntegerTypeProperties(TypeSymbol type)
         {
-            if (type == TypeSymbol.I64) return (true, 8);
-            if (type == TypeSymbol.I32) return (true, 4);
-            if (type == TypeSymbol.I16) return (true, 2);
-            if (type == TypeSymbol.I8) return (true, 1);
-            if (type == TypeSymbol.U64) return (false, 8);
-            if (type == TypeSymbol.U32) return (false, 4);
-            if (type == TypeSymbol.U16) return (false, 2);
-            if (type == TypeSymbol.U8) return (false, 1);
+            if (type == _i64Type) return (true, 8);
+            if (type == _i32Type) return (true, 4);
+            if (type == _i16Type) return (true, 2);
+            if (type == _i8Type) return (true, 1);
+            if (type == _u64Type) return (false, 8);
+            if (type == _u32Type) return (false, 4);
+            if (type == _u16Type) return (false, 2);
+            if (type == _u8Type) return (false, 1);
             throw new Exception("Non integer types are not supported");
         }
 
@@ -785,7 +835,7 @@ namespace Repl.CodeAnalysis.Binding
             if (s == null)
             {
                 Diagnostics.ReportThisNotAllowed(syntax.Span);
-                return new BoundLiteralExpression(TypeSymbol.Int, 0);
+                return new BoundLiteralExpression(_intType, 0);
             }
 
             var scope = (TypeScope)s;
@@ -809,7 +859,7 @@ namespace Repl.CodeAnalysis.Binding
             if (memberSymbol == null)
             {
                 Diagnostics.ReportTypeDoesNotHaveMember(identifierToken.Span, target.Type, name);
-                return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                return new BoundLiteralExpression(_intType, 0);
             }
 
             if (memberSymbol is FieldSymbol f)
@@ -836,14 +886,14 @@ namespace Repl.CodeAnalysis.Binding
                 if (!(t.Type.Members.FirstOrDefault(me => me.Name == m.IdentifierToken.Text) is MethodSymbol method))
                 {
                     Diagnostics.ReportTypeDoesNotHaveMember(m.IdentifierToken.Span, t.Type, m.IdentifierToken.Text);
-                    return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                    return new BoundLiteralExpression(_intType, 0);
                 }
 
                 var parameters = method.Parameters;
                 var arguments = syntax.Arguments.OfType<ExpressionSyntax>().ToArray();
 
                 if (!TryBindArguments(method.Name, parameters, arguments, out var boundArguments))
-                    return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                    return new BoundLiteralExpression(_intType, 0);
 
                 return new BoundMethodCallExpression(t, method, boundArguments);
             }
@@ -856,7 +906,7 @@ namespace Repl.CodeAnalysis.Binding
             if (!(target is NameExpressionSyntax n))
             {
                 Diagnostics.ReportFunctionNameExpected(target.Span);
-                return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                return new BoundLiteralExpression(_intType, 0);
             }
 
             var allowedTypes = new[]
@@ -873,7 +923,7 @@ namespace Repl.CodeAnalysis.Binding
                 var parameters = function.Parameters;
 
                 if (!TryBindArguments(function.Name, parameters, arguments, out var boundArguments))
-                    return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                    return new BoundLiteralExpression(_intType, 0);
 
                 return new BoundFunctionCallExpression(function, boundArguments);
             }
@@ -886,7 +936,7 @@ namespace Repl.CodeAnalysis.Binding
                 var parameters = constructor.Parameters;
 
                 if (!TryBindArguments(constructor.Name, parameters, arguments, out var boundArguments))
-                    return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                    return new BoundLiteralExpression(_intType, 0);
 
                 return new BoundConstructorCallExpression(constructor, boundArguments);
             }
@@ -899,12 +949,12 @@ namespace Repl.CodeAnalysis.Binding
                 var parameters = method1.Parameters;
 
                 if (!TryBindArguments(method1.Name, parameters, arguments, out var boundArguments))
-                    return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                    return new BoundLiteralExpression(_intType, 0);
 
                 return new BoundMethodCallExpression(null, method1, boundArguments);
             }
 
-            return new BoundLiteralExpression(TypeSymbol.I32, 0);
+            return new BoundLiteralExpression(_intType, 0);
         }
 
         private bool TryBindArguments(string name, ParameterSymbol[] parameters, ExpressionSyntax[] arguments,
@@ -1009,7 +1059,8 @@ namespace Repl.CodeAnalysis.Binding
 
         private Symbol GetSymbol(Token identifierToken)
         {
-            var name = identifierToken.Text;
+            var name = GetName(identifierToken);
+
             if (string.IsNullOrEmpty(name))
             {
                 // Token was inserted by parser
@@ -1023,6 +1074,39 @@ namespace Repl.CodeAnalysis.Binding
             }
 
             return symbol;
+        }
+
+        private static string GetName(Token token)
+        {
+            switch (token.Kind)
+            {
+                case TokenKind.Identifier:
+                    return token.Text;
+                case TokenKind.StringKeyword:
+                    return "String";
+                case TokenKind.IntKeyword:
+                    return "Int64";
+                case TokenKind.I8Keyword:
+                    return "Int8";
+                case TokenKind.I16Keyword:
+                    return "Int16";
+                case TokenKind.I32Keyword:
+                    return "Int32";
+                case TokenKind.I64Keyword:
+                    return "Int64";
+                case TokenKind.UintKeyword:
+                    return "UInt64";
+                case TokenKind.U8Keyword:
+                    return "UInt8";
+                case TokenKind.U16Keyword:
+                    return "UInt16";
+                case TokenKind.U32Keyword:
+                    return "UInt32";
+                case TokenKind.U64Keyword:
+                    return "UInt64";
+            }
+
+            throw new InvalidOperationException($"Unsupported Token kind {token.Kind}");
         }
 
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax, bool allowTypes)
@@ -1041,7 +1125,7 @@ namespace Repl.CodeAnalysis.Binding
                 case FieldSymbol f: return new BoundFieldExpression(null, f);
                 default:
                     Diagnostics.ReportNotSupported(syntax.IdentifierToken.Span);
-                    return new BoundLiteralExpression(TypeSymbol.I32, 0);
+                    return new BoundLiteralExpression(_intType, 0);
             }
         }
 
@@ -1086,26 +1170,26 @@ namespace Repl.CodeAnalysis.Binding
             var token = syntax.LiteralToken;
             object value = null;
 
-            TypeSymbol type = TypeSymbol.I32;
+            TypeSymbol type = _intType;
             switch (token.Kind)
             {
                 case TokenKind.TrueKeyword:
                 case TokenKind.FalseKeyword:
                     value = token.Kind == TokenKind.TrueKeyword;
-                    type = TypeSymbol.Bool;
+                    type = _boolType;
                     break;
                 case TokenKind.NumberLiteral:
                     if (!long.TryParse(token.Text, out var number))
                         Diagnostics.ReportInvalidNumber(token.Span, token.Text);
                     value = number;
-                    type = TypeSymbol.I64;
+                    type = _intType;
                     break;
                 case TokenKind.StringLiteral:
                     value = token.Text.Substring(1, token.Text.Length - 2)
                         .Replace(@"\t", "\t")
                         .Replace(@"\r", "\r")
                         .Replace(@"\n", "\n");
-                    type = TypeSymbol.String;
+                    type = _stringType;
                     break;
             }
 

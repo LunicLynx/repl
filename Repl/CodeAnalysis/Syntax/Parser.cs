@@ -186,16 +186,22 @@ namespace Repl.CodeAnalysis.Syntax
                 return ParseMethodDeclaration();
             }
 
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            TypeAnnotationSyntax typeAnnotation = null;
+            if (Current.Kind == TokenKind.Colon)
+            {
+                typeAnnotation = ParseTypeAnnotation();
+            }
 
-            if (peek.Kind == TokenKind.OpenBrace ||
-                peek.Kind == TokenKind.EqualsGreater)
+            if (Current.Kind == TokenKind.OpenBrace ||
+                Current.Kind == TokenKind.EqualsGreater)
             {
                 // Property
-                return ParsePropertyDeclaration();
+                return ParsePropertyDeclaration(identifierToken, typeAnnotation);
             }
 
             // field
-            return ParseFieldDeclaration();
+            return ParseFieldDeclaration(identifierToken, typeAnnotation);
         }
 
         private MemberDeclarationSyntax ParseConstructorDeclaration()
@@ -206,17 +212,8 @@ namespace Repl.CodeAnalysis.Syntax
             return new ConstructorDeclarationSyntax(identifierToken, parameterList, body);
         }
 
-        private MemberDeclarationSyntax ParseFieldDeclaration()
+        private MemberDeclarationSyntax ParseFieldDeclaration(Token identifierToken, TypeAnnotationSyntax typeAnnotation)
         {
-            var identifierToken = MatchToken(TokenKind.Identifier);
-
-            TypeAnnotationSyntax typeAnnotation = null;
-            // For now types must be specified
-            //if (Current.Kind == TokenKind.Colon)
-            {
-                typeAnnotation = ParseTypeAnnotation();
-            }
-
             InitializerSyntax initializer = null;
             if (Current.Kind == TokenKind.Equals)
             {
@@ -234,14 +231,8 @@ namespace Repl.CodeAnalysis.Syntax
             return new InitializerSyntax(equalsToken, expression);
         }
 
-        private MemberDeclarationSyntax ParsePropertyDeclaration()
+        private MemberDeclarationSyntax ParsePropertyDeclaration(Token identifierToken, TypeAnnotationSyntax typeAnnotation)
         {
-            var identifierToken = MatchToken(TokenKind.Identifier);
-
-            TypeAnnotationSyntax typeAnnotation = null;
-            if (Current.Kind == TokenKind.Colon)
-                typeAnnotation = ParseTypeAnnotation();
-
             // get expression ?
             if (Current.Kind == TokenKind.EqualsGreater)
             {

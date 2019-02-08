@@ -61,11 +61,16 @@ namespace Repl.CodeAnalysis.Binding
 
         }
 
-        public static readonly BoundBinaryOperator[] Operators =
-            BoundOperators.GetOperators(
+        public static BoundBinaryOperator[] Operators;
+
+        public static void Initialize(IScope scope)
+        {
+            Operators =
+            BoundOperators.GetOperators(scope,
                 NumericalOperators,
                 NumericalOperators,
                 BooleanOperators);
+        }
 
 
         public static BoundBinaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol leftType, TypeSymbol rightType)

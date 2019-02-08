@@ -15,5 +15,10 @@ namespace Repl.CodeAnalysis
 
         [DllImport("kernel32.dll")]
         public static extern bool WriteFile(long handle, string text, int len, long p, long p2);
+
+        public static long StringLength(string str)
+        {
+            return str.Length;
+        }
     }
 }

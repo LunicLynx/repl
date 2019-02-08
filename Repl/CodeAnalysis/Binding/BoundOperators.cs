@@ -6,11 +6,14 @@ namespace Repl.CodeAnalysis.Binding
 {
     public static class BoundOperators
     {
-        public static T[] GetOperators<T>(
+        public static T[] GetOperators<T>(IScope scope,
             Func<TypeSymbol, TypeSymbol, IEnumerable<T>> numericalOperatorsSigned,
             Func<TypeSymbol, TypeSymbol, IEnumerable<T>> numericalOperatorsUnsigned,
             Func<TypeSymbol, IEnumerable<T>> booleanOperators)
         {
+
+            //scope.TryLookup(NativeTypeNames.UInt16);
+
             var boolType = TypeSymbol.Bool;
             var numericalTypesSigned = new[]
             {
