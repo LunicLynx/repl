@@ -21,11 +21,6 @@ namespace Repl.CodeAnalysis.Binding
             ResultType = resultType;
         }
 
-        static BoundUnaryOperator()
-        {
-
-        }
-
         private static IEnumerable<BoundUnaryOperator> NumericalOperatorsSigned(TypeSymbol type, TypeSymbol _)
         {
             yield return new BoundUnaryOperator(TokenKind.Plus, BoundUnaryOperatorKind.Identity, type);

@@ -36,6 +36,7 @@ namespace Repl.CodeAnalysis.Binding
             yield return new BoundBinaryOperator(TokenKind.Ampersand, BoundBinaryOperatorKind.BitwiseAnd, type);
             yield return new BoundBinaryOperator(TokenKind.Pipe, BoundBinaryOperatorKind.BitwiseOr, type);
             yield return new BoundBinaryOperator(TokenKind.Hat, BoundBinaryOperatorKind.BitwiseXor, type);
+            if (boolType == null) yield break;
             yield return new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equal, type,
                 boolType);
             yield return new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEqual, type,
@@ -58,7 +59,6 @@ namespace Repl.CodeAnalysis.Binding
             yield return new BoundBinaryOperator(TokenKind.Hat, BoundBinaryOperatorKind.BitwiseXor, type);
             yield return new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equal, type);
             yield return new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEqual, type);
-
         }
 
         public static BoundBinaryOperator[] Operators;

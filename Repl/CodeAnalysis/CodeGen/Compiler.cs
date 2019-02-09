@@ -34,7 +34,7 @@ namespace Repl.CodeAnalysis.CodeGen
                 builder.PositionAtEnd(_basicBlock);
 
                 var codeGenerator = new CodeGenerator(_module, builder, _variablePtrs);
-                var value = codeGenerator.Generate(Lowerer.Lower(globalScope.Unit), globalScope.Symbols);
+                var value = codeGenerator.Generate(Lowerer.Lower(globalScope), globalScope.Symbols);
                 _basicBlock = builder.GetInsertBlock();
 
                 v = builder.Ret(value);

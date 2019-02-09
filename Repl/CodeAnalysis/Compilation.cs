@@ -71,7 +71,7 @@ namespace Repl.CodeAnalysis
 
         private BoundUnit GetUnit()
         {
-            var statement = Lowerer.Lower(GlobalScope.Unit);
+            var statement = Lowerer.Lower(GlobalScope);
             return statement;
         }
 
