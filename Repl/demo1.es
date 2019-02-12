@@ -1,7 +1,4 @@
-﻿
-//namespace Standard;
-
-extern StringLength(str: string): int
+﻿extern StringLength(str: string): int
 
 struct String {
     Length:int => StringLength(this)
@@ -37,7 +34,6 @@ struct Void {
 struct Boolean {
 }
 
-//alias HANDLE = void*
 alias HANDLE = i64
 alias DWORD = i32
 //alias LPDWORD = DWORD*
@@ -63,44 +59,19 @@ func Print(text: string) {
 	WriteFile(handle, text, (DWORD)text.Length, 0, 0)
 }
 
-struct A : A {}
-
-//struct B : C {}
-//struct C : B {}
-
 struct Person {
     Name: string
     Age: i32
-    //i32 Age
 
 	Tell() {
-		Print(Name)
-		Print("\n")
+		//Print(Name)
+		//Print("\n")
 	}
 }
 
-let p1 = Person()
-let p2 = new Person()
-
-//let p3: Person# = Person
-//let p4: Person = new Person
-
-p1
-p2
-//p3
-//p4
-
-p1.Name = "Peter"
-p2.Name = "Florian"
-Print(p1.Name)
-Print("\n")
-
-p2.Tell()
-p1.Tell()
-//p3.Tell()
-//p4.Tell()
-
-let handle = GetStdHandle((i32)-11)
-WriteFile(handle, "Hello Alma\n", (i32)11, 0, 0)
-
-Print("Hello World!\n")
+//let p1 = Person()
+//p1.Name = "Peter"
+//Print(p1.Name)
+//Print("\n")
+//
+//p1.Tell()

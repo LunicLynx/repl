@@ -11,6 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="demo1.es">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="demo.es">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

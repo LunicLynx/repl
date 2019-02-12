@@ -16,6 +16,7 @@ namespace Repl.CodeAnalysis.Binding
 
         public BoundPropertyDeclaration(PropertySymbol property, BoundBlockStatement getBody) : base(property)
         {
+            Property = property;
             GetBody = getBody;
         }
 

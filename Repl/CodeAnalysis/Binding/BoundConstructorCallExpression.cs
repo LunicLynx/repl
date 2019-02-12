@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Binding
 {
-    internal class BoundConstructorCallExpression : BoundExpression
+    public class BoundConstructorCallExpression : BoundExpression
     {
         public override TypeSymbol Type => Constructor.Type;
         public ConstructorSymbol Constructor { get; }

@@ -59,7 +59,7 @@ namespace Repl.CodeAnalysis.Lowering
 
         private LabelSymbol _continueLabel;
         private LabelSymbol _breakLabel;
-        private TypeSymbol _intType;
+        private readonly TypeSymbol _intType;
 
         protected override BoundStatement RewriteContinueStatement(BoundContinueStatement node)
         {
@@ -209,22 +209,33 @@ namespace Repl.CodeAnalysis.Lowering
                 upperBoundDeclaration,
                 whileStatement));
 
-            return RewriteBlockStatement(result);
+            return RewriteStatement(result);
         }
 
         protected override BoundStructDeclaration RewriteStructDeclaration(BoundStructDeclaration node)
         {
+            // TODO this should probably be at the end
             node = base.RewriteStructDeclaration(node);
 
             var changed = false;
-            // 1. define default constructor
-
             var type = node.Type;
+            var members = node.Members;
 
-            var boundMembers = node.Members.Select(m => m.Member).ToList();
+            // 0. Rewrite properties to field and method
+            var props = members.OfType<BoundPropertyDeclaration>().ToList();
+            foreach (var prop in props)
+            {
+                changed = true;
+                var symbol = prop.Property;
+                members = members.Remove(prop);
+                var getter = new BoundMethodDeclaration(symbol.Getter, prop.GetBody);
+                members = members.Add(getter);
+            }
+
+            // 1. define default constructor
+            var boundMembers = members.Select(m => m.Member).ToList();
             var defaultCtor = type.Members.OfType<ConstructorSymbol>().FirstOrDefault(c => boundMembers.All(m => m != c));
 
-            var members = node.Members;
             if (defaultCtor != null)
             {
                 changed = true;
@@ -234,12 +245,12 @@ namespace Repl.CodeAnalysis.Lowering
             }
 
             // 2. prepend initializers to every constructor that does not call another constructor
-            //var newCtors = new List<>
             var ctors = members.OfType<BoundConstructorDeclaration>().ToList();
             foreach (var ctor in ctors)
             {
                 var initializerStatements = new List<BoundStatement>();
 
+                // TODO add properties
                 var fields = members.OfType<BoundFieldDeclaration>();
                 foreach (var field in fields)
                 {
@@ -249,6 +260,8 @@ namespace Repl.CodeAnalysis.Lowering
                         var assign = new BoundAssignmentExpression(fieldExpression, field.Initializer);
                         var assignStatement = new BoundExpressionStatement(assign);
                         initializerStatements.Add(assignStatement);
+                        var newField = new BoundFieldDeclaration(field.Field, null);
+                        members = members.Replace(field, newField);
                     }
                 }
 
@@ -262,7 +275,37 @@ namespace Repl.CodeAnalysis.Lowering
                 }
             }
 
+
+
             return changed ? new BoundStructDeclaration(node.Type, members) : node;
+        }
+
+        // TODO lower property declaration 
+        //  field and methods
+
+
+        protected override BoundMemberDeclaration RewriteMember(BoundMemberDeclaration node)
+        {
+            return base.RewriteMember(node);
+        }
+
+        // TODO lower property expression
+        //  get for read and set for assignment
+
+        protected override BoundExpression RewritePropertyExpression(BoundPropertyExpression node)
+        {
+            var call = new BoundMethodCallExpression(node.Target, node.Property.Getter, ImmutableArray<BoundExpression>.Empty);
+            //return base.RewritePropertyExpression(node);
+            return call;
+        }
+
+        protected override BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node)
+        {
+            if (node.Target is BoundPropertyExpression p)
+            {
+                while (false) ;
+            }
+            return base.RewriteAssignmentExpression(node);
         }
     }
 }

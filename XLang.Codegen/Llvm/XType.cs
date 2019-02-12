@@ -1,4 +1,6 @@
-﻿using LLVMSharp;
+﻿using System.Collections.Generic;
+using System.Linq;
+using LLVMSharp;
 
 namespace XLang.Codegen.Llvm
 {
@@ -19,8 +21,17 @@ namespace XLang.Codegen.Llvm
         public static XType Int32 = new XType(LLVM.Int32Type());
         public static XType Int64 = new XType(LLVM.Int64Type());
 
+
         //public static XType Ptr = new XType(LLVM.P);
 
         public static XType Double = new XType(LLVM.DoubleType());
+
+        public static XType Struct(/*string name, */IEnumerable<XType> elementTypes)
+        {
+            //LLVM.StructCreateNamed(Context.Global.ContextRef, name )
+            //LLVM.StructSetBody
+            var types = elementTypes.Select(m => m.TypeRef).ToArray();
+            return new XType(LLVM.StructType(types, false));
+        }
     }
 }

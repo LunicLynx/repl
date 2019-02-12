@@ -19,12 +19,12 @@ namespace Repl.CodeAnalysis.Binding
             }
         }
 
-        private BoundNode RewriteConstDeclaration(BoundConstDeclaration node)
+        protected virtual BoundNode RewriteConstDeclaration(BoundConstDeclaration node)
         {
             return node;
         }
 
-        private BoundNode RewriteAliasDeclaration(BoundAliasDeclaration node)
+        protected virtual BoundNode RewriteAliasDeclaration(BoundAliasDeclaration node)
         {
             return node;
         }
@@ -64,7 +64,7 @@ namespace Repl.CodeAnalysis.Binding
             return changed ? new BoundStructDeclaration(node.Type, result.ToImmutable()) : node;
         }
 
-        private BoundMemberDeclaration RewriteMember(BoundMemberDeclaration node)
+        protected virtual BoundMemberDeclaration RewriteMember(BoundMemberDeclaration node)
         {
             switch (node)
             {
@@ -77,7 +77,7 @@ namespace Repl.CodeAnalysis.Binding
             }
         }
 
-        private BoundMemberDeclaration RewriteConstructorDeclaration(BoundConstructorDeclaration node)
+        protected virtual BoundMemberDeclaration RewriteConstructorDeclaration(BoundConstructorDeclaration node)
         {
             var body = RewriteBlockStatement(node.Body);
             if (body == node.Body)
@@ -85,7 +85,7 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundConstructorDeclaration(node.Constructor, body);
         }
 
-        private BoundMemberDeclaration RewriteMethodDeclaration(BoundMethodDeclaration node)
+        protected virtual BoundMemberDeclaration RewriteMethodDeclaration(BoundMethodDeclaration node)
         {
             var body = RewriteBlockStatement(node.Body);
             if (body == node.Body)
@@ -93,7 +93,7 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundMethodDeclaration(node.Method, body);
         }
 
-        private BoundMemberDeclaration RewritePropertyDeclaration(BoundPropertyDeclaration node)
+        protected virtual BoundMemberDeclaration RewritePropertyDeclaration(BoundPropertyDeclaration node)
         {
             var initializer = node.Initializer == null ? null : RewriteExpression(node.Initializer);
             if (initializer == node.Initializer)
@@ -101,7 +101,7 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundPropertyDeclaration(node.Property, initializer);
         }
 
-        private BoundMemberDeclaration RewriteFieldDeclaration(BoundFieldDeclaration node)
+        protected virtual BoundMemberDeclaration RewriteFieldDeclaration(BoundFieldDeclaration node)
         {
             var initializer = node.Initializer == null ? null : RewriteExpression(node.Initializer);
             if (initializer == node.Initializer)
@@ -241,12 +241,12 @@ namespace Repl.CodeAnalysis.Binding
             }
         }
 
-        private BoundExpression RewritePropertyExpression(BoundPropertyExpression node)
+        protected virtual BoundExpression RewritePropertyExpression(BoundPropertyExpression node)
         {
             return node;
         }
 
-        private BoundExpression RewriteConstructorCallExpression(BoundConstructorCallExpression node)
+        protected virtual BoundExpression RewriteConstructorCallExpression(BoundConstructorCallExpression node)
         {
             var changed = false;
             var result = ImmutableArray.CreateBuilder<BoundExpression>();
@@ -261,7 +261,7 @@ namespace Repl.CodeAnalysis.Binding
             return changed ? new BoundConstructorCallExpression(node.Constructor, result.ToImmutable()) : node;
         }
 
-        private BoundExpression RewriteMethodCallExpression(BoundMethodCallExpression node)
+        protected virtual BoundExpression RewriteMethodCallExpression(BoundMethodCallExpression node)
         {
             var target = RewriteExpression(node.Target);
 
@@ -278,27 +278,27 @@ namespace Repl.CodeAnalysis.Binding
             return target != node.Target || changed ? new BoundMethodCallExpression(target, node.Method, result.ToImmutable()) : node;
         }
 
-        private BoundExpression RewriteFieldExpression(BoundFieldExpression node)
+        protected virtual BoundExpression RewriteFieldExpression(BoundFieldExpression node)
         {
             return node;
         }
 
-        private BoundExpression RewriteConstExpression(BoundConstExpression node)
+        protected virtual BoundExpression RewriteConstExpression(BoundConstExpression node)
         {
             return node;
         }
 
-        private BoundExpression RewriteNewExpression(BoundNewExpression node)
+        protected virtual BoundExpression RewriteNewExpression(BoundNewExpression node)
         {
             return node;
         }
 
-        private BoundExpression RewriteTypeExpression(BoundTypeExpression node)
+        protected virtual BoundExpression RewriteTypeExpression(BoundTypeExpression node)
         {
             return node;
         }
 
-        private BoundExpression RewriteCastExpression(BoundCastExpression node)
+        protected virtual BoundExpression RewriteCastExpression(BoundCastExpression node)
         {
             var expression = RewriteExpression(node.Expression);
             if (expression == node.Expression)
@@ -306,12 +306,12 @@ namespace Repl.CodeAnalysis.Binding
             return new BoundCastExpression(node.Type, expression);
         }
 
-        private BoundExpression RewriteParameterExpression(BoundParameterExpression node)
+        protected virtual BoundExpression RewriteParameterExpression(BoundParameterExpression node)
         {
             return node;
         }
 
-        private BoundExpression RewriteCallExpression(BoundFunctionCallExpression node)
+        protected virtual BoundExpression RewriteCallExpression(BoundFunctionCallExpression node)
         {
             var changed = false;
             var result = ImmutableArray.CreateBuilder<BoundExpression>();

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using Repl.CodeAnalysis.Binding;
 using XLang.Codegen.Llvm;
@@ -9,56 +8,89 @@ namespace Repl.CodeAnalysis.CodeGen
 {
     public class CodeGenerator
     {
-        private readonly Dictionary<Symbol, Value> _symbols;
-        private readonly XModule _module;
+        private readonly CodeGeneratorContext _context;
         private readonly Builder _builder;
 
-        public CodeGenerator(XModule module, Builder builder, Dictionary<Symbol, Value> symbols)
+        public CodeGenerator(CodeGeneratorContext context, Builder builder)
         {
-            _module = module;
+            _context = context;
             _builder = builder;
-            _symbols = symbols;
+
+            InitializeTypes();
         }
 
         private Value _lastValue = Value.Int32(0);
         private TypeSymbol _i32Type;
         private TypeSymbol _i64Type;
-        private TypeSymbol _i16Type;
-        private TypeSymbol _i8Type;
+        private readonly TypeSymbol _i16Type;
+        private readonly TypeSymbol _i8Type;
         private TypeSymbol _u64Type;
-        private TypeSymbol _u32Type;
-        private TypeSymbol _u16Type;
-        private TypeSymbol _u8Type;
-        private TypeSymbol _stringType;
-        private TypeSymbol _boolType;
-        private TypeSymbol _voidType;
+        private readonly TypeSymbol _u32Type;
+        private readonly TypeSymbol _u16Type;
+        private readonly TypeSymbol _u8Type;
+        private readonly TypeSymbol _stringType;
+        private readonly TypeSymbol _boolType;
+        private readonly TypeSymbol _voidType;
         private TypeSymbol _intType;
         private TypeSymbol _uintType;
 
-        public Value Generate(BoundUnit unit, ImmutableArray<Symbol> symbols)
+        public Value Generate(BoundUnit unit)
         {
-            _i64Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int64");
-            _i32Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int32");
-            _i16Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int16");
-            _i8Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int8");
-            _u64Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt64");
-            _u32Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt32");
-            _u16Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt16");
-            _u8Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt8");
-            _stringType = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "String");
-            _boolType = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Boolean");
-            _voidType = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Void");
-            _intType = _i64Type;
-            _uintType = _u64Type;
+            var children = unit.GetChildren().ToList();
 
-            _lastValue = Value.Int32(0);
+            var decl = children.OfType<BoundStructDeclaration>().ToList();
 
-            foreach (var node in unit.GetChildren())
+            var lastCount = decl.Count;
+            while (decl.Any())
+            {
+                var x = decl.ToList();
+                foreach (var item in x)
+                {
+                    if (TryGenerateStructDeclaration(item))
+                        decl.Remove(item);
+                }
+                if (lastCount == decl.Count)
+                    throw new Exception("circular dependency");
+            }
+
+            //foreach (var d in decl)
+            //{
+            //    TryGenerateStructDeclaration(d);
+            //}
+            var other = children.Except(decl).ToList();
+
+            //InitializeTypes();
+
+            _lastValue = GetAsValue(_intType, 0);
+
+            foreach (var node in other)
             {
                 GenerateNode(node);
             }
 
             return _lastValue;
+        }
+
+        private void InitializeTypes(/*ImmutableArray<Symbol> symbols*/)
+        {
+            var list = _context.Types.Cast<KeyValuePair<TypeSymbol, XType>?>().ToList();
+            _i64Type = list.FirstOrDefault(kv => kv.Value.Key.Name == "Int64")?.Key;
+            _i32Type = list.FirstOrDefault(kv => kv.Value.Key.Name == "Int32")?.Key;
+            _u64Type = list.FirstOrDefault(kv => kv.Value.Key.Name == "UInt64")?.Key;
+            //_i64Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int64");
+            ////if(_i64Type == null && _types.) 
+            //_i32Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int32");
+            //_i16Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int16");
+            //_i8Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Int8");
+            //_u64Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt64");
+            //_u32Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt32");
+            //_u16Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt16");
+            //_u8Type = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "UInt8");
+            //_stringType = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "String");
+            //_boolType = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Boolean");
+            //_voidType = symbols.OfType<TypeSymbol>().FirstOrDefault(t => t.Name == "Void");
+            _intType = _i64Type;
+            _uintType = _u64Type;
         }
 
         private void GenerateNode(BoundNode node)
@@ -79,9 +111,103 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundConstDeclaration c:
                     GenerateConstDeclaration(c);
                     break;
+                case BoundStructDeclaration s:
+                    GenerateStructDeclaration(s);
+                    break;
                 default:
                     throw new Exception($"Unexpected node {node.GetType()}");
             }
+        }
+
+        private XType GetFieldType(BoundFieldDeclaration node)
+        {
+            _context.Types.TryGetValue(node.Field.Type, out var type);
+            return type;
+        }
+
+        private XType GenerateMember(BoundMemberDeclaration node, XType owner)
+        {
+            switch (node)
+            {
+                case BoundMethodDeclaration m:
+                    GenerateMethodDeclaration(m, owner);
+                    break;
+                case BoundConstructorDeclaration c:
+                    GenerateConstructorDeclaration(c, owner);
+                    break;
+                default:
+                    throw new Exception($"Unexpected member {node.GetType()}");
+            }
+            return null;
+        }
+
+        private void GenerateConstructorDeclaration(BoundConstructorDeclaration node, XType owner)
+        {
+            //node.Constructor
+
+            var constructor = node.Constructor;
+            var ft = CreateConstructorType(constructor, owner);
+            var f = _context.Module.AddFunction(ft, constructor.Name);
+            _context.Symbols[constructor] = f;
+            var entry = f.AppendBasicBlock("entry");
+
+            using (var builder = new Builder())
+            {
+                builder.PositionAtEnd(entry);
+
+                var c = new CodeGenerator(_context, builder);
+                c.GenerateStatement(node.Body);
+
+                builder.Ret(c._lastValue);
+            }
+        }
+
+        private void GenerateMethodDeclaration(BoundMethodDeclaration node, XType owner)
+        {
+            GenerateMethodBase(node, owner);
+        }
+
+        private bool TryGenerateStructDeclaration(BoundStructDeclaration node)
+        {
+            if (NativeTypeNames.Names.Contains(node.Type.Name)) return true;
+
+            var fields = node.Members.OfType<BoundFieldDeclaration>().ToList();
+            var fieldTypes = fields.Select(f => (f.Field, Type: GetFieldType(f))).ToList();
+            if (fieldTypes.Any(ft => ft.Type == null)) return false;
+
+            for (var i = 0; i < fieldTypes.Count; i++)
+            {
+                var fieldType = fieldTypes[i];
+                _context.FieldIndicies[fieldType.Field] = i;
+            }
+
+            //var members = node.Members.Select(GenerateMember).ToList();
+            var structType = XType.Struct(fieldTypes.Select(ft => ft.Type));
+
+            //node.Members
+            //    .Except(fields)
+            //    .Select(x => GenerateMember(x, structType))
+            //    .ToList();
+
+            _context.Types[node.Type] = structType;
+            return true;
+        }
+
+        private void GenerateStructDeclaration(BoundStructDeclaration node)
+        {
+            var fields = node.Members.OfType<BoundFieldDeclaration>().ToList();
+            //var fieldTypes = fields.Select(f => GenerateMember(f, null)).ToList();
+            //var members = node.Members.Select(GenerateMember).ToList();
+            //var structType = XType.Struct(fieldTypes);
+
+            var structType = _context.Types[node.Type];
+
+            node.Members
+                .Except(fields)
+                .Select(x => GenerateMember(x, structType))
+                .ToList();
+
+            _context.Types[node.Type] = structType;
         }
 
         private void GenerateConstDeclaration(BoundConstDeclaration node)
@@ -90,22 +216,22 @@ namespace Repl.CodeAnalysis.CodeGen
             var nodeValue = node.Value;
             var value = GetAsValue(type, nodeValue);
 
-            _symbols[node.Const] = value;
+            _context.Symbols[node.Const] = value;
         }
 
         private Value GetAsValue(TypeSymbol type, object nodeValue)
         {
             Value value = null;
             if (type == _boolType) value = Value.Int1((bool)nodeValue);
-            if (type == _i16Type) value = Value.Int16((short)nodeValue);
-            if (type == _i32Type) value = Value.Int32((int)nodeValue);
-            if (type == _i64Type) value = Value.Int64((long)nodeValue);
-            if (type == _i8Type) value = Value.Int8((sbyte)nodeValue);
+            if (type == _i16Type) value = Value.Int16((short)Convert.ChangeType(nodeValue, typeof(short)));
+            if (type == _i32Type) value = Value.Int32((int)Convert.ChangeType(nodeValue, typeof(int)));
+            if (type == _i64Type) value = Value.Int64((long)Convert.ChangeType(nodeValue, typeof(long)));
+            if (type == _i8Type) value = Value.Int8((sbyte)Convert.ChangeType(nodeValue, typeof(sbyte)));
             if (type == _stringType) value = Value.String((string)nodeValue);
-            if (type == _u16Type) value = Value.UInt16((ushort)nodeValue);
-            if (type == _u32Type) value = Value.UInt32((uint)nodeValue);
-            if (type == _u64Type) value = Value.UInt64((ulong)nodeValue);
-            if (type == _u8Type) value = Value.UInt8((byte)nodeValue);
+            if (type == _u16Type) value = Value.UInt16((ushort)Convert.ChangeType(nodeValue, typeof(ushort)));
+            if (type == _u32Type) value = Value.UInt32((uint)Convert.ChangeType(nodeValue, typeof(uint)));
+            if (type == _u64Type) value = Value.UInt64((ulong)Convert.ChangeType(nodeValue, typeof(ulong)));
+            if (type == _u8Type) value = Value.UInt8((byte)Convert.ChangeType(nodeValue, typeof(byte)));
 
             if (value == null) throw new Exception("");
             return value;
@@ -142,22 +268,47 @@ namespace Repl.CodeAnalysis.CodeGen
         private void GenerateExternDeclaration(BoundExternDeclaration node)
         {
             var ft = CreateFunctionType(node.Function);
-            var f = _module.AddFunction(ft, node.Function.Name);
-            _symbols[node.Function] = f;
+            var f = _context.Module.AddFunction(ft, node.Function.Name);
+            _context.Symbols[node.Function] = f;
         }
 
         private void GenerateFunctionDeclaration(BoundFunctionDeclaration node)
         {
-            var ft = CreateFunctionType(node.Function);
-            var f = _module.AddFunction(ft, node.Function.Name);
-            _symbols[node.Function] = f;
+            GenerateFunctionBase(node);
+        }
+
+        private void GenerateFunctionBase(BoundFunctionDeclaration node)
+        {
+            var function = node.Function;
+            var ft = CreateFunctionType(function);
+            var f = _context.Module.AddFunction(ft, function.Name);
+            _context.Symbols[function] = f;
             var entry = f.AppendBasicBlock("entry");
 
             using (var builder = new Builder())
             {
                 builder.PositionAtEnd(entry);
 
-                var c = new CodeGenerator(_module, builder, _symbols);
+                var c = new CodeGenerator(_context, builder);
+                c.GenerateStatement(node.Body);
+
+                builder.Ret(c._lastValue);
+            }
+        }
+
+        private void GenerateMethodBase(BoundMethodDeclaration node, XType owner)
+        {
+            var function = node.Method;
+            var ft = CreateMethodType(function, owner);
+            var f = _context.Module.AddFunction(ft, function.Name);
+            _context.Symbols[function] = f;
+            var entry = f.AppendBasicBlock("entry");
+
+            using (var builder = new Builder())
+            {
+                builder.PositionAtEnd(entry);
+
+                var c = new CodeGenerator(_context, builder);
                 c.GenerateStatement(node.Body);
 
                 builder.Ret(c._lastValue);
@@ -168,6 +319,20 @@ namespace Repl.CodeAnalysis.CodeGen
         {
             var returnType = GetXType(function.ReturnType);
             var parameterTypes = function.Parameters.Select(p => GetXType(p.Type)).ToArray();
+            return new FunctionType(returnType, parameterTypes);
+        }
+
+        private FunctionType CreateMethodType(MethodSymbol method, XType owner)
+        {
+            var returnType = GetXType(method.Type);
+            var parameterTypes = new[] { owner }.Concat(method.Parameters.Select(p => GetXType(p.Type))).ToArray();
+            return new FunctionType(returnType, parameterTypes);
+        }
+
+        private FunctionType CreateConstructorType(ConstructorSymbol constructor, XType owner)
+        {
+            var returnType = GetXType(constructor.Type);
+            var parameterTypes = new[] { owner }.Concat(constructor.Parameters.Select(p => GetXType(p.Type))).ToArray();
             return new FunctionType(returnType, parameterTypes);
         }
 
@@ -213,14 +378,14 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private BasicBlock GetOrAppend(LabelSymbol labelSymbol, bool addPhi = false)
         {
-            if (_symbols.TryGetValue(labelSymbol, out var label))
+            if (_context.Symbols.TryGetValue(labelSymbol, out var label))
             {
                 return label.AsBasicBlock();
             }
 
             var target = Append(addPhi, labelSymbol.Name);
 
-            _symbols[labelSymbol] = target.AsValue();
+            _context.Symbols[labelSymbol] = target.AsValue();
             return target;
         }
 
@@ -263,11 +428,11 @@ namespace Repl.CodeAnalysis.CodeGen
         {
             var value = GenerateExpression(node.Initializer);
             var variable = node.Variable;
-            if (!_symbols.TryGetValue(variable, out var ptr))
+            if (!_context.Symbols.TryGetValue(variable, out var ptr))
             {
                 var xType = GetXType(variable.Type);
                 ptr = _builder.Alloca(xType, variable.Name);
-                _symbols[variable] = ptr;
+                _context.Symbols[variable] = ptr;
             }
             _builder.Store(value, ptr);
             _lastValue = value;
@@ -302,9 +467,53 @@ namespace Repl.CodeAnalysis.CodeGen
                     return GenerateConstExpression(c);
                 case BoundPropertyExpression m:
                     return GeneratePropertyExpression(m);
+                case BoundThisExpression t:
+                    return GenerateThisExpression(t);
+                case BoundMethodCallExpression m:
+                    return GenerateMethodCallExpression(m);
+                case BoundFieldExpression f:
+                    return GenerateFieldExpression(f);
+                case BoundConstructorCallExpression c:
+                    return GenerateConstructorCallExpression(c);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private Value GenerateConstructorCallExpression(BoundConstructorCallExpression node)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Value GenerateFieldExpression(BoundFieldExpression node)
+        {
+            var index = _context.FieldIndicies[node.Field];
+            Value target;
+            if (node.Target != null)
+            {
+                target = GenerateExpression(node.Target);
+            }
+            else
+            {
+                target = _builder.GetInsertBlock().GetParent().AsFunction().GetParam(0);
+            }
+
+            return _builder.GEP(target, new[] { Value.Int32(index) });
+        }
+
+        private Value GenerateMethodCallExpression(BoundMethodCallExpression node)
+        {
+            var target = GenerateExpression(node.Target);
+            var arguments = new[] { target }
+                .Concat(node.Arguments.Select(GenerateExpression))
+                .ToArray();
+            var function = _context.Symbols[node.Method];
+            return _builder.Call(function, arguments);
+        }
+
+        private Value GenerateThisExpression(BoundThisExpression node)
+        {
+            return _builder.GetInsertBlock().GetParent().AsFunction().GetParam(0);
         }
 
         private Value GeneratePropertyExpression(BoundPropertyExpression node)
@@ -316,7 +525,7 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private Value GenerateConstExpression(BoundConstExpression node)
         {
-            var value = _symbols[node.Const];
+            var value = _context.Symbols[node.Const];
             return value;
         }
 
@@ -334,7 +543,7 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private Value GenerateFunctionCallExpression(BoundFunctionCallExpression node)
         {
-            var function = _symbols[node.Function];
+            var function = _context.Symbols[node.Function];
             var args = node.Arguments.Select(GenerateExpression).ToArray();
             return _builder.Call(function, args);
         }
@@ -342,7 +551,7 @@ namespace Repl.CodeAnalysis.CodeGen
         private Value GenerateVariableExpression(BoundVariableExpression node)
         {
             var variable = node.Variable;
-            if (_symbols.TryGetValue(variable, out var ptr))
+            if (_context.Symbols.TryGetValue(variable, out var ptr))
                 return _builder.Load(ptr, variable.Name);
             return null;
         }
@@ -362,6 +571,8 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private XType GetXType(TypeSymbol type)
         {
+            if (_context.Types.TryGetValue(type, out var x))
+                return x;
             if (type == _boolType) return XType.Int1;
             if (type == _i8Type) return XType.Int8;
             if (type == _i16Type) return XType.Int16;

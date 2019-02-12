@@ -72,7 +72,7 @@ namespace XLang.Codegen.Llvm
         public Value Call(Value func, Value[] args, string name = "")
         {
             return new Value(LLVM.BuildCall(BuilderRef, func.ValueRef, args.Select(a => a.ValueRef).ToArray(),
-                ""));
+                name));
         }
 
         public Value RetVoid()

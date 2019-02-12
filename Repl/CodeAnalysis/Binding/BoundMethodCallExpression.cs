@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Binding
 {
-    internal class BoundMethodCallExpression : BoundExpression
+    public class BoundMethodCallExpression : BoundExpression
     {
         public BoundExpression Target { get; }
         public MethodSymbol Method { get; }

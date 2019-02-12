@@ -148,6 +148,23 @@ namespace Repl.CodeAnalysis
 
         private void EvaluatePropertyDeclaration(BoundPropertyDeclaration node)
         {
+            var body = node.GetBody;
+
+            var value = node.GetBody;
+
+            var method = node.Property.Getter;
+
+            _globals[method] = (Func<object, object[], object>)((target, args) =>
+            {
+                for (var i = 0; i < method.Parameters.Length; i++)
+                {
+                    var parameter = method.Parameters[i];
+                    SetSymbolValue(parameter, args[i]);
+                }
+                return EvaluateBlock(body);
+            });
+
+            _lastValue = value;
         }
 
         private void EvaluateFieldDeclaration(BoundFieldDeclaration node)
@@ -269,9 +286,16 @@ namespace Repl.CodeAnalysis
                     return EvaluateFieldExpression(f);
                 case BoundConstructorCallExpression c:
                     return EvaluateConstructorCallExpression(c);
+                case BoundThisExpression t:
+                    return EvaluateThisExpression(t);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private object EvaluateThisExpression(BoundThisExpression node)
+        {
+            return _locals.This;
         }
 
         private object EvaluateConstructorCallExpression(BoundConstructorCallExpression node)
@@ -348,8 +372,18 @@ namespace Repl.CodeAnalysis
 
         private object EvaluatePropertyExpression(BoundPropertyExpression node)
         {
-            var target = (IDictionary<Symbol, object>)EvaluateExpression(node.Target);
-            return target[node.Property];
+            var method = node.Property.Getter;
+
+            var target = EvaluateExpression(node.Target);
+            //var args = node.Arguments.Select(EvaluateExpression).ToArray();
+
+            using (StackFrame(target))
+            {
+                return ((Delegate)_globals[method]).DynamicInvoke(target, new object[0]);
+            }
+
+            //var target = (IDictionary<Symbol, object>)EvaluateExpression(node.Target);
+            //return target[node.Property];
         }
 
         private object EvaluateConstExpression(BoundConstExpression node)

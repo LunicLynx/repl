@@ -9,16 +9,16 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class Binder
     {
-        private readonly TypeSymbol _i8Type;
-        private readonly TypeSymbol _i16Type;
+        private TypeSymbol _i8Type;
+        private TypeSymbol _i16Type;
         private TypeSymbol _i32Type;
         private TypeSymbol _i64Type;
         private TypeSymbol _intType;
-        private readonly TypeSymbol _u8Type;
-        private readonly TypeSymbol _u16Type;
-        private readonly TypeSymbol _u32Type;
-        private readonly TypeSymbol _u64Type;
-        private readonly TypeSymbol _uintType;
+        private TypeSymbol _u8Type;
+        private TypeSymbol _u16Type;
+        private TypeSymbol _u32Type;
+        private TypeSymbol _u64Type;
+        private TypeSymbol _uintType;
         private TypeSymbol _stringType;
         private TypeSymbol _voidType;
         private TypeSymbol _boolType;
@@ -166,7 +166,13 @@ namespace Repl.CodeAnalysis.Binding
             TypeSymbol type = null;
             if (syntax.TypeAnnotation != null)
                 type = LookupTypeAnnotation(syntax.TypeAnnotation);
-            var property = new PropertySymbol(syntax.IdentifierToken.Text, type);
+            MethodSymbol getter = null;
+            MethodSymbol setter = null;
+            if (syntax.ExpressionBody != null)
+            {
+                getter = new MethodSymbol(type, "<>Get_" + syntax.IdentifierToken.Text, new ParameterSymbol[0]);
+            }
+            var property = new PropertySymbol(syntax.IdentifierToken.Text, type, getter, setter);
             DeclareSymbol(property, syntax.IdentifierToken);
         }
 
@@ -213,22 +219,75 @@ namespace Repl.CodeAnalysis.Binding
                 DeclareAlias(alias);
             }
 
-            Symbol s;
-            _scope.TryLookup("String", out s);
-            _stringType = (TypeSymbol)s;
-            _scope.TryLookup("Int32", out s);
-            _i32Type = (TypeSymbol)s;
-            _scope.TryLookup("Int64", out s);
-            _i64Type = (TypeSymbol)s;
-            _scope.TryLookup("Void", out s);
-            _voidType = (TypeSymbol)s;
-            _scope.TryLookup("Boolean", out s);
-            _boolType = (TypeSymbol)s;
-
-            _intType = _i64Type;
+            InitNativeTypes();
 
             BoundBinaryOperator.Initialize(_scope);
             BoundUnaryOperator.Initialize(_scope);
+        }
+
+        private void InitNativeTypes()
+        {
+            if (_scope.TryLookup("Void", out var s))
+            {
+                _voidType = (TypeSymbol)s;
+                _clrTypes[_voidType] = typeof(void);
+            }
+            if (_scope.TryLookup("Int8", out s))
+            {
+                _i8Type = (TypeSymbol)s;
+                _clrTypes[_i8Type] = typeof(sbyte);
+            }
+            if (_scope.TryLookup("Int16", out s))
+            {
+                _i16Type = (TypeSymbol)s;
+                _clrTypes[_i16Type] = typeof(short);
+            }
+            if (_scope.TryLookup("Int32", out s))
+            {
+                _i32Type = (TypeSymbol)s;
+                _clrTypes[_i32Type] = typeof(int);
+            }
+            if (_scope.TryLookup("Int64", out s))
+            {
+                _i64Type = (TypeSymbol)s;
+                _clrTypes[_i64Type] = typeof(long);
+            }
+
+            if (_scope.TryLookup("UInt8", out s))
+            {
+                _u8Type = (TypeSymbol)s;
+                _clrTypes[_u8Type] = typeof(byte);
+            }
+            if (_scope.TryLookup("UInt16", out s))
+            {
+                _u16Type = (TypeSymbol)s;
+                _clrTypes[_u16Type] = typeof(ushort);
+            }
+            if (_scope.TryLookup("UInt32", out s))
+            {
+                _u32Type = (TypeSymbol)s;
+                _clrTypes[_u32Type] = typeof(uint);
+            }
+            if (_scope.TryLookup("UInt64", out s))
+            {
+                _u64Type = (TypeSymbol)s;
+                _clrTypes[_u64Type] = typeof(ulong);
+            }
+
+            if (_scope.TryLookup("String", out s))
+            {
+                _stringType = (TypeSymbol)s;
+                _clrTypes[_stringType] = typeof(string);
+            }
+
+            if (_scope.TryLookup("Boolean", out s))
+            {
+                _boolType = (TypeSymbol)s;
+                _clrTypes[_boolType] = typeof(bool);
+            }
+
+            _intType = _i64Type;
+            _uintType = _u64Type;
         }
 
         private void DeclareAlias(AliasDeclarationSyntax alias)

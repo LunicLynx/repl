@@ -2,8 +2,13 @@
 {
     public class PropertySymbol : MemberSymbol
     {
-        public PropertySymbol(string name, TypeSymbol type) : base(name, type)
+        public PropertySymbol(string name, TypeSymbol type, MethodSymbol getter, MethodSymbol setter) : base(name, type)
         {
+            Getter = getter;
+            Setter = setter;
         }
+
+        public MethodSymbol Getter { get; }
+        public MethodSymbol Setter { get; }
     }
 }
