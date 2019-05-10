@@ -10,7 +10,7 @@ namespace XLang.Codegen
         {
             Console.WriteLine("Compiling...");
 
-            var toolset = @"C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Tools\MSVC\14.16.27023";
+            var toolset = @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Tools\MSVC\14.21.27619";
             var windowskitsInclude = @"C:\Program Files (x86)\Windows Kits\10\include\10.0.17763.0";
             var windowskitsLibs = @"C:\Program Files (x86)\Windows Kits\10\lib\10.0.17763.0";
             var clExe = Path.Combine(toolset, @"bin\Hostx64\x64\cl.exe");

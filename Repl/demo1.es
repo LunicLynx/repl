@@ -69,9 +69,9 @@ struct Person {
 	}
 }
 
-//let p1 = Person()
-//p1.Name = "Peter"
-//Print(p1.Name)
+let p1 = Person()
+p1.Name = "Peter"
+Print(p1.Name)
 //Print("\n")
 //
 //p1.Tell()

@@ -23,3 +23,10 @@ int main()
 
     std::cout << __anon_expr() << std::endl;
 }
+
+extern "C" {
+	int StringLength(char* str) {
+		std::cout << "Got string: " << str << std::endl;
+		return strlen(str);
+	}
+}
