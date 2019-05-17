@@ -26,12 +26,23 @@ namespace XLang.Codegen.Llvm
 
         public static XType Double = new XType(LLVM.DoubleType());
 
-        public static XType Struct(/*string name, */IEnumerable<XType> elementTypes)
+        public static XType Struct(IEnumerable<XType> elementTypes)
         {
-            //LLVM.StructCreateNamed(Context.Global.ContextRef, name )
-            //LLVM.StructSetBody
             var types = elementTypes.Select(m => m.TypeRef).ToArray();
             return new XType(LLVM.StructType(types, false));
+        }
+
+        public static XType StructNamed(Context ctx, string name, IEnumerable<XType> elementTypes)
+        {
+            var types = elementTypes.Select(m => m.TypeRef).ToArray();
+            var s = LLVM.StructCreateNamed(ctx.ContextRef, name);
+            LLVM.StructSetBody(s, types, false);
+            return new XType(s);
+        }
+
+        public static XType Pointer(XType type)
+        {
+            return new XType(LLVM.PointerType(type.TypeRef, 0));
         }
     }
 }

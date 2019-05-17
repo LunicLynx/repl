@@ -53,5 +53,10 @@ namespace XLang.Codegen.Llvm
             var s = Marshal.PtrToStringAnsi(LLVM.PrintModuleToString(ModuleRef));
             writer.Write(s);
         }
+
+        public Context GetContext()
+        {
+            return new Context(LLVM.GetModuleContext(ModuleRef));
+        }
     }
 }

@@ -6,41 +6,59 @@ using Repl.CodeAnalysis.Binding;
 
 namespace Repl.CodeAnalysis
 {
+    public interface IInvokable
+    {
+        object Invoke(Evaluator evaluator, object target, object[] args);
+    }
+
+    public class BB : IInvokable
+    {
+        private readonly BoundBlockStatement _bbs;
+        private readonly ParameterSymbol[] _parameters;
+
+        public BB(BoundBlockStatement bbs, ParameterSymbol[] parameters)
+        {
+            _bbs = bbs;
+            _parameters = parameters;
+        }
+
+        public object Invoke(Evaluator evaluator, object target, object[] args)
+        {
+            return evaluator.RunBlock(_parameters, target, args, _bbs);
+        }
+    }
+
+    public class BuiltInFunction : IInvokable
+    {
+        private readonly MethodInfo _methodInfo;
+
+        public BuiltInFunction(MethodInfo methodInfo)
+        {
+            _methodInfo = methodInfo;
+        }
+
+        public object Invoke(Evaluator evaluator, object target, object[] args)
+        {
+            return _methodInfo.Invoke(target, args);
+        }
+    }
+
     public class Evaluator
     {
 
         private object _lastValue;
         private readonly BoundUnit _root;
-        //private readonly Dictionary<ConstSymbol, object> _constants;
-        //private readonly Dictionary<VariableSymbol, object> _variables;
-        //private readonly Dictionary<FunctionSymbol, Delegate> _functions;
-        //private readonly Dictionary<MethodSymbol, Delegate> _methods;
-        //private Dictionary<ParameterSymbol, object> _arguments = new Dictionary<ParameterSymbol, object>();
-
         private readonly Dictionary<Symbol, object> _globals;
-
         private LocalContext _locals = null;
         private readonly Stack<LocalContext> _stack = new Stack<LocalContext>();
 
         public Evaluator(
             BoundUnit root,
-            //Dictionary<ConstSymbol, object> constants,
             Dictionary<Symbol, object> globals
-            //,
-            //Dictionary<VariableSymbol, object> variables,
-            //Dictionary<FunctionSymbol, Delegate> functions,
-            //Dictionary<MethodSymbol, Delegate> methods
             )
         {
             _root = root;
             _globals = globals;
-            //_constants = constants;
-            //_variables = variables;
-            //_functions = functions;
-            //_methods = methods;
-            //sbyte s1 = 4;
-            //sbyte s2 = 4;
-            //var i = s1 + s2;
         }
 
         public object Evaluate()
@@ -114,16 +132,8 @@ namespace Repl.CodeAnalysis
 
             var value = node.Body;
 
-            _globals[node.Constructor] = (Func<object, object[], object>)((target, args) =>
-            {
-                for (var i = 0; i < node.Constructor.Parameters.Length; i++)
-                {
-                    var parameter = node.Constructor.Parameters[i];
-                    SetSymbolValue(parameter, args[i]);
-                }
-
-                return EvaluateBlock(body);
-            });
+            var bb = new BB(body, node.Constructor.Parameters);
+            _globals[node.Constructor] = bb;
             _lastValue = value;
         }
 
@@ -133,16 +143,8 @@ namespace Repl.CodeAnalysis
 
             var value = node.Body;
 
-            _globals[node.Method] = (Func<object, object[], object>)((target, args) =>
-           {
-               for (var i = 0; i < node.Method.Parameters.Length; i++)
-               {
-                   var parameter = node.Method.Parameters[i];
-                   SetSymbolValue(parameter, args[i]);
-               }
-
-               return EvaluateBlock(body);
-           });
+            var bb = new BB(body, node.Method.Parameters);
+            _globals[node.Method] = bb;
             _lastValue = value;
         }
 
@@ -152,19 +154,25 @@ namespace Repl.CodeAnalysis
 
             var value = node.GetBody;
 
-            var method = node.Property.Getter;
+            var getter = node.Property.Getter;
 
-            _globals[method] = (Func<object, object[], object>)((target, args) =>
+            var bb = new BB(body, getter.Parameters);
+            _globals[getter] = bb;
+            _lastValue = value;
+        }
+
+        public object RunBlock(ParameterSymbol[] parameters, object target, object[] args, BoundBlockStatement body)
+        {
+            using (StackFrame(target))
             {
-                for (var i = 0; i < method.Parameters.Length; i++)
+                for (var i = 0; i < parameters.Length; i++)
                 {
-                    var parameter = method.Parameters[i];
+                    var parameter = parameters[i];
                     SetSymbolValue(parameter, args[i]);
                 }
-                return EvaluateBlock(body);
-            });
 
-            _lastValue = value;
+                return EvaluateBlock(body);
+            }
         }
 
         private void EvaluateFieldDeclaration(BoundFieldDeclaration node)
@@ -230,25 +238,17 @@ namespace Repl.CodeAnalysis
             if (method == null)
                 throw new Exception($"Extern function {node.Function} was not found.");
 
-            _globals[node.Function] = (Func<object[], object>)(args => method.Invoke(null, args));
+            var builtInFunction = new BuiltInFunction(method);
+            _globals[node.Function] = builtInFunction;
         }
 
         private void EvaluateFunctionDeclaration(BoundFunctionDeclaration node)
         {
             var body = node.Body;
-            //var evaluator = new Evaluator(body, _variables, _functions);
 
             var value = node.Body;
-            _globals[node.Function] = (Func<object[], object>)(args =>
-           {
-               for (var i = 0; i < node.Function.Parameters.Length; i++)
-               {
-                   var parameter = node.Function.Parameters[i];
-                   SetSymbolValue(parameter, args[i]);
-               }
-
-               return EvaluateBlock(body);
-           });
+            var bb = new BB(body, node.Function.Parameters);
+            _globals[node.Function] = bb;
             _lastValue = value;
         }
 
@@ -308,11 +308,9 @@ namespace Repl.CodeAnalysis
             {
                 target[field] = GetDefaultValue(field.Type);
             }
-            using (StackFrame(target))
-            {
-                ((Delegate)_globals[node.Constructor]).DynamicInvoke(target, args);
-                return target;
-            }
+
+            ((IInvokable)_globals[node.Constructor]).Invoke(this, target, args);
+            return target;
         }
 
         private static T GetDefaultValue<T>()
@@ -346,10 +344,7 @@ namespace Repl.CodeAnalysis
             var target = EvaluateExpression(node.Target);
             var args = node.Arguments.Select(EvaluateExpression).ToArray();
 
-            using (StackFrame(target))
-            {
-                return ((Delegate)_globals[node.Method]).DynamicInvoke(target, args);
-            }
+            return ((IInvokable)_globals[node.Method]).Invoke(this, target, args);
         }
 
         private IDisposable StackFrame(object @this)
@@ -375,15 +370,8 @@ namespace Repl.CodeAnalysis
             var method = node.Property.Getter;
 
             var target = EvaluateExpression(node.Target);
-            //var args = node.Arguments.Select(EvaluateExpression).ToArray();
 
-            using (StackFrame(target))
-            {
-                return ((Delegate)_globals[method]).DynamicInvoke(target, new object[0]);
-            }
-
-            //var target = (IDictionary<Symbol, object>)EvaluateExpression(node.Target);
-            //return target[node.Property];
+            return ((IInvokable)_globals[method]).Invoke(this, target, new object[0]);
         }
 
         private object EvaluateConstExpression(BoundConstExpression node)
@@ -417,10 +405,7 @@ namespace Repl.CodeAnalysis
         private object EvaluateFunctionCallExpression(BoundFunctionCallExpression node)
         {
             var args = node.Arguments.Select(EvaluateExpression).ToArray();
-            using (StackFrame(null))
-            {
-                return ((Delegate)_globals[node.Function]).DynamicInvoke(new object[] { args });
-            }
+            return ((IInvokable)_globals[node.Function]).Invoke(this, null, args);
         }
 
         private void EvaluateVariableDeclaration(BoundVariableDeclaration node)
@@ -470,7 +455,6 @@ namespace Repl.CodeAnalysis
             }
             else if (node.Target is BoundFieldExpression f)
             {
-                //target = (Dictionary<Symbol, object>)_locals.This;
                 target = (Dictionary<Symbol, object>)EvaluateExpression(f.Target);
                 symbol = f.Field;
                 t = f.Field.Type.GetClrType();

@@ -64,14 +64,17 @@ struct Person {
     Age: i32
 
 	Tell() {
-		//Print(Name)
-		//Print("\n")
+		Print(Name)
+		Print("\n")
 	}
 }
 
 let p1 = Person()
 p1.Name = "Peter"
-Print(p1.Name)
+//Print(p1.Name)
 //Print("\n")
 //
-//p1.Tell()
+p1.Tell()
+p1.Tell()
+p1.Tell()
+p1.Tell()

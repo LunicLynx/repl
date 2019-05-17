@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.136
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28902.138
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Repl", "Repl\Repl.csproj", "{A7EC42B7-52B4-4BF6-8B9B-31ED67A34A5A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XLang.Codegen", "XLang.Codegen\XLang.Codegen.csproj", "{44337BF9-FA14-4FB4-BB2A-D90B4DC2BE8C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Repl.Tests", "Repl.Tests\Repl.Tests.csproj", "{A50E4D8B-172F-4A88-9F36-045EA77C4C39}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Repl.Tests", "Repl.Tests\Repl.Tests.csproj", "{A50E4D8B-172F-4A88-9F36-045EA77C4C39}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlvmSandbox", "LlvmSandbox\LlvmSandbox.csproj", "{CC12E639-CC7C-4483-BB1C-6D476F78179F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{A50E4D8B-172F-4A88-9F36-045EA77C4C39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A50E4D8B-172F-4A88-9F36-045EA77C4C39}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A50E4D8B-172F-4A88-9F36-045EA77C4C39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC12E639-CC7C-4483-BB1C-6D476F78179F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC12E639-CC7C-4483-BB1C-6D476F78179F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC12E639-CC7C-4483-BB1C-6D476F78179F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC12E639-CC7C-4483-BB1C-6D476F78179F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
