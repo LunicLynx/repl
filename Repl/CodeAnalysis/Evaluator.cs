@@ -45,25 +45,25 @@ namespace Repl.CodeAnalysis
 
     public class Evaluator
     {
-
-        private object _lastValue;
-        private readonly BoundUnit _root;
+        private readonly BoundUnit _program;
         private readonly Dictionary<Symbol, object> _globals;
         private LocalContext _locals = null;
         private readonly Stack<LocalContext> _stack = new Stack<LocalContext>();
 
+        private object _lastValue;
+
         public Evaluator(
-            BoundUnit root,
-            Dictionary<Symbol, object> globals
+            BoundUnit program,
+            Dictionary<Symbol, object> variables
             )
         {
-            _root = root;
-            _globals = globals;
+            _program = program;
+            _globals = variables;
         }
 
         public object Evaluate()
         {
-            foreach (var node in _root.GetChildren())
+            foreach (var node in _program.GetChildren())
             {
                 EvaluateNode(node);
             }

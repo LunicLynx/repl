@@ -143,7 +143,19 @@ namespace Repl.CodeAnalysis
 
         public void ReportThisNotAllowed(TextSpan span)
         {
-            var message = "This is not allowed in this scope";
+            var message = "This is not allowed in this scope.";
+            Report(span, message);
+        }
+
+        public void ReportUnsupportedCast(TextSpan span, TypeSymbol from, TypeSymbol to)
+        {
+            var message = $"The cast from '{from}' to '{to}' is not supported.";
+            Report(span, message);
+        }
+
+        public void ReportCannotConvertImplicitly(TextSpan span, TypeSymbol from, TypeSymbol to)
+        {
+            var message = $"The cast from '{from}' to '{to}' is not implicitly supported.";
             Report(span, message);
         }
     }

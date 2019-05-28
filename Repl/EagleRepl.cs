@@ -12,16 +12,12 @@ namespace Repl
     public class EagleRepl : Repl
     {
         private Compilation _previous;
+        private NCompilation _nPrevious;
         private bool _showTree = false;
         private bool _showProgram = true;
         private bool _compile = false;
 
-        private readonly Dictionary<ConstSymbol, object> _constants = new Dictionary<ConstSymbol, object>();
-
-        private readonly Dictionary<Symbol, object> _globals = new Dictionary<Symbol, object>();
-
-        private readonly Dictionary<FunctionSymbol, Delegate> _functions =
-            new Dictionary<FunctionSymbol, Delegate>();
+        private readonly Dictionary<Symbol, object> _variables = new Dictionary<Symbol, object>();
 
         private readonly Compiler _compiler = new Compiler();
 
@@ -40,8 +36,11 @@ namespace Repl
             {
                 var isKeyword = token.Kind.ToString().EndsWith("Keyword");
                 var isNumber = token.Kind == TokenKind.NumberLiteral;
+                var isString = token.Kind == TokenKind.StringLiteral;
                 if (isKeyword)
                     Console.ForegroundColor = ConsoleColor.Blue;
+                else if (isString)
+                    Console.ForegroundColor = ConsoleColor.Cyan;
                 else if (!isNumber)
                     Console.ForegroundColor = ConsoleColor.DarkGray;
 
@@ -93,6 +92,9 @@ namespace Repl
             var compilation = _previous == null
                 ? new Compilation(syntaxTree)
                 : _previous.ContinueWith(syntaxTree);
+            var nCompilation = _nPrevious == null
+                ? new NCompilation(compilation)
+                : _nPrevious.ContinueWith(compilation);
 
             if (_showTree)
             {
@@ -109,7 +111,7 @@ namespace Repl
                 printer.Print(compilation);
             }
 
-            var result = compilation.Evaluate(_globals);
+            var result = compilation.Evaluate(_variables);
 
             if (!result.Diagnostics.Any())
             {
@@ -118,8 +120,8 @@ namespace Repl
                 Console.ResetColor();
 
                 // TODO if (compile) - if activated we would need to re-emit the whole module
-                if (_compile)
-                    _compiler.CompileAndRun(compilation, _globals);
+                //if (_compile)
+                //    _compiler.CompileAndRun(compilation, _variables);
 
                 _previous = compilation;
             }

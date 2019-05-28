@@ -61,16 +61,16 @@ namespace Repl.CodeAnalysis.Binding
             yield return new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEqual, type);
         }
 
-        public static BoundBinaryOperator[] Operators;
+        public static BoundBinaryOperator[] Operators = BoundOperators.GetOperators(
+            NumericalOperators,
+            NumericalOperators,
+            BooleanOperators);
 
-        public static void Initialize(IScope scope)
-        {
-            Operators =
-            BoundOperators.GetOperators(scope,
-                NumericalOperators,
-                NumericalOperators,
-                BooleanOperators);
-        }
+        //public static void Initialize(IScope scope)
+        //{
+        //    Operators =
+            
+        //}
 
 
         public static BoundBinaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol leftType, TypeSymbol rightType)

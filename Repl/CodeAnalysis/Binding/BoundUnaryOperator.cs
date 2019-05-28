@@ -38,15 +38,17 @@ namespace Repl.CodeAnalysis.Binding
             yield return new BoundUnaryOperator(TokenKind.Bang, BoundUnaryOperatorKind.LogicalNot, type);
         }
 
-        public static BoundUnaryOperator[] Operators;
+        public static BoundUnaryOperator[] Operators = BoundOperators.GetOperators(NumericalOperatorsSigned,
+            NumericalOperatorsUnsigned,
+            BooleanOperators);
 
-        public static void Initialize(IScope scope)
-        {
-            Operators = BoundOperators.GetOperators(scope,
-                NumericalOperatorsSigned,
-                NumericalOperatorsUnsigned,
-                BooleanOperators);
-        }
+        //public static void Initialize(IScope scope)
+        //{
+        //    Operators = BoundOperators.GetOperators(scope,
+        //        NumericalOperatorsSigned,
+        //        NumericalOperatorsUnsigned,
+        //        BooleanOperators);
+        //}
 
         public static BoundUnaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol operandType)
         {

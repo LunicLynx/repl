@@ -237,8 +237,14 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundFieldExpression f: return RewriteFieldExpression(f);
                 case BoundMethodCallExpression m: return RewriteMethodCallExpression(m);
                 case BoundConstructorCallExpression c: return RewriteConstructorCallExpression(c);
+                case BoundErrorExpression e: return RewriteErrorExpression(e);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        protected virtual BoundExpression RewriteErrorExpression(BoundErrorExpression node)
+        {
+            return node;
         }
 
         protected virtual BoundExpression RewritePropertyExpression(BoundPropertyExpression node)
