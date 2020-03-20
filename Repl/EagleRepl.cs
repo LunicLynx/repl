@@ -35,13 +35,19 @@ namespace Repl
             foreach (var token in tokens)
             {
                 var isKeyword = token.Kind.ToString().EndsWith("Keyword");
+                var isIdentifier = token.Kind == TokenKind.Identifier;
                 var isNumber = token.Kind == TokenKind.NumberLiteral;
                 var isString = token.Kind == TokenKind.StringLiteral;
+
                 if (isKeyword)
                     Console.ForegroundColor = ConsoleColor.Blue;
-                else if (isString)
+                else if (isIdentifier)
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                else if (isNumber)
                     Console.ForegroundColor = ConsoleColor.Cyan;
-                else if (!isNumber)
+                else if (isString)
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                else
                     Console.ForegroundColor = ConsoleColor.DarkGray;
 
                 Console.Write(token.Text);
@@ -62,8 +68,12 @@ namespace Repl
                     _showProgram = !_showProgram;
                     Console.WriteLine(_showProgram ? "Showing bound trees." : "Not showing bound trees.");
                     break;
+                case "#cls":
+                    Console.Clear();
+                    break;
                 case "#reset":
                     _previous = null;
+                    _variables.Clear();
                     break;
                 case "#emit":
                     _compile = !_compile;
