@@ -16,6 +16,8 @@ namespace Repl.CodeAnalysis
 
         static EvalOperators()
         {
+            var concatMethod = typeof(string).GetMethod("Concat", new[] { typeof(object), typeof(object) });
+
             foreach (var @operator in BoundUnaryOperator.Operators)
             {
                 var i = (uint)1;
@@ -54,6 +56,7 @@ namespace Repl.CodeAnalysis
                 Expression e;
                 switch (@operator.Kind)
                 {
+
                     case BoundBinaryOperatorKind.Addition:
                         e = Expression.Add(pl, pr);
                         break;
@@ -101,6 +104,15 @@ namespace Repl.CodeAnalysis
                         break;
                     case BoundBinaryOperatorKind.Modulo:
                         e = Expression.Modulo(pl, pr);
+                        break;
+                    case BoundBinaryOperatorKind.Concatenation:
+                        Expression el = pl;
+                        Expression er = pr;
+                        if (el.Type != typeof(string))
+                            el = Expression.Convert(el, typeof(object));
+                        if (er.Type != typeof(string))
+                            er = Expression.Convert(er, typeof(object));
+                        e = Expression.Add(el, er, concatMethod);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();

@@ -6,43 +6,6 @@ using Repl.CodeAnalysis.Binding;
 
 namespace Repl.CodeAnalysis
 {
-    public interface IInvokable
-    {
-        object Invoke(Evaluator evaluator, object target, object[] args);
-    }
-
-    public class BB : IInvokable
-    {
-        private readonly BoundBlockStatement _bbs;
-        private readonly ParameterSymbol[] _parameters;
-
-        public BB(BoundBlockStatement bbs, ParameterSymbol[] parameters)
-        {
-            _bbs = bbs;
-            _parameters = parameters;
-        }
-
-        public object Invoke(Evaluator evaluator, object target, object[] args)
-        {
-            return evaluator.RunBlock(_parameters, target, args, _bbs);
-        }
-    }
-
-    public class BuiltInFunction : IInvokable
-    {
-        private readonly MethodInfo _methodInfo;
-
-        public BuiltInFunction(MethodInfo methodInfo)
-        {
-            _methodInfo = methodInfo;
-        }
-
-        public object Invoke(Evaluator evaluator, object target, object[] args)
-        {
-            return _methodInfo.Invoke(target, args);
-        }
-    }
-
     public class Evaluator
     {
         private readonly BoundUnit _program;
@@ -223,6 +186,8 @@ namespace Repl.CodeAnalysis
                     case BoundLabelStatement _:
                         index++;
                         break;
+                    case BoundReturnStatement r:
+                        return EvaluateExpression(r.Value);
                     default:
                         throw new Exception($"Unexpected node {s.GetType()}");
                 }

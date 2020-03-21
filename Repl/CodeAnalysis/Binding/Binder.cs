@@ -55,9 +55,50 @@ namespace Repl.CodeAnalysis.Binding
             {
                 DeclareTypeMembers(@struct);
             }
+
+            var classes = nodes.OfType<ClassDeclarationSyntax>();
+            foreach (var @class in classes)
+            {
+                DeclareTypeMembers(@class);
+            }
         }
 
         private void DeclareTypeMembers(StructDeclarationSyntax syntax)
+        {
+            var symbol = GetSymbol<TypeSymbol>(syntax.IdentifierToken);
+
+            if (syntax.BaseType != null)
+            {
+                var baseType = LookupBaseType(syntax.BaseType);
+
+                // check for cyclic dependency
+                if (IsCyclicDependency(baseType, symbol))
+                {
+                    Diagnostics.ReportCyclicDependency(syntax.BaseType.Span);
+                }
+
+                symbol.BaseType = baseType;
+            }
+
+            _scope = new TypeScope(_scope, symbol);
+
+            foreach (var member in syntax.Members)
+            {
+                DeclareTypeMember(member);
+            }
+
+            var hasConstructor = symbol.Members.OfType<ConstructorSymbol>().Any();
+            if (!hasConstructor)
+            {
+                var constructorSymbol = new ConstructorSymbol(symbol, Array.Empty<ParameterSymbol>());
+                DeclareSymbol(constructorSymbol, syntax.IdentifierToken);
+            }
+
+            symbol.Lock();
+            _scope = _scope.Parent;
+        }
+
+        private void DeclareTypeMembers(ClassDeclarationSyntax syntax)
         {
             var symbol = GetSymbol<TypeSymbol>(syntax.IdentifierToken);
 
@@ -157,8 +198,9 @@ namespace Repl.CodeAnalysis.Binding
 
         private void DeclareTypes(ImmutableArray<SyntaxNode> nodes)
         {
-            var structs = nodes.OfType<StructDeclarationSyntax>();
-            var types = structs;
+            var classes = nodes.OfType<ClassDeclarationSyntax>();
+            var structs = nodes.OfType<StructDeclarationSyntax>().Cast<SyntaxNode>();
+            var types = structs.Concat(classes);
 
             foreach (var type in types)
             {
@@ -185,6 +227,10 @@ namespace Repl.CodeAnalysis.Binding
             Token identifierToken;
             switch (type)
             {
+                case ClassDeclarationSyntax c:
+                    identifierToken = c.IdentifierToken;
+                    symbol = new TypeSymbol(identifierToken.Text);
+                    break;
                 case StructDeclarationSyntax s:
                     identifierToken = s.IdentifierToken;
                     symbol = new TypeSymbol(identifierToken.Text);
@@ -259,6 +305,8 @@ namespace Repl.CodeAnalysis.Binding
                     return BindFunctionDeclaration(f);
                 case StructDeclarationSyntax s:
                     return BindStructDeclaration(s);
+                case ClassDeclarationSyntax c:
+                    return BindClassDeclaration(c);
                 case ConstDeclarationSyntax c:
                     return BindConstDeclaration(c);
                 default:
@@ -369,9 +417,17 @@ namespace Repl.CodeAnalysis.Binding
                     return BindForStatement(f);
                 case ExpressionStatementSyntax e:
                     return BindExpressionStatement(e);
+                case ReturnStatementSyntax r:
+                    return BindReturnStatement(r);
                 default:
                     throw new Exception($"Unexpected syntax {stmt.GetType()}");
             }
+        }
+
+        private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
+        {
+            var value = BindExpression(syntax.Value);
+            return new BoundReturnStatement(value);
         }
 
         private BoundStructDeclaration BindStructDeclaration(StructDeclarationSyntax syntax)
@@ -384,6 +440,18 @@ namespace Repl.CodeAnalysis.Binding
             _scope = _scope.Parent;
 
             return new BoundStructDeclaration(symbol, members.ToImmutableArray());
+        }
+
+        private BoundClassDeclaration BindClassDeclaration(ClassDeclarationSyntax syntax)
+        {
+            var symbol = GetSymbol<TypeSymbol>(syntax.IdentifierToken);
+
+            _scope = new TypeScope(_scope, symbol);
+
+            var members = syntax.Members.Select(BindMemberDeclaration).ToList();
+            _scope = _scope.Parent;
+
+            return new BoundClassDeclaration(symbol, members.ToImmutableArray());
         }
 
         private bool IsCyclicDependency(ImmutableArray<TypeSymbol> baseType, TypeSymbol symbol)

@@ -59,33 +59,44 @@ func Print(text: string) {
 	WriteFile(handle, text, (DWORD)text.Length, 0, 0)
 }
 
-struct Person {
-    Name: string
-    Age: i32
-
-	Person(){}
-
-	Tell() {
-		Print(Name)
-		Print("\n")
-	}
+func Read() : string {
+    return ""
 }
 
-let p1 = Person()
-p1.Name = "Peter"
-//Print(p1.Name)
-//Print("\n")
-//
-p1.Tell()
-p1.Tell()
-p1.Tell()
-p1.Tell()
+var min = 0;
+            var max = 100;
+            Print($"Think of a number between {min} and {max}.")
 
-let expr = "3 + 4"
+            while (min != max)
+            {
+                let guess = (min + max) / 2
 
-class Lexer {
+                Print("Is your number greater than " + guess + "?")
 
-Lexer(s: string) {
-}
+                var greater = false
+                while (true)
+                {
+                    Print("Enter y, n:")
+                    var a = Read()
+                    if (a == "y")
+                    {
+                        greater = true;
+                        break
+                    }
+                    else if (a == "n")
+                    {
+                        break
+                    }
+                }
 
-}
+                if (greater)
+                {
+                    min = guess + 1
+                }
+                else
+                {
+                    max = guess
+                }
+            }
+
+            Print("Your number is "+ min)

@@ -17,6 +17,7 @@
         BitwiseAnd,
         BitwiseOr,
         BitwiseXor,
-        Modulo
+        Modulo,
+        Concatenation
     }
 }

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace Repl.CodeAnalysis
 {
+    [DebuggerDisplay("{Name}")]
     public class TypeSymbol : Symbol
     {
         private bool _locked;

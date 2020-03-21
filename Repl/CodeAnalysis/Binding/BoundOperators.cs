@@ -9,12 +9,16 @@ namespace Repl.CodeAnalysis.Binding
         public static T[] GetOperators<T>(//IScope scope,
             Func<TypeSymbol, TypeSymbol, IEnumerable<T>> numericalOperatorsSigned,
             Func<TypeSymbol, TypeSymbol, IEnumerable<T>> numericalOperatorsUnsigned,
-            Func<TypeSymbol, IEnumerable<T>> booleanOperators)
+            Func<TypeSymbol, IEnumerable<T>> booleanOperators,
+            Func<TypeSymbol, TypeSymbol, IEnumerable<T>> stringConcatOperators = null,
+            Func<TypeSymbol, TypeSymbol, IEnumerable<T>> stringOperators = null
+            )
         {
 
+            var stringType = TypeSymbol.String;
             //scope.TryLookup(NativeTypeNames.UInt16);
             var boolType = TypeSymbol.Bool;
-                //scope.GetTypeSymbol(NativeTypeNames.Boolean);
+            //scope.GetTypeSymbol(NativeTypeNames.Boolean);
             var numericalTypesSigned = new[]
             {
                 //scope.GetTypeSymbol(NativeTypeNames.Int16),
@@ -39,11 +43,29 @@ namespace Repl.CodeAnalysis.Binding
                 //TypeSymbol.Uint
             }.Where(x => x != null);
 
-            return Enumerable.Empty<T>()
-                .Concat(numericalTypesSigned.SelectMany(t => numericalOperatorsSigned(t, boolType)))
-                .Concat(numericalTypesUnsigned.SelectMany(t => numericalOperatorsUnsigned(t, boolType)))
-                .Concat(booleanOperators(boolType))
-                .ToArray();
+
+            var allTypesExceptString =
+                new[] { boolType }
+                    .Concat(numericalTypesUnsigned)
+                    .Concat(numericalTypesSigned)
+                    .ToList();
+
+            var operators = Enumerable.Empty<T>()
+            .Concat(numericalTypesSigned.SelectMany(t => numericalOperatorsSigned(t, boolType)))
+            .Concat(numericalTypesUnsigned.SelectMany(t => numericalOperatorsUnsigned(t, boolType)))
+            .Concat(booleanOperators(boolType));
+
+            if (stringConcatOperators != null)
+            {
+                operators = operators.Concat(allTypesExceptString.SelectMany(t => stringConcatOperators(stringType, t)));
+            }
+
+            if(stringOperators != null)
+            {
+                operators = operators.Concat(stringOperators(stringType, boolType));
+            }
+
+            return operators.ToArray();
         }
     }
 }

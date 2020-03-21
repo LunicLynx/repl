@@ -23,7 +23,7 @@ namespace Repl
 
         public override void Run()
         {
-            var path = "demo1.es";
+            var path = "guess.es";
             if (File.Exists(path))
                 Load(path);
             base.Run();

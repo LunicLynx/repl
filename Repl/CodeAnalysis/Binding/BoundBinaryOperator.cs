@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using Repl.CodeAnalysis.Syntax;
 
 namespace Repl.CodeAnalysis.Binding
 {
+    [DebuggerDisplay("{Kind} {LeftType} {RightType}")]
     public class BoundBinaryOperator
     {
         public TokenKind TokenKind { get; }
@@ -61,26 +63,29 @@ namespace Repl.CodeAnalysis.Binding
             yield return new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEqual, type);
         }
 
+        private static IEnumerable<BoundBinaryOperator> StringConcatOperators(TypeSymbol stringType, TypeSymbol otherType)
+        {
+            yield return new BoundBinaryOperator(TokenKind.Plus, BoundBinaryOperatorKind.Concatenation, stringType, otherType, stringType);
+        }
+
+        private static IEnumerable<BoundBinaryOperator> StringOperators(TypeSymbol stringType, TypeSymbol boolType)
+        {
+            yield return new BoundBinaryOperator(TokenKind.Plus, BoundBinaryOperatorKind.Concatenation, stringType);
+            yield return new BoundBinaryOperator(TokenKind.EqualsEquals, BoundBinaryOperatorKind.Equal, stringType, boolType);
+            yield return new BoundBinaryOperator(TokenKind.BangEquals, BoundBinaryOperatorKind.NotEqual, stringType, boolType);
+        }
+
         public static BoundBinaryOperator[] Operators = BoundOperators.GetOperators(
             NumericalOperators,
             NumericalOperators,
-            BooleanOperators);
-
-        //public static void Initialize(IScope scope)
-        //{
-        //    Operators =
-            
-        //}
-
+            BooleanOperators,
+            StringConcatOperators,
+            StringOperators);
 
         public static BoundBinaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol leftType, TypeSymbol rightType)
         {
-
-
             foreach (var @operator in Operators)
             {
-
-
                 if (@operator.TokenKind == operatorTokenKind && @operator.LeftType == leftType &&
                     @operator.RightType == rightType)
                     return @operator;

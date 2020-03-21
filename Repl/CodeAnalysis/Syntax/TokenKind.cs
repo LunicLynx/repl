@@ -55,11 +55,13 @@
         ToKeyword,
         ExternKeyword,
         StructKeyword,
+        ClassKeyword,
         NewKeyword,
         AliasKeyword,
         FuncKeyword,
         ConstKeyword,
         ThisKeyword,
+        ReturnKeyword,
 
         // Types
         VoidKeyword,

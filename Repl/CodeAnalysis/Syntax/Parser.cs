@@ -51,6 +51,9 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.StructKeyword:
                     node = ParseStructDeclaration();
                     return true;
+                case TokenKind.ClassKeyword:
+                    node = ParseClassKeyword();
+                    return true;
                 case TokenKind.FuncKeyword:
                     node = ParseFunctionDeclaration();
                     return true;
@@ -60,6 +63,39 @@ namespace Repl.CodeAnalysis.Syntax
                 default:
                     return false;
             }
+        }
+
+        private SyntaxNode ParseClassKeyword()
+        {
+            var structKeyword = MatchToken(TokenKind.ClassKeyword);
+            var identifierToken = MatchToken(TokenKind.Identifier);
+
+            _structIdentifier = identifierToken;
+
+            BaseTypeSyntax baseType = null;
+            if (Current.Kind == TokenKind.Colon)
+            {
+                baseType = ParseBaseType();
+            }
+
+            var openBraceToken = MatchToken(TokenKind.OpenBrace);
+
+            var builder = ImmutableArray.CreateBuilder<MemberDeclarationSyntax>();
+            Token startToken = null;
+            while (Current.Kind != TokenKind.CloseBrace &&
+                   Current.Kind != TokenKind.EndOfFile)
+            {
+                var member = ParseMemberDeclaration();
+                builder.Add(member);
+
+                // Make sure we consume tokens
+                if (Current == startToken)
+                    NextToken();
+
+                startToken = Current;
+            }
+            var closeBraceToken = MatchToken(TokenKind.CloseBrace);
+            return new ClassDeclarationSyntax(structKeyword, identifierToken, baseType, openBraceToken, builder.ToImmutable(), closeBraceToken);
         }
 
         private SyntaxNode ParseConstDeclaration()
@@ -107,11 +143,21 @@ namespace Repl.CodeAnalysis.Syntax
                     return ParseBreakStatement();
                 case TokenKind.ContinueKeyword:
                     return ParseContinueStatement();
+                case TokenKind.ReturnKeyword:
+                    return ParseReturnStatement();
                 default:
                     return ParseExpressionStatement();
             }
         }
 
+        private StatementSyntax ParseReturnStatement()
+        {
+            var returnKeyword = MatchToken(TokenKind.ReturnKeyword);
+
+            var value = ParseExpression();
+
+            return new ReturnStatementSyntax(returnKeyword, value);
+        }
 
         private Token _structIdentifier;
         private SyntaxNode ParseStructDeclaration()
@@ -666,6 +712,12 @@ namespace Repl.CodeAnalysis.Syntax
 
             var result = TryParseType(out var type);
             if (result == TypeFacts.NotType)
+            {
+                ResetPosition(resetPosition);
+                return false;
+            }
+
+            if (Current.Kind != TokenKind.CloseParenthesis)
             {
                 ResetPosition(resetPosition);
                 return false;

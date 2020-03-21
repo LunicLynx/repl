@@ -6,7 +6,7 @@ namespace Repl
     {
         private static void Main(string[] args)
         {
-            PrintAllColors();
+            //PrintAllColors();
             //Console.SetWindowSize(22, 5);
             //Console.SetBufferSize(22, 5);
             var repl = new EagleRepl();

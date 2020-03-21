@@ -21,11 +21,13 @@ namespace Repl.CodeAnalysis.Syntax
             {"continue", TokenKind.ContinueKeyword},
             {"extern", TokenKind.ExternKeyword},
             {"struct", TokenKind.StructKeyword },
+            {"class", TokenKind.ClassKeyword },
             {"new", TokenKind.NewKeyword },
             {"alias", TokenKind.AliasKeyword },
             {"func", TokenKind.FuncKeyword },
             {"const", TokenKind.ConstKeyword },
             {"this", TokenKind.ThisKeyword },
+            { "return", TokenKind.ReturnKeyword},
 
             {"void", TokenKind.VoidKeyword},
             {"bool", TokenKind.BoolKeyword},

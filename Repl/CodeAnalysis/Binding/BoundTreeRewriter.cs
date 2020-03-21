@@ -45,8 +45,17 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundGotoStatement g: return RewriteGotoStatement(g);
                 case BoundConditionalGotoStatement c: return RewriteConditionalGotoStatement(c);
                 case BoundExpressionStatement e: return RewriteExpressionStatement(e);
+                case BoundReturnStatement r: return RewriteReturnStatement(r);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundStatement RewriteReturnStatement(BoundReturnStatement node)
+        {
+            var value = RewriteExpression(node.Value);
+            if (value == node.Value)
+                return node;
+            return new BoundReturnStatement(value);
         }
 
         protected virtual BoundStructDeclaration RewriteStructDeclaration(BoundStructDeclaration node)
