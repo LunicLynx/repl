@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28902.138
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Repl", "Repl\Repl.csproj", "{A7EC42B7-52B4-4BF6-8B9B-31ED67A34A5A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Eagle", "Eagle\Eagle.csproj", "{A7EC42B7-52B4-4BF6-8B9B-31ED67A34A5A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XLang.Codegen", "XLang.Codegen\XLang.Codegen.csproj", "{44337BF9-FA14-4FB4-BB2A-D90B4DC2BE8C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Repl.Tests", "Repl.Tests\Repl.Tests.csproj", "{A50E4D8B-172F-4A88-9F36-045EA77C4C39}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Eagle.Tests", "Eagle.Tests\Eagle.Tests.csproj", "{A50E4D8B-172F-4A88-9F36-045EA77C4C39}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LlvmSandbox", "LlvmSandbox\LlvmSandbox.csproj", "{CC12E639-CC7C-4483-BB1C-6D476F78179F}"
 EndProject
