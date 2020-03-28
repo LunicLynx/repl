@@ -5,6 +5,7 @@
         Identity,
         Negation,
         LogicalNot,
-        BitwiseComplement
+        BitwiseComplement,
+        AddressOf
     }
 }

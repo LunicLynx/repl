@@ -645,15 +645,24 @@ namespace Repl.CodeAnalysis.Binding
             return LookupType(syntax.Type);
         }
 
-        private TypeSymbol LookupType(TypeSyntax syntax)
+        private TypeSymbol LookupType(SyntaxNode syntax)
         {
-            var typeIdentifierToken = syntax.TypeOrIdentifierToken;
-            var type = GetSymbol<AliasSymbol, TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int;
+            if (syntax is PointerTypeSyntax p)
+            {
+                return LookupType(p.Type).MakePointer();
+            }
 
-            while (type is AliasSymbol a)
-                type = a.Type;
+            if (syntax is TypeSyntax t)
+            {
+                var typeIdentifierToken = t.TypeOrIdentifierToken;
+                var type = GetSymbol<AliasSymbol, TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int;
 
-            return (TypeSymbol)type;
+                while (type is AliasSymbol a)
+                    type = a.Type;
+
+                return (TypeSymbol)type;
+            }
+            throw new InvalidOperationException($"Unexpected syntax node '{syntax.GetType()}'.");
         }
 
         private BoundExternDeclaration BindExternDeclaration(ExternDeclarationSyntax syntax)
@@ -1228,6 +1237,9 @@ namespace Repl.CodeAnalysis.Binding
             var operand = BindExpression(syntax.Operand);
 
             var operatorToken = syntax.OperatorToken;
+
+
+
             var boundOperator = BoundUnaryOperator.Bind(operatorToken.Kind, operand.Type);
             if (boundOperator == null)
             {

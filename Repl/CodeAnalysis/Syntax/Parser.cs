@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Repl.CodeAnalysis.Text;
 
@@ -365,10 +366,15 @@ namespace Repl.CodeAnalysis.Syntax
             return new TypeAnnotationSyntax(colonToken, type);
         }
 
-        private TypeSyntax ParseType()
+        private SyntaxNode ParseType()
         {
             var typeOrIdentifierToken = MatchTypeOrIdentifierToken();
-            return new TypeSyntax(typeOrIdentifierToken);
+
+            SyntaxNode typeSyntax = new TypeSyntax(typeOrIdentifierToken);
+            while (Current.Kind == TokenKind.Star)
+                typeSyntax = new PointerTypeSyntax(typeSyntax, MatchToken(TokenKind.Star));
+
+            return typeSyntax;
         }
 
         private ParameterSyntax ParseParameter()
@@ -782,7 +788,7 @@ namespace Repl.CodeAnalysis.Syntax
             TypeOrExpression,
         }
 
-        private TypeFacts TryParseType(out TypeSyntax type)
+        private TypeFacts TryParseType(out SyntaxNode type)
         {
             type = null;
             var resetPosition = GetPosition();

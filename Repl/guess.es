@@ -34,34 +34,8 @@ struct Void {
 struct Boolean {
 }
 
-alias HANDLE = i64
-alias DWORD = i32
-//alias LPDWORD = DWORD*
-alias LPDWORD = i64
-//alias LPCVOID = /*const*/ void*
-alias LPCVOID = /*const*/ string
-alias BOOL = int
-
-const STD_OUTPUT_HANDLE: DWORD = (DWORD)(-11)
-
-// should also work
-//const STD_OUTPUT_HANDLE2: DWORD = (DWORD)11
-//const STD_OUTPUT_HANDLE3 = (int)11
-//const STD_OUTPUT_HANDLE4 = 11
-
-extern GetStdHandle(nStdHandle: DWORD): HANDLE
-//extern i64 GetStdHandle(i32 nStdHandle)
-extern WriteFile(hFile: HANDLE, lpBuffer: LPCVOID, nNumberOfBytesToWrite: DWORD, lpNumberOfBytesWritten: LPDWORD, lpOverlapped: i64): BOOL
-//extern int WriteFile(i64 hFile, string lpBuffer, i32 nNumberOfBytesToWrite, i64 lpNumberOfBytesWritten, i64 lpOverlapped)
-
-func Print(text: string) {
-	let handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	WriteFile(handle, text, (DWORD)text.Length, 0, 0)
-}
-
-func Read() : string {
-    return ""
-}
+extern Print(s: string);
+extern Read(): string;
 
 var min = 0;
             var max = 100;

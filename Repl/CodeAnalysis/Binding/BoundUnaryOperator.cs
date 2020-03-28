@@ -52,6 +52,13 @@ namespace Repl.CodeAnalysis.Binding
 
         public static BoundUnaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol operandType)
         {
+            if (operatorTokenKind == TokenKind.Ampersand)
+            {
+                // address of
+                // T => T*
+                return new BoundUnaryOperator(operatorTokenKind, BoundUnaryOperatorKind.AddressOf, operandType, operandType.MakePointer());
+            }
+
             foreach (var @operator in Operators)
             {
                 if (@operator.TokenKind == operatorTokenKind && @operator.OperandType == operandType)

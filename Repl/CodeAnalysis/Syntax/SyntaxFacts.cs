@@ -35,6 +35,7 @@
                 case TokenKind.Minus:
                 case TokenKind.Bang:
                 case TokenKind.Tilde:
+                case TokenKind.Ampersand:
                     return 10;
 
                 default: return 0;

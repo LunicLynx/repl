@@ -5,9 +5,9 @@
         public Token AliasKeyword { get; }
         public Token IdentifierToken { get; }
         public Token EqualsToken { get; }
-        public TypeSyntax Type { get; }
+        public SyntaxNode Type { get; }
 
-        public AliasDeclarationSyntax(Token aliasKeyword, Token identifierToken, Token equalsToken, TypeSyntax type)
+        public AliasDeclarationSyntax(Token aliasKeyword, Token identifierToken, Token equalsToken, SyntaxNode type)
         {
             AliasKeyword = aliasKeyword;
             IdentifierToken = identifierToken;
