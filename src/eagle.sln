@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LlvmSandbox", "LlvmSandbox\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoAlgorithms", "DemoAlgorithms\DemoAlgorithms.csproj", "{F58B612B-645B-4CCA-8194-AE87BB46DC6A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ei", "ei\ei.csproj", "{AB0B7EFB-2D49-48A4-B0E0-ABB46DA2DCC0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ec", "ec\ec.csproj", "{2C412110-EC35-42E2-8C06-979EF434480E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +43,14 @@ Global
 		{F58B612B-645B-4CCA-8194-AE87BB46DC6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F58B612B-645B-4CCA-8194-AE87BB46DC6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F58B612B-645B-4CCA-8194-AE87BB46DC6A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB0B7EFB-2D49-48A4-B0E0-ABB46DA2DCC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB0B7EFB-2D49-48A4-B0E0-ABB46DA2DCC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB0B7EFB-2D49-48A4-B0E0-ABB46DA2DCC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB0B7EFB-2D49-48A4-B0E0-ABB46DA2DCC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C412110-EC35-42E2-8C06-979EF434480E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C412110-EC35-42E2-8C06-979EF434480E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C412110-EC35-42E2-8C06-979EF434480E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C412110-EC35-42E2-8C06-979EF434480E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
