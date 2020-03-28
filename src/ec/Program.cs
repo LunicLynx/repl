@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ec
+namespace Eagle
 {
     class Program
     {

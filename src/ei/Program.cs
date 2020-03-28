@@ -1,12 +1,14 @@
 ﻿using System;
+using Repl;
 
-namespace ei
+namespace Eagle
 {
     class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            var repl = new EagleRepl();
+            repl.Run();
         }
     }
 }
