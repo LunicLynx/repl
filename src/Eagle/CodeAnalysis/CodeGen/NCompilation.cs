@@ -1,6 +1,6 @@
 ﻿namespace Repl.CodeAnalysis.CodeGen
 {
-    class NCompilation
+    public class NCompilation
     {
         public NCompilation Previous { get; }
         public Compilation Compilation { get; }
