@@ -7,8 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public ParameterListSyntax ParameterList { get; }
         public BlockStatementSyntax Body { get; }
 
-        public ConstructorDeclarationSyntax(Token identifierToken, ParameterListSyntax parameterList, BlockStatementSyntax body)
-            : base(identifierToken, null)
+        public ConstructorDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, ParameterListSyntax parameterList, BlockStatementSyntax body)
+            : base(syntaxTree, identifierToken, null)
         {
             ParameterList = parameterList;
             Body = body;

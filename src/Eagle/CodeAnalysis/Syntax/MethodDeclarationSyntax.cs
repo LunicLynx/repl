@@ -7,8 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public PrototypeSyntax Prototype { get; }
         public BlockStatementSyntax Body { get; }
 
-        public MethodDeclarationSyntax(PrototypeSyntax prototype, BlockStatementSyntax body)
-        : base(prototype.IdentifierToken, prototype.ReturnType)
+        public MethodDeclarationSyntax(SyntaxTree syntaxTree, PrototypeSyntax prototype, BlockStatementSyntax body)
+        : base(syntaxTree, prototype.IdentifierToken, prototype.ReturnType)
         {
             Prototype = prototype;
             Body = body;

@@ -10,7 +10,8 @@ namespace Repl.CodeAnalysis.Syntax
         public ImmutableArray<SyntaxNode> Arguments { get; }
         public Token CloseParenthesisToken { get; }
 
-        public InvokeExpressionSyntax(ExpressionSyntax target, Token openParenthesisToken, ImmutableArray<SyntaxNode> arguments, Token closeParenthesisToken)
+        public InvokeExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax target, Token openParenthesisToken, ImmutableArray<SyntaxNode> arguments, Token closeParenthesisToken)
+            : base(syntaxTree)
         {
             Target = target;
             OpenParenthesisToken = openParenthesisToken;

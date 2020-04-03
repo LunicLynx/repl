@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Repl.CodeAnalysis.Binding;
 using Repl.CodeAnalysis.Syntax;
 using Repl.CodeAnalysis.Text;
 
@@ -20,143 +21,149 @@ namespace Repl.CodeAnalysis
             return GetEnumerator();
         }
 
-        public void Report(TextSpan span, string message)
+        public void Report(TextLocation location, string message)
         {
-            if (_diagnostics.Any(d => d.Span == span)) return;
-            _diagnostics.Add(new Diagnostic(span, message));
+            var diagnostic = new Diagnostic(location, message);
+            _diagnostics.Add(diagnostic);
         }
 
-        public void ReportUnexpectedCharacter(TextSpan span, char c)
+        public void ReportUnexpectedCharacter(TextLocation location, char c)
         {
-            Report(span, $"Unexpected character '{c}'.");
+            Report(location, $"Unexpected character '{c}'.");
         }
 
-        public void ReportUnexpectedToken(TextSpan span, TokenKind actual, TokenKind expected)
+        public void ReportUnexpectedToken(TextLocation location, TokenKind actual, TokenKind expected)
         {
-            Report(span, $"Unexpected token '{actual}', expected '{expected}'.");
+            Report(location, $"Unexpected token '{actual}', expected '{expected}'.");
         }
 
-        public void ReportUndefinedUnaryOperator(TextSpan span, string operatorText, TypeSymbol type)
+        public void ReportUndefinedUnaryOperator(TextLocation location, string operatorText, TypeSymbol type)
         {
-            Report(span, $"Unary operator '{operatorText}' is not defined for type '{type}'.");
+            Report(location, $"Unary operator '{operatorText}' is not defined for type '{type}'.");
         }
 
-        public void ReportUndefinedBinaryOperator(TextSpan span, string operatorText, TypeSymbol leftType, TypeSymbol rightType)
+        public void ReportUndefinedBinaryOperator(TextLocation location, string operatorText, TypeSymbol leftType, TypeSymbol rightType)
         {
-            Report(span, $"Binary operator '{operatorText}' is not defined for types '{leftType}' and '{rightType}'.");
+            Report(location, $"Binary operator '{operatorText}' is not defined for types '{leftType}' and '{rightType}'.");
         }
 
-        public void ReportInvalidNumber(TextSpan span, string text)
+        public void ReportInvalidNumber(TextLocation location, string text)
         {
-            Report(span, $"The number '{text}' is no a valid Number");
+            Report(location, $"The number '{text}' is no a valid Number");
         }
 
-        public void ReportUndefinedName(TextSpan span, string name)
+        public void ReportUndefinedName(TextLocation location, string name)
         {
             var message = $"Symbol '{name}' doesn't exist.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportCannotConvert(TextSpan span, TypeSymbol from, TypeSymbol to)
+        public void ReportCannotConvert(TextLocation location, TypeSymbol from, TypeSymbol to)
         {
             var message = $"Cannot convert type '{from}' to '{to}'.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportSymbolAlreadyDeclared(TextSpan span, string name)
+        public void ReportSymbolAlreadyDeclared(TextLocation location, string name)
         {
             var message = $"Symbol '{name}' is already declared.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportCannotAssign(TextSpan span, string name)
+        public void ReportCannotAssign(TextLocation location, string name)
         {
             var message = $"Variable '{name}' is read-only and cannot be assigned to.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportContinueOutsideLoop(TextSpan span)
+        public void ReportContinueOutsideLoop(TextLocation location)
         {
             var message = "The 'continue'-Statement can only be used inside a loop";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportBreakOutsideLoop(TextSpan span)
+        public void ReportBreakOutsideLoop(TextLocation location)
         {
             var message = "The 'break'-Statement can only be used inside a loop";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportExpectedTypeOrIdentifier(TextSpan span)
+        public void ReportExpectedTypeOrIdentifier(TextLocation location)
         {
             var message = "Expected type or identifier";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportUnexpectedSymbol(TextSpan span, string actual, params string[] expected)
+        public void ReportUnexpectedSymbol(TextLocation location, string actual, params string[] expected)
         {
             var message = $"Unexpected symbol '{actual}', expected '{string.Join("', '", expected)}'.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportFunctionNameExpected(TextSpan span)
+        public void ReportFunctionNameExpected(TextLocation location)
         {
             var message = "Function name expected.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportParameterCount(TextSpan span, string name, int expected, int actual)
+        public void ReportParameterCount(TextLocation location, string name, int expected, int actual)
         {
             var message = $"Function '{name}' is called with {actual} but only accepts {expected}.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportNotSupported(TextSpan span)
+        public void ReportNotSupported(TextLocation location)
         {
             var message = "The given expression is not supported.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportExpressionIsNotCompileTimeConstant(TextSpan span)
+        public void ReportExpressionIsNotCompileTimeConstant(TextLocation location)
         {
             var message = "The given expression is not compile time constant.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportMemberMustBeTyped(TextSpan span)
+        public void ReportMemberMustBeTyped(TextLocation location)
         {
             var message = "Either annotate the member with a type or initialize it.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportCyclicDependency(TextSpan span)
+        public void ReportCyclicDependency(TextLocation location)
         {
             var message = "Cyclic dependency.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportTypeDoesNotHaveMember(TextSpan span, TypeSymbol type, string memberName)
+        public void ReportTypeDoesNotHaveMember(TextLocation location, TypeSymbol type, string memberName)
         {
             var message = $"Type '{type}' doesn't have a member called '{memberName}'.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportThisNotAllowed(TextSpan span)
+        public void ReportThisNotAllowed(TextLocation location)
         {
             var message = "This is not allowed in this scope.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportUnsupportedCast(TextSpan span, TypeSymbol from, TypeSymbol to)
+        public void ReportUnsupportedCast(TextLocation location, TypeSymbol from, TypeSymbol to)
         {
             var message = $"The cast from '{from}' to '{to}' is not supported.";
-            Report(span, message);
+            Report(location, message);
         }
 
-        public void ReportCannotConvertImplicitly(TextSpan span, TypeSymbol from, TypeSymbol to)
+        public void ReportCannotConvertImplicitly(TextLocation location, TypeSymbol from, TypeSymbol to)
         {
             var message = $"The cast from '{from}' to '{to}' is not implicitly supported.";
-            Report(span, message);
+            Report(location, message);
+        }
+
+        public void ReportNotLValue(TextLocation location, Symbol symbol)
+        {
+            var message = $"Reference '{symbol.Name}' is a '{symbol.Kind}'. The assignment target must be an assignable variable, field, property or indexer.";
+            Report(location, message);
         }
     }
 }

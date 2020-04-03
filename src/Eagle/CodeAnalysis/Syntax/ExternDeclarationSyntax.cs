@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token ExternKeyword { get; }
         public PrototypeSyntax Prototype { get; }
 
-        public ExternDeclarationSyntax(Token externKeyword, PrototypeSyntax prototype)
+        public ExternDeclarationSyntax(SyntaxTree syntaxTree, Token externKeyword, PrototypeSyntax prototype)
+            : base(syntaxTree)
         {
             ExternKeyword = externKeyword;
             Prototype = prototype;

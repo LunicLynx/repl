@@ -6,7 +6,8 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token LiteralToken { get; }
 
-        public LiteralExpressionSyntax(Token literalToken)
+        public LiteralExpressionSyntax(SyntaxTree syntaxTree, Token literalToken)
+            : base(syntaxTree)
         {
             LiteralToken = literalToken;
         }

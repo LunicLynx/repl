@@ -8,7 +8,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token ColonToken { get; }
         public ImmutableArray<SyntaxNode> Types { get; }
 
-        public BaseTypeSyntax(Token colonToken, ImmutableArray<SyntaxNode> types)
+        public BaseTypeSyntax(SyntaxTree syntaxTree, Token colonToken, ImmutableArray<SyntaxNode> types)
+            : base(syntaxTree)
         {
             ColonToken = colonToken;
             Types = types;

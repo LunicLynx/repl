@@ -8,7 +8,7 @@ namespace Repl.CodeAnalysis.Syntax
         public override TextSpan Span { get; }
         public string Text { get; }
 
-        public Token(TokenKind kind, TextSpan span, string text)
+        public Token(SyntaxTree syntaxTree, TokenKind kind, TextSpan span, string text) : base(syntaxTree)
         {
             Kind = kind;
             Span = span;
@@ -19,5 +19,10 @@ namespace Repl.CodeAnalysis.Syntax
         {
             return $"{Kind}: {Text}";
         }
+
+        /// <summary>
+        /// A token is missing if it was inserted by the parser and doesn't appear in source.
+        /// </summary>
+        public bool IsMissing => Text == null;
     }
 }

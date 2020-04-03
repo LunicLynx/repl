@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token ElseKeyword { get; }
         public StatementSyntax ElseStatement { get; }
 
-        public ElseClauseSyntax(Token elseKeyword, StatementSyntax elseStatement)
+        public ElseClauseSyntax(SyntaxTree syntaxTree, Token elseKeyword, StatementSyntax elseStatement)
+            : base(syntaxTree)
         {
             ElseKeyword = elseKeyword;
             ElseStatement = elseStatement;

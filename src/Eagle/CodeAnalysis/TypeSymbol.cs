@@ -14,6 +14,8 @@ namespace Repl.CodeAnalysis
         private ImmutableArray<TypeSymbol> _baseType;
 
         private string _name;
+        public override SymbolKind Kind => SymbolKind.Type;
+
         public override string Name
         {
             get
@@ -45,19 +47,19 @@ namespace Repl.CodeAnalysis
         }
 
         public static readonly TypeSymbol Error = new TypeSymbol("?");
-        public static TypeSymbol String { get; set; }
-        public static TypeSymbol Void { get; set; }
-        public static TypeSymbol I8 { get; set; }
-        public static TypeSymbol I16 { get; set; }
-        public static TypeSymbol I32 { get; set; }
-        public static TypeSymbol I64 { get; set; }
-        public static TypeSymbol U8 { get; set; }
-        public static TypeSymbol U16 { get; set; }
-        public static TypeSymbol U32 { get; set; }
-        public static TypeSymbol U64 { get; set; }
-        public static TypeSymbol Bool { get; set; }
-        public static TypeSymbol Uint { get; set; }
-        public static TypeSymbol Int { get; set; }
+        public static TypeSymbol String = new TypeSymbol("String");
+        public static TypeSymbol Void = new TypeSymbol("Void");
+        public static TypeSymbol I8 = new TypeSymbol("Int8");
+        public static TypeSymbol I16 = new TypeSymbol("Int16");
+        public static TypeSymbol I32 = new TypeSymbol("Int32");
+        public static TypeSymbol I64 = new TypeSymbol("Int64");
+        public static TypeSymbol U8 = new TypeSymbol("UInt8");
+        public static TypeSymbol U16 = new TypeSymbol("UInt16");
+        public static TypeSymbol U32 = new TypeSymbol("UInt32");
+        public static TypeSymbol U64 = new TypeSymbol("UInt64");
+        public static TypeSymbol Bool = new TypeSymbol("Boolean");
+        public static TypeSymbol Uint = U64;
+        public static TypeSymbol Int = I64;
 
         public TypeSymbol(string name, ImmutableArray<TypeSymbol> baseType, ImmutableArray<MemberSymbol> members)
         {

@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token LoopKeyword { get; }
         public BlockStatementSyntax Body { get; }
 
-        public LoopStatementSyntax(Token loopKeyword, BlockStatementSyntax body)
+        public LoopStatementSyntax(SyntaxTree syntaxTree, Token loopKeyword, BlockStatementSyntax body)
+            : base(syntaxTree)
         {
             LoopKeyword = loopKeyword;
             Body = body;

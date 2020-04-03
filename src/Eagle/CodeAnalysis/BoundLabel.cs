@@ -1,10 +1,10 @@
 ﻿namespace Repl.CodeAnalysis
 {
-    public class LabelSymbol : Symbol
+    public class BoundLabel
     {
-        public override string Name { get; }
+        public string Name { get; }
 
-        public LabelSymbol(string name)
+        public BoundLabel(string name)
         {
             Name = name;
         }

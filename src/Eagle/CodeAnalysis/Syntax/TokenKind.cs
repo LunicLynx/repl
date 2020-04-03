@@ -58,7 +58,6 @@
         ClassKeyword,
         NewKeyword,
         AliasKeyword,
-        FuncKeyword,
         ConstKeyword,
         ThisKeyword,
         ReturnKeyword,

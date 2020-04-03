@@ -12,7 +12,8 @@ namespace Repl.CodeAnalysis.Syntax
         public ImmutableArray<MemberDeclarationSyntax> Members { get; }
         public Token CloseBraceToken { get; }
 
-        public StructDeclarationSyntax(Token structKeyword, Token identifierToken, BaseTypeSyntax baseType, Token openBraceToken, ImmutableArray<MemberDeclarationSyntax> members, Token closeBraceToken)
+        public StructDeclarationSyntax(SyntaxTree syntaxTree, Token structKeyword, Token identifierToken, BaseTypeSyntax baseType, Token openBraceToken, ImmutableArray<MemberDeclarationSyntax> members, Token closeBraceToken)
+            : base(syntaxTree)
         {
             StructKeyword = structKeyword;
             IdentifierToken = identifierToken;

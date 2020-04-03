@@ -4,11 +4,15 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class BoundLoopStatement : BoundStatement
     {
-        public BoundBlockStatement Body { get; }
+        public BoundStatement Body { get; }
+        public BoundLabel BreakLabel { get; }
+        public BoundLabel ContinueLabel { get; }
 
-        public BoundLoopStatement(BoundBlockStatement body)
+        public BoundLoopStatement(BoundStatement body, BoundLabel breakLabel, BoundLabel continueLabel)
         {
             Body = body;
+            BreakLabel = breakLabel;
+            ContinueLabel = continueLabel;
         }
 
         public override IEnumerable<BoundNode> GetChildren()

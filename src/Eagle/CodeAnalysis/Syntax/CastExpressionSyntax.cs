@@ -9,7 +9,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token CloseParenthesisToken { get; }
         public ExpressionSyntax Expression { get; }
 
-        public CastExpressionSyntax(Token openParenthesisToken, SyntaxNode type, Token closeParenthesisToken, ExpressionSyntax expression)
+        public CastExpressionSyntax(SyntaxTree syntaxTree, Token openParenthesisToken, SyntaxNode type, Token closeParenthesisToken, ExpressionSyntax expression)
+            : base(syntaxTree)
         {
             OpenParenthesisToken = openParenthesisToken;
             Type = type;

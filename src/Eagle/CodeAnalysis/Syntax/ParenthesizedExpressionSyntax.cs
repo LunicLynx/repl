@@ -8,7 +8,8 @@ namespace Repl.CodeAnalysis.Syntax
         public ExpressionSyntax Expression { get; }
         public Token CloseParenthesisToken { get; }
 
-        public ParenthesizedExpressionSyntax(Token openParenthesisToken, ExpressionSyntax expression, Token closeParenthesisToken)
+        public ParenthesizedExpressionSyntax(SyntaxTree syntaxTree, Token openParenthesisToken, ExpressionSyntax expression, Token closeParenthesisToken)
+            : base(syntaxTree)
         {
             OpenParenthesisToken = openParenthesisToken;
             Expression = expression;

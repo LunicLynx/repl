@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using Repl.CodeAnalysis.Text;
 
 namespace Repl.CodeAnalysis.Syntax
 {
     public class Parser : ParserBase
     {
-        public SourceText Text { get; }
-
-        public Parser(SourceText text)
+        public Parser(SyntaxTree syntaxTree)
+            : base(syntaxTree)
         {
-            Text = text;
             var tokens = new List<Token>();
-            var lexer = new Lexer(text);
+            var lexer = new Lexer(syntaxTree);
 
             Token token;
             do
@@ -35,10 +34,10 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var nodes = ParseStatementsOrDeclarations();
             var endOfFileToken = MatchToken(TokenKind.EndOfFile);
-            return new CompilationUnitSyntax(nodes, endOfFileToken);
+            return new CompilationUnitSyntax(SyntaxTree, nodes, endOfFileToken);
         }
 
-        public bool TryParseDeclaration(out SyntaxNode node)
+        public bool TryParseDeclaration([NotNullWhen(true)]out SyntaxNode? node)
         {
             node = null;
             switch (Current.Kind)
@@ -55,12 +54,28 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.ClassKeyword:
                     node = ParseClassKeyword();
                     return true;
-                case TokenKind.FuncKeyword:
-                    node = ParseFunctionDeclaration();
-                    return true;
                 case TokenKind.ConstKeyword:
                     node = ParseConstDeclaration();
                     return true;
+
+                /*
+                 *This i quiet complex
+                 * we only know this is a declaration when we hit a type clause
+                 * eg:
+                 *     someFunc1() : int { ... }
+                 *     someFunc2(i: int) { ... }
+                 *
+                 * worse case is this:
+                 *     someFunc() {}
+                 *   whitout semicolons this is not indistinguishable from a call followed by a block
+                 *
+                 * So it is defenatly a call this way
+                 *    someFunc();
+                 */
+                case TokenKind.Identifier when Peek(1).Kind == TokenKind.OpenParenthesis:
+                    var result = TryParseFunctionDeclaration(out var functionDeclarationSyntax);
+                    node = functionDeclarationSyntax;
+                    return result;
                 default:
                     return false;
             }
@@ -96,7 +111,7 @@ namespace Repl.CodeAnalysis.Syntax
                 startToken = Current;
             }
             var closeBraceToken = MatchToken(TokenKind.CloseBrace);
-            return new ClassDeclarationSyntax(structKeyword, identifierToken, baseType, openBraceToken, builder.ToImmutable(), closeBraceToken);
+            return new ClassDeclarationSyntax(SyntaxTree, structKeyword, identifierToken, baseType, openBraceToken, builder.ToImmutable(), closeBraceToken);
         }
 
         private SyntaxNode ParseConstDeclaration()
@@ -110,7 +125,7 @@ namespace Repl.CodeAnalysis.Syntax
             }
             var equalsToken = MatchToken(TokenKind.Equals);
             var expression = ParseExpression();
-            return new ConstDeclarationSyntax(constKeyword, identifierToken, typeAnnotation, equalsToken, expression);
+            return new ConstDeclarationSyntax(SyntaxTree, constKeyword, identifierToken, typeAnnotation, equalsToken, expression);
         }
 
         private SyntaxNode ParseAliasDeclaration()
@@ -120,7 +135,7 @@ namespace Repl.CodeAnalysis.Syntax
             var equalsToken = MatchToken(TokenKind.Equals);
             var type = ParseType();
 
-            return new AliasDeclarationSyntax(aliasKeyword, identifierToken, equalsToken, type);
+            return new AliasDeclarationSyntax(SyntaxTree, aliasKeyword, identifierToken, equalsToken, type);
         }
 
         public StatementSyntax ParseStatement()
@@ -157,7 +172,7 @@ namespace Repl.CodeAnalysis.Syntax
 
             var value = ParseExpression();
 
-            return new ReturnStatementSyntax(returnKeyword, value);
+            return new ReturnStatementSyntax(SyntaxTree, returnKeyword, value);
         }
 
         private Token _structIdentifier;
@@ -191,7 +206,7 @@ namespace Repl.CodeAnalysis.Syntax
                 startToken = Current;
             }
             var closeBraceToken = MatchToken(TokenKind.CloseBrace);
-            return new StructDeclarationSyntax(structKeyword, identifierToken, baseType, openBraceToken, builder.ToImmutable(), closeBraceToken);
+            return new StructDeclarationSyntax(SyntaxTree, structKeyword, identifierToken, baseType, openBraceToken, builder.ToImmutable(), closeBraceToken);
         }
 
         private BaseTypeSyntax ParseBaseType()
@@ -214,7 +229,7 @@ namespace Repl.CodeAnalysis.Syntax
                 Current.Kind == TokenKind.Comma &&
                 Current.Kind != TokenKind.EndOfFile);
 
-            return new BaseTypeSyntax(colonToken, builder.ToImmutable());
+            return new BaseTypeSyntax(SyntaxTree, colonToken, builder.ToImmutable());
         }
 
         private MemberDeclarationSyntax ParseMemberDeclaration()
@@ -256,7 +271,7 @@ namespace Repl.CodeAnalysis.Syntax
             var identifierToken = MatchToken(TokenKind.Identifier);
             var parameterList = ParseParameterList();
             var body = ParseBlockStatement();
-            return new ConstructorDeclarationSyntax(identifierToken, parameterList, body);
+            return new ConstructorDeclarationSyntax(SyntaxTree, identifierToken, parameterList, body);
         }
 
         private MemberDeclarationSyntax ParseFieldDeclaration(Token identifierToken, TypeAnnotationSyntax typeAnnotation)
@@ -268,14 +283,14 @@ namespace Repl.CodeAnalysis.Syntax
 
             }
 
-            return new FieldDeclarationSyntax(identifierToken, typeAnnotation, initializer);
+            return new FieldDeclarationSyntax(SyntaxTree, identifierToken, typeAnnotation, initializer);
         }
 
         private InitializerSyntax ParseInitializer()
         {
             var equalsToken = MatchToken(TokenKind.Equals);
             var expression = ParseExpression();
-            return new InitializerSyntax(equalsToken, expression);
+            return new InitializerSyntax(SyntaxTree, equalsToken, expression);
         }
 
         private MemberDeclarationSyntax ParsePropertyDeclaration(Token identifierToken, TypeAnnotationSyntax typeAnnotation)
@@ -284,39 +299,80 @@ namespace Repl.CodeAnalysis.Syntax
             if (Current.Kind == TokenKind.EqualsGreater)
             {
                 var expressionBody = ParseExpressionBody();
-                return new PropertyDeclarationSyntax(identifierToken, typeAnnotation, expressionBody);
+                return new PropertyDeclarationSyntax(SyntaxTree, identifierToken, typeAnnotation, expressionBody);
             }
 
-            return new PropertyDeclarationSyntax(identifierToken, typeAnnotation, null);
+            return new PropertyDeclarationSyntax(SyntaxTree, identifierToken, typeAnnotation, null);
         }
 
         private ExpressionBodySyntax ParseExpressionBody()
         {
             var equalsGreaterToken = MatchToken(TokenKind.EqualsGreater);
             var expression = ParseExpression();
-            return new ExpressionBodySyntax(equalsGreaterToken, expression);
+            return new ExpressionBodySyntax(SyntaxTree, equalsGreaterToken, expression);
         }
 
         private MemberDeclarationSyntax ParseMethodDeclaration()
         {
             var prototype = ParsePrototype();
             var body = ParseBlockStatement();
-            return new MethodDeclarationSyntax(prototype, body);
+            return new MethodDeclarationSyntax(SyntaxTree, prototype, body);
         }
 
         private SyntaxNode ParseExternDeclaration()
         {
             var externKeyword = MatchToken(TokenKind.ExternKeyword);
             var prototype = ParsePrototype();
-            return new ExternDeclarationSyntax(externKeyword, prototype);
+            return new ExternDeclarationSyntax(SyntaxTree, externKeyword, prototype);
         }
 
-        private SyntaxNode ParseFunctionDeclaration()
+        private bool TryParseFunctionDeclaration([NotNullWhen(true)] out FunctionDeclarationSyntax? syntax)
         {
-            var funcKeyword = MatchToken(TokenKind.FuncKeyword);
-            var prototype = ParsePrototype();
+            // case 1: IDENTIFIER ( ) { 
+            // case 2: IDENTIFIER ( ) :
+            // case 2: IDENTIFIER ( IDENTIFIER :
+
+            syntax = default;
+            var position = GetPosition();
+
+            if (!TryParsePrototype(out var prototype))
+            {
+                ResetPosition(position);
+                return false;
+            }
+
+            if (Current.Kind != TokenKind.OpenBrace)
+            {
+                ResetPosition(position);
+                return false;
+            }
+
             var body = ParseBlockStatement();
-            return new FunctionDeclarationSyntax(funcKeyword, prototype, body);
+            syntax = new FunctionDeclarationSyntax(SyntaxTree, prototype, body);
+            return true;
+        }
+
+        private bool TryParsePrototype([NotNullWhen(true)]out PrototypeSyntax? syntax)
+        {
+            syntax = null;
+
+            var position = GetPosition();
+
+            var identifierToken = MatchToken(TokenKind.Identifier);
+            if (!TryParseParameterList(out var parameterList))
+            {
+                ResetPosition(position);
+                return false;
+            }
+
+            TypeAnnotationSyntax? returnTypeAnnotation = null;
+            if (Current.Kind == TokenKind.Colon)
+            {
+                returnTypeAnnotation = ParseTypeAnnotation();
+            }
+
+            syntax = new PrototypeSyntax(SyntaxTree, identifierToken, parameterList, returnTypeAnnotation);
+            return true;
         }
 
         private PrototypeSyntax ParsePrototype()
@@ -330,7 +386,7 @@ namespace Repl.CodeAnalysis.Syntax
                 returnTypeAnnotation = ParseTypeAnnotation();
             }
 
-            return new PrototypeSyntax(identifierToken, parameterList, returnTypeAnnotation);
+            return new PrototypeSyntax(SyntaxTree, identifierToken, parameterList, returnTypeAnnotation);
         }
 
         private ParameterListSyntax ParseParameterList()
@@ -356,23 +412,23 @@ namespace Repl.CodeAnalysis.Syntax
             }
 
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
-            return new ParameterListSyntax(openParenthesisToken, parameters.ToImmutable(), closeParenthesisToken);
+            return new ParameterListSyntax(SyntaxTree, openParenthesisToken, parameters.ToImmutable(), closeParenthesisToken);
         }
 
         private TypeAnnotationSyntax ParseTypeAnnotation()
         {
             var colonToken = MatchToken(TokenKind.Colon);
             var type = ParseType();
-            return new TypeAnnotationSyntax(colonToken, type);
+            return new TypeAnnotationSyntax(SyntaxTree, colonToken, type);
         }
 
         private SyntaxNode ParseType()
         {
             var typeOrIdentifierToken = MatchTypeOrIdentifierToken();
 
-            SyntaxNode typeSyntax = new TypeSyntax(typeOrIdentifierToken);
+            SyntaxNode typeSyntax = new TypeSyntax(SyntaxTree, typeOrIdentifierToken);
             while (Current.Kind == TokenKind.Star)
-                typeSyntax = new PointerTypeSyntax(typeSyntax, MatchToken(TokenKind.Star));
+                typeSyntax = new PointerTypeSyntax(SyntaxTree, typeSyntax, MatchToken(TokenKind.Star));
 
             return typeSyntax;
         }
@@ -381,14 +437,14 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var identifierToken = MatchToken(TokenKind.Identifier);
             var type = ParseTypeAnnotation();
-            return new ParameterSyntax(identifierToken, type);
+            return new ParameterSyntax(SyntaxTree, identifierToken, type);
         }
 
         private Token MatchTypeOrIdentifierToken()
         {
             // TODO Parse qualified types
             if (!IsTypeOrIdentifierToken(Current.Kind))
-                Diagnostics.ReportExpectedTypeOrIdentifier(Current.Span);
+                Diagnostics.ReportExpectedTypeOrIdentifier(Current.Location);
 
             return MatchToken(Current.Kind);
         }
@@ -401,13 +457,13 @@ namespace Repl.CodeAnalysis.Syntax
         private StatementSyntax ParseContinueStatement()
         {
             var continueKeyword = MatchToken(TokenKind.ContinueKeyword);
-            return new ContinueStatementSyntax(continueKeyword);
+            return new ContinueStatementSyntax(SyntaxTree, continueKeyword);
         }
 
         private StatementSyntax ParseBreakStatement()
         {
             var breakKeyword = MatchToken(TokenKind.BreakKeyword);
-            return new BreakStatementSyntax(breakKeyword);
+            return new BreakStatementSyntax(SyntaxTree, breakKeyword);
         }
 
         private StatementSyntax ParseForStatement()
@@ -419,7 +475,7 @@ namespace Repl.CodeAnalysis.Syntax
             var toKeyword = MatchToken(TokenKind.ToKeyword);
             var upperBound = ParseExpression();
             var body = ParseBlockStatement();
-            return new ForStatementSyntax(forKeyword, identifierToken, equalsToken, lowerBound, toKeyword, upperBound, body);
+            return new ForStatementSyntax(SyntaxTree, forKeyword, identifierToken, equalsToken, lowerBound, toKeyword, upperBound, body);
         }
 
         private StatementSyntax ParseWhileStatement()
@@ -427,14 +483,14 @@ namespace Repl.CodeAnalysis.Syntax
             var whileKeyword = MatchToken(TokenKind.WhileKeyword);
             var condition = ParseExpression();
             var body = ParseBlockStatement();
-            return new WhileStatementSyntax(whileKeyword, condition, body);
+            return new WhileStatementSyntax(SyntaxTree, whileKeyword, condition, body);
         }
 
         private StatementSyntax ParseLoopStatement()
         {
             var loopKeyword = MatchToken(TokenKind.LoopKeyword);
             var body = ParseBlockStatement();
-            return new LoopStatementSyntax(loopKeyword, body);
+            return new LoopStatementSyntax(SyntaxTree, loopKeyword, body);
         }
 
         private IfStatementSyntax ParseIfStatement()
@@ -445,7 +501,7 @@ namespace Repl.CodeAnalysis.Syntax
 
             var elseClause = ParseElseClause();
 
-            return new IfStatementSyntax(ifKeyword, expression, thenBlock, elseClause);
+            return new IfStatementSyntax(SyntaxTree, ifKeyword, expression, thenBlock, elseClause);
         }
 
         private ElseClauseSyntax ParseElseClause()
@@ -458,7 +514,7 @@ namespace Repl.CodeAnalysis.Syntax
                 ? (StatementSyntax)ParseIfStatement()
                 : ParseBlockStatement();
 
-            return new ElseClauseSyntax(elseKeyword, elseIfStatement);
+            return new ElseClauseSyntax(SyntaxTree, elseKeyword, elseIfStatement);
         }
 
         private StatementSyntax ParseVariableDeclaration()
@@ -471,13 +527,13 @@ namespace Repl.CodeAnalysis.Syntax
             var identifier = MatchToken(TokenKind.Identifier);
             var equalsToken = MatchToken(TokenKind.Equals);
             var initializer = ParseExpression();
-            return new VariableDeclarationSyntax(keyword, identifier, equalsToken, initializer);
+            return new VariableDeclarationSyntax(SyntaxTree, keyword, identifier, equalsToken, initializer);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement()
         {
             var expression = ParseExpression();
-            return new ExpressionStatementSyntax(expression);
+            return new ExpressionStatementSyntax(SyntaxTree, expression);
         }
 
         private BlockStatementSyntax ParseBlockStatement()
@@ -502,16 +558,17 @@ namespace Repl.CodeAnalysis.Syntax
 
             var closeBraceToken = MatchToken(TokenKind.CloseBrace);
 
-            return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
+            return new BlockStatementSyntax(SyntaxTree, openBraceToken, statements.ToImmutable(), closeBraceToken);
         }
 
         private ImmutableArray<SyntaxNode> ParseStatementsOrDeclarations()
         {
             var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
 
-            var startToken = Current;
             while (Current.Kind != TokenKind.EndOfFile)
             {
+                var startToken = Current;
+
                 if (!TryParseDeclaration(out var node))
                     node = ParseStatement();
                 builder.Add(node);
@@ -519,8 +576,6 @@ namespace Repl.CodeAnalysis.Syntax
                 // Make sure we consume tokens
                 if (Current == startToken)
                     NextToken();
-
-                startToken = Current;
             }
 
             return builder.ToImmutable();
@@ -547,7 +602,7 @@ namespace Repl.CodeAnalysis.Syntax
             {
                 var equalsToken = MatchToken(TokenKind.Equals);
                 var right = ParseAssignmentExpression();
-                return new AssignmentExpressionSyntax(syntax, equalsToken, right);
+                return new AssignmentExpressionSyntax(SyntaxTree, syntax, equalsToken, right);
             }
             return syntax;
         }
@@ -569,7 +624,7 @@ namespace Repl.CodeAnalysis.Syntax
             {
                 var operatorToken = NextToken();
                 var operand = ParseBinaryExpression(unaryOperatorPrecedence);
-                left = new UnaryExpressionSyntax(operatorToken, operand);
+                left = new UnaryExpressionSyntax(SyntaxTree, operatorToken, operand);
             }
             else
             {
@@ -585,7 +640,7 @@ namespace Repl.CodeAnalysis.Syntax
 
                 var operatorToken = NextToken();
                 var right = ParseBinaryExpression(precedence);
-                left = new BinaryExpressionSyntax(left, operatorToken, right);
+                left = new BinaryExpressionSyntax(SyntaxTree, left, operatorToken, right);
             }
 
             return left;
@@ -619,7 +674,7 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var dotToken = MatchToken(TokenKind.Dot);
             var identifierToken = MatchToken(TokenKind.Identifier);
-            return new MemberAccessExpressionSyntax(target, dotToken, identifierToken);
+            return new MemberAccessExpressionSyntax(SyntaxTree, target, dotToken, identifierToken);
         }
 
         public ExpressionSyntax ParsePrimaryExpressionStart()
@@ -648,20 +703,20 @@ namespace Repl.CodeAnalysis.Syntax
         private ExpressionSyntax ParseThisExpression()
         {
             var thisKeyword = MatchToken(TokenKind.ThisKeyword);
-            return new ThisExpressionSyntax(thisKeyword);
+            return new ThisExpressionSyntax(SyntaxTree, thisKeyword);
         }
 
         private ExpressionSyntax ParseNewExpression()
         {
             var newKeyword = MatchToken(TokenKind.NewKeyword);
             var nameExpression = (NameExpressionSyntax)ParseNameExpression();
-            return new NewExpressionSyntax(newKeyword, nameExpression);
+            return new NewExpressionSyntax(SyntaxTree, newKeyword, nameExpression);
         }
 
         private ExpressionSyntax ParseStringLiteralExpression()
         {
             var token = MatchToken(TokenKind.StringLiteral);
-            return new LiteralExpressionSyntax(token);
+            return new LiteralExpressionSyntax(SyntaxTree, token);
         }
 
         private ExpressionSyntax ParseInvokeExpression(ExpressionSyntax target)
@@ -692,7 +747,7 @@ namespace Repl.CodeAnalysis.Syntax
 
             var closeParenthesis = MatchToken(TokenKind.CloseParenthesis);
 
-            return new InvokeExpressionSyntax(target, openParenthesis, arguments.ToImmutable(), closeParenthesis);
+            return new InvokeExpressionSyntax(SyntaxTree, target, openParenthesis, arguments.ToImmutable(), closeParenthesis);
         }
 
         private ExpressionSyntax ParseCastOrParenthesizedExpression()
@@ -707,10 +762,10 @@ namespace Repl.CodeAnalysis.Syntax
             var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
             var expression = ParseExpression();
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
-            return new ParenthesizedExpressionSyntax(openParenthesisToken, expression, closeParenthesisToken);
+            return new ParenthesizedExpressionSyntax(SyntaxTree, openParenthesisToken, expression, closeParenthesisToken);
         }
 
-        private bool TryParseCast(out CastExpressionSyntax castExpression)
+        private bool TryParseCast([NotNullWhen(true)]out CastExpressionSyntax? castExpression)
         {
             castExpression = null;
             var resetPosition = GetPosition();
@@ -738,7 +793,7 @@ namespace Repl.CodeAnalysis.Syntax
             }
 
             var expression = ParseExpression();
-            castExpression = new CastExpressionSyntax(openParenthesisToken, type, closeParenthesisToken, expression);
+            castExpression = new CastExpressionSyntax(SyntaxTree, openParenthesisToken, type, closeParenthesisToken, expression);
             return true;
         }
 
@@ -812,19 +867,19 @@ namespace Repl.CodeAnalysis.Syntax
         private ExpressionSyntax ParseBooleanLiteralExpression(TokenKind kind)
         {
             var token = MatchToken(kind);
-            return new LiteralExpressionSyntax(token);
+            return new LiteralExpressionSyntax(SyntaxTree, token);
         }
 
         private ExpressionSyntax ParseNameExpression()
         {
             var token = MatchToken(TokenKind.Identifier);
-            return new NameExpressionSyntax(token);
+            return new NameExpressionSyntax(SyntaxTree, token);
         }
 
         public LiteralExpressionSyntax ParseNumberLiteralExpression()
         {
             var token = MatchToken(TokenKind.NumberLiteral);
-            return new LiteralExpressionSyntax(token);
+            return new LiteralExpressionSyntax(SyntaxTree, token);
         }
     }
 }

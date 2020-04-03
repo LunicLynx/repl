@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token OperatorToken { get; }
         public ExpressionSyntax Operand { get; }
 
-        public UnaryExpressionSyntax(Token operatorToken, ExpressionSyntax operand)
+        public UnaryExpressionSyntax(SyntaxTree syntaxTree, Token operatorToken, ExpressionSyntax operand)
+            : base(syntaxTree)
         {
             OperatorToken = operatorToken;
             Operand = operand;

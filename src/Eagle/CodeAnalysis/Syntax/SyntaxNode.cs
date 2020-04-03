@@ -7,6 +7,15 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public abstract class SyntaxNode
     {
+        public SyntaxTree SyntaxTree { get; }
+
+        public TextLocation Location => new TextLocation(SyntaxTree.Text, Span);
+
+        protected SyntaxNode(SyntaxTree syntaxTree)
+        {
+            SyntaxTree = syntaxTree;
+        }
+
         public virtual IEnumerable<SyntaxNode> GetChildren()
         {
             return Array.Empty<SyntaxNode>();

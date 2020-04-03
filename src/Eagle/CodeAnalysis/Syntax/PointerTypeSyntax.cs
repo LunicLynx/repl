@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public SyntaxNode Type { get; }
         public Token AsteriskToken { get; }
 
-        public PointerTypeSyntax(SyntaxNode type, Token asteriskToken)
+        public PointerTypeSyntax(SyntaxTree syntaxTree, SyntaxNode type, Token asteriskToken)
+            : base(syntaxTree)
         {
             Type = type;
             AsteriskToken = asteriskToken;

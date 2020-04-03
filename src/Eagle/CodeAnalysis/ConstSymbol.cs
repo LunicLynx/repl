@@ -4,6 +4,7 @@ namespace Repl.CodeAnalysis
 {
     public class ConstSymbol : Symbol
     {
+        public override SymbolKind Kind => SymbolKind.Constant;
         public override string Name { get; }
         public TypeSymbol Type { get; }
 

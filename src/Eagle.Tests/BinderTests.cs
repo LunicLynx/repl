@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Repl.CodeAnalysis.Binding;
 using Repl.CodeAnalysis.Syntax;
 using Repl.CodeAnalysis.Text;
@@ -12,11 +13,9 @@ namespace Repl.Tests
         {
             var source = "struct A { B(){} C(){ B() } }";
 
-            var text = SourceText.From(source);
+            var syntaxTree = SyntaxTree.Parse(source);
 
-            var parser = new Parser(text);
-            var compilationUnit = parser.ParseCompilationUnit();
-            var scope = Binder.BindGlobalScope(null, compilationUnit);
+            var scope = Binder.BindGlobalScope(null, ImmutableArray.Create(syntaxTree));
         }
     }
 }

@@ -10,9 +10,10 @@ namespace Repl.CodeAnalysis.Syntax
         public ExpressionSyntax LowerBound { get; }
         public Token ToKeyword { get; }
         public ExpressionSyntax UpperBound { get; }
-        public BlockStatementSyntax Body { get; }
+        public StatementSyntax Body { get; }
 
-        public ForStatementSyntax(Token forKeyword, Token identifierToken, Token equalsToken, ExpressionSyntax lowerBound, Token toKeyword, ExpressionSyntax upperBound, BlockStatementSyntax body)
+        public ForStatementSyntax(SyntaxTree syntaxTree, Token forKeyword, Token identifierToken, Token equalsToken, ExpressionSyntax lowerBound, Token toKeyword, ExpressionSyntax upperBound, StatementSyntax body)
+            : base(syntaxTree)
         {
             ForKeyword = forKeyword;
             IdentifierToken = identifierToken;

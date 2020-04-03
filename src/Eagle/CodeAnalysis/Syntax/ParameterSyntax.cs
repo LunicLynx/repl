@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token IdentifierToken { get; }
         public TypeAnnotationSyntax Type { get; }
 
-        public ParameterSyntax(Token identifierToken, TypeAnnotationSyntax type)
+        public ParameterSyntax(SyntaxTree syntaxTree, Token identifierToken, TypeAnnotationSyntax type)
+            : base(syntaxTree)
         {
             IdentifierToken = identifierToken;
             Type = type;

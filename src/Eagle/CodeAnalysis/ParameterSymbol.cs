@@ -3,6 +3,7 @@
     public class ParameterSymbol : Symbol
     {
         public TypeSymbol Type { get; }
+        public override SymbolKind Kind => SymbolKind.Parameter;
         public override string Name { get; }
         public int Index { get; }
 

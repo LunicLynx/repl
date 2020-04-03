@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Repl.CodeAnalysis.Text
 {
-    public class TextSpan
+    public struct TextSpan
     {
         public int Start { get; }
         public int Length { get; }
@@ -20,5 +20,7 @@ namespace Repl.CodeAnalysis.Text
         {
             return new TextSpan(start, end - start);
         }
+
+        public override string ToString() => $"{Start}..{End}";
     }
 }

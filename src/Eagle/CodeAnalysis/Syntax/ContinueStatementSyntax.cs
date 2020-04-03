@@ -6,7 +6,8 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token ContinueKeyword { get; }
 
-        public ContinueStatementSyntax(Token continueKeyword)
+        public ContinueStatementSyntax(SyntaxTree syntaxTree, Token continueKeyword)
+            : base(syntaxTree)
         {
             ContinueKeyword = continueKeyword;
         }

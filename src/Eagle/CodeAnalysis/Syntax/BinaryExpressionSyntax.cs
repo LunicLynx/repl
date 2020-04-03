@@ -8,7 +8,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token OperatorToken { get; }
         public ExpressionSyntax Right { get; }
 
-        public BinaryExpressionSyntax(ExpressionSyntax left, Token operatorToken, ExpressionSyntax right)
+        public BinaryExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax left, Token operatorToken, ExpressionSyntax right)
+            : base(syntaxTree)
         {
             Left = left;
             OperatorToken = operatorToken;

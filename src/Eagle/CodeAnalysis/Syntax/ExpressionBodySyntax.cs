@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token EqualsGreaterToken { get; }
         public ExpressionSyntax Expression { get; }
 
-        public ExpressionBodySyntax(Token equalsGreaterToken, ExpressionSyntax expression)
+        public ExpressionBodySyntax(SyntaxTree syntaxTree, Token equalsGreaterToken, ExpressionSyntax expression)
+            : base(syntaxTree)
         {
             EqualsGreaterToken = equalsGreaterToken;
             Expression = expression;

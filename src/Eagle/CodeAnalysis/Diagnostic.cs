@@ -4,14 +4,15 @@ namespace Repl.CodeAnalysis
 {
     public class Diagnostic
     {
-        public TextSpan Span { get; }
         public string Message { get; }
 
-        public Diagnostic(TextSpan span, string message)
+        public Diagnostic(TextLocation location, string message)
         {
-            Span = span;
+            Location = location;
             Message = message;
         }
+
+        public TextLocation Location { get; set; }
 
         public override string ToString() => Message;
     }

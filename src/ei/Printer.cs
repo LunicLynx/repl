@@ -138,7 +138,8 @@ namespace Repl
 
         internal void Print(Compilation compilation)
         {
-            compilation.Print(Print);
+            
+            //compilation.Print(Print);
         }
     }
 }

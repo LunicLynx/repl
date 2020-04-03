@@ -10,5 +10,6 @@
 
         public MethodSymbol Getter { get; }
         public MethodSymbol Setter { get; }
+        public override SymbolKind Kind => SymbolKind.Property;
     }
 }

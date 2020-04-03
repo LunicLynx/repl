@@ -9,7 +9,8 @@ namespace Repl.CodeAnalysis.Syntax
         public BlockStatementSyntax ThenBlock { get; }
         public ElseClauseSyntax ElseClause { get; }
 
-        public IfStatementSyntax(Token ifKeyword, ExpressionSyntax condition, BlockStatementSyntax thenBlock, ElseClauseSyntax elseClause)
+        public IfStatementSyntax(SyntaxTree syntaxTree, Token ifKeyword, ExpressionSyntax condition, BlockStatementSyntax thenBlock, ElseClauseSyntax elseClause)
+            : base(syntaxTree)
         {
             IfKeyword = ifKeyword;
             Condition = condition;

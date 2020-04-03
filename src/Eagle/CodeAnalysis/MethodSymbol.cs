@@ -1,12 +1,13 @@
-﻿using System.Linq;
+﻿using System.Collections.Immutable;
+using System.Linq;
 
 namespace Repl.CodeAnalysis
 {
     public class MethodSymbol : MemberSymbol
     {
-        public ParameterSymbol[] Parameters { get; }
+        public ImmutableArray<ParameterSymbol> Parameters { get; }
 
-        public MethodSymbol(TypeSymbol returnType, string name, ParameterSymbol[] parameters) : base(name, returnType)
+        public MethodSymbol(TypeSymbol returnType, string name, ImmutableArray<ParameterSymbol> parameters) : base(name, returnType)
         {
             Parameters = parameters;
         }
@@ -15,5 +16,7 @@ namespace Repl.CodeAnalysis
         {
             return $"{Name}({string.Join(", ", Parameters.Select(p => p.ToString()))}): {Type} ";
         }
+
+        public override SymbolKind Kind => SymbolKind.Method;
     }
 }

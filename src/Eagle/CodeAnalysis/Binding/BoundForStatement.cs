@@ -2,14 +2,14 @@
 
 namespace Repl.CodeAnalysis.Binding
 {
-    public class BoundForStatement : BoundStatement
+    public class BoundForStatement : BoundLoopStatementBase
     {
         public VariableSymbol Variable { get; }
         public BoundExpression LowerBound { get; }
         public BoundExpression UpperBound { get; }
-        public BoundBlockStatement Body { get; }
+        public BoundStatement Body { get; }
 
-        public BoundForStatement(VariableSymbol variable, BoundExpression lowerBound, BoundExpression upperBound, BoundBlockStatement body)
+        public BoundForStatement(VariableSymbol variable, BoundExpression lowerBound, BoundExpression upperBound, BoundStatement body, BoundLabel breakLabel, BoundLabel continueLabel) : base(breakLabel, continueLabel)
         {
             Variable = variable;
             LowerBound = lowerBound;
@@ -23,5 +23,17 @@ namespace Repl.CodeAnalysis.Binding
             yield return UpperBound;
             yield return Body;
         }
+    }
+
+    public abstract class BoundLoopStatementBase : BoundStatement
+    {
+        protected BoundLoopStatementBase(BoundLabel breakLabel, BoundLabel continueLabel)
+        {
+            BreakLabel = breakLabel;
+            ContinueLabel = continueLabel;
+        }
+
+        public BoundLabel BreakLabel { get; }
+        public BoundLabel ContinueLabel { get; }
     }
 }

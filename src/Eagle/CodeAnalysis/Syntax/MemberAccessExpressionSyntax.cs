@@ -8,7 +8,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token DotToken { get; }
         public Token IdentifierToken { get; }
 
-        public MemberAccessExpressionSyntax(ExpressionSyntax target, Token dotToken, Token identifierToken)
+        public MemberAccessExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax target, Token dotToken, Token identifierToken)
+            : base(syntaxTree)
         {
             Target = target;
             DotToken = dotToken;

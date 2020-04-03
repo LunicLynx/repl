@@ -24,7 +24,6 @@ namespace Repl.CodeAnalysis.Syntax
             {"class", TokenKind.ClassKeyword },
             {"new", TokenKind.NewKeyword },
             {"alias", TokenKind.AliasKeyword },
-            {"func", TokenKind.FuncKeyword },
             {"const", TokenKind.ConstKeyword },
             {"this", TokenKind.ThisKeyword },
             { "return", TokenKind.ReturnKeyword},
@@ -46,7 +45,8 @@ namespace Repl.CodeAnalysis.Syntax
             {"string", TokenKind.StringKeyword },
         };
 
-        public Lexer(SourceText text) : base(text) { }
+        public Lexer(SyntaxTree syntaxTree)
+            : base(syntaxTree) { }
 
         public override Token Lex()
         {
@@ -220,12 +220,13 @@ namespace Repl.CodeAnalysis.Syntax
                         break;
                     default:
                         kind = TokenKind.Bad;
-                        Diagnostics.ReportUnexpectedCharacter(TextSpan.FromBounds(start, Position), c);
+                        var location = new TextLocation(SyntaxTree.Text, TextSpan.FromBounds(start, Position));
+                        Diagnostics.ReportUnexpectedCharacter(location, c);
                         break;
                 }
             }
 
-            return new Token(kind, TextSpan.FromBounds(start, Position), Text.ToString(start, Position - start));
+            return new Token(SyntaxTree, kind, TextSpan.FromBounds(start, Position), Text.ToString(start, Position - start));
         }
 
         private bool IsIdentifierStart(char c)

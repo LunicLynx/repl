@@ -4,9 +4,9 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class BoundGotoStatement : BoundStatement
     {
-        public LabelSymbol Label { get; }
+        public BoundLabel Label { get; }
 
-        public BoundGotoStatement(LabelSymbol label)
+        public BoundGotoStatement(BoundLabel label)
         {
             Label = label;
         }

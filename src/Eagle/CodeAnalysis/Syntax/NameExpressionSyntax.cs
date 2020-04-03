@@ -6,7 +6,8 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token IdentifierToken { get; }
 
-        public NameExpressionSyntax(Token identifierToken)
+        public NameExpressionSyntax(SyntaxTree syntaxTree, Token identifierToken)
+            : base(syntaxTree)
         {
             IdentifierToken = identifierToken;
         }

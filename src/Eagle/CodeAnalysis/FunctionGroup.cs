@@ -1,7 +1,8 @@
 ﻿namespace Repl.CodeAnalysis
 {
-    public abstract class FunctionGroup : Symbol
+    public class FunctionGroup : Symbol
     {
-
+        public override SymbolKind Kind => SymbolKind.FunctionGroup;
+        public override string Name { get; }
     }
 }

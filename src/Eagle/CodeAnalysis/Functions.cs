@@ -77,7 +77,7 @@ func Read() : string {
             Console.WriteLine(s);
         }
 
-        public static string Read()
+        public static string Input()
         {
             return Console.ReadLine();
         }

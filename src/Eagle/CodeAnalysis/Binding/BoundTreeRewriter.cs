@@ -37,8 +37,6 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundIfStatement i: return RewriteIfStatement(i);
                 case BoundWhileStatement w: return RewriteWhileStatement(w);
                 case BoundLoopStatement l: return RewriteLoopStatement(l);
-                case BoundBreakStatement b: return RewriteBreakStatement(b);
-                case BoundContinueStatement c: return RewriteContinueStatement(c);
                 case BoundBlockStatement b: return RewriteBlockStatement(b);
                 case BoundForStatement f: return RewriteForStatement(f);
                 case BoundLabelStatement l: return RewriteLabelStatement(l);
@@ -163,10 +161,10 @@ namespace Repl.CodeAnalysis.Binding
         {
             var lowerBound = RewriteExpression(node.LowerBound);
             var upperBound = RewriteExpression(node.UpperBound);
-            var body = RewriteBlockStatement(node.Body);
+            var body = RewriteStatement(node.Body);
             if (lowerBound == node.LowerBound && upperBound == node.UpperBound && body == node.Body)
                 return node;
-            return new BoundForStatement(node.Variable, lowerBound, upperBound, body);
+            return new BoundForStatement(node.Variable, lowerBound, upperBound, body, node.BreakLabel, node.ContinueLabel);
         }
 
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
@@ -192,31 +190,21 @@ namespace Repl.CodeAnalysis.Binding
             return changed ? new BoundBlockStatement(result.ToImmutable()) : node;
         }
 
-        protected virtual BoundStatement RewriteContinueStatement(BoundContinueStatement node)
-        {
-            return node;
-        }
-
-        protected virtual BoundStatement RewriteBreakStatement(BoundBreakStatement node)
-        {
-            return node;
-        }
-
         protected virtual BoundStatement RewriteLoopStatement(BoundLoopStatement node)
         {
-            var body = RewriteBlockStatement(node.Body);
+            var body = RewriteStatement(node.Body);
             if (body == node.Body)
                 return node;
-            return new BoundLoopStatement(body);
+            return new BoundLoopStatement(body, node.BreakLabel, node.ContinueLabel);
         }
 
         protected virtual BoundStatement RewriteWhileStatement(BoundWhileStatement node)
         {
             var condition = RewriteExpression(node.Condition);
-            var body = RewriteBlockStatement(node.Body);
+            var body = RewriteStatement(node.Body);
             if (condition == node.Condition && body == node.Body)
                 return node;
-            return new BoundWhileStatement(condition, body);
+            return new BoundWhileStatement(condition, body, node.BreakLabel, node.ContinueLabel);
         }
 
         protected virtual BoundStatement RewriteVariableDeclaration(BoundVariableDeclaration node)
@@ -238,7 +226,7 @@ namespace Repl.CodeAnalysis.Binding
                 case BoundVariableExpression v: return RewriteVariableExpression(v);
                 case BoundFunctionCallExpression i: return RewriteCallExpression(i);
                 case BoundParameterExpression p: return RewriteParameterExpression(p);
-                case BoundCastExpression c: return RewriteCastExpression(c);
+                case BoundConversionExpression c: return RewriteCastExpression(c);
                 case BoundTypeExpression t: return RewriteTypeExpression(t);
                 case BoundNewExpression n: return RewriteNewExpression(n);
                 case BoundPropertyExpression m: return RewritePropertyExpression(m);
@@ -313,12 +301,12 @@ namespace Repl.CodeAnalysis.Binding
             return node;
         }
 
-        protected virtual BoundExpression RewriteCastExpression(BoundCastExpression node)
+        protected virtual BoundExpression RewriteCastExpression(BoundConversionExpression node)
         {
             var expression = RewriteExpression(node.Expression);
             if (expression == node.Expression)
                 return node;
-            return new BoundCastExpression(node.Type, expression);
+            return new BoundConversionExpression(node.Type, expression);
         }
 
         protected virtual BoundExpression RewriteParameterExpression(BoundParameterExpression node)

@@ -6,7 +6,8 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token ThisKeyword { get; }
 
-        public ThisExpressionSyntax(Token thisKeyword)
+        public ThisExpressionSyntax(SyntaxTree syntaxTree, Token thisKeyword)
+            : base(syntaxTree)
         {
             ThisKeyword = thisKeyword;
         }

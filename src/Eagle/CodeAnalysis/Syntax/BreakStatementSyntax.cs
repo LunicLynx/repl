@@ -6,7 +6,8 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token BreakKeyword { get; }
 
-        public BreakStatementSyntax(Token breakKeyword)
+        public BreakStatementSyntax(SyntaxTree syntaxTree, Token breakKeyword)
+            : base(syntaxTree)
         {
             BreakKeyword = breakKeyword;
         }

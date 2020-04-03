@@ -8,7 +8,8 @@ namespace Repl.CodeAnalysis.Syntax
         public ImmutableArray<SyntaxNode> Nodes { get; }
         public Token EndOfFileToken { get; }
 
-        public CompilationUnitSyntax(ImmutableArray<SyntaxNode> nodes, Token endOfFileToken)
+        public CompilationUnitSyntax(SyntaxTree syntaxTree, ImmutableArray<SyntaxNode> nodes, Token endOfFileToken)
+            : base(syntaxTree)
         {
             Nodes = nodes;
             EndOfFileToken = endOfFileToken;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using Repl.CodeAnalysis.Binding;
@@ -124,7 +125,7 @@ namespace Repl.CodeAnalysis
             _lastValue = value;
         }
 
-        public object RunBlock(ParameterSymbol[] parameters, object target, object[] args, BoundBlockStatement body)
+        public object RunBlock(ImmutableArray<ParameterSymbol> parameters, object target, object[] args, BoundBlockStatement body)
         {
             using (StackFrame(target))
             {
@@ -149,7 +150,7 @@ namespace Repl.CodeAnalysis
 
         public object EvaluateBlock(BoundBlockStatement block)
         {
-            var labelToIndex = new Dictionary<LabelSymbol, int>();
+            var labelToIndex = new Dictionary<BoundLabel, int>();
 
             var statements = block.Statements;
             for (var i = 0; i < statements.Length; i++)
@@ -235,7 +236,7 @@ namespace Repl.CodeAnalysis
                     return EvaluateFunctionCallExpression(i);
                 case BoundParameterExpression p:
                     return EvaluateParameterExpression(p);
-                case BoundCastExpression c:
+                case BoundConversionExpression c:
                     return EvaluateCastExpression(c);
                 case BoundTypeExpression t:
                     return EvaluateTypeExpression(t);
@@ -356,7 +357,7 @@ namespace Repl.CodeAnalysis
             // TODO call all initializer
         }
 
-        private object EvaluateCastExpression(BoundCastExpression node)
+        private object EvaluateCastExpression(BoundConversionExpression node)
         {
             var value = EvaluateExpression(node.Expression);
             return Convert.ChangeType(value, node.Type.GetClrType());

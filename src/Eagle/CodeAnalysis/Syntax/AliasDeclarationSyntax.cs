@@ -7,7 +7,8 @@
         public Token EqualsToken { get; }
         public SyntaxNode Type { get; }
 
-        public AliasDeclarationSyntax(Token aliasKeyword, Token identifierToken, Token equalsToken, SyntaxNode type)
+        public AliasDeclarationSyntax(SyntaxTree syntaxTree, Token aliasKeyword, Token identifierToken, Token equalsToken, SyntaxNode type)
+        :base(syntaxTree)
         {
             AliasKeyword = aliasKeyword;
             IdentifierToken = identifierToken;

@@ -7,6 +7,7 @@ namespace Repl.CodeAnalysis
         private bool _locked;
 
         private TypeSymbol _type;
+        public override SymbolKind Kind => SymbolKind.Alias;
         public override string Name { get; }
 
         public TypeSymbol Type

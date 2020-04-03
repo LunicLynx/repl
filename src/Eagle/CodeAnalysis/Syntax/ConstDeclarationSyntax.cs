@@ -10,7 +10,9 @@ namespace Repl.CodeAnalysis.Syntax
         public Token EqualsToken { get; }
         public ExpressionSyntax Initializer { get; }
 
-        public ConstDeclarationSyntax(Token constKeyword, Token identifierToken, TypeAnnotationSyntax typeAnnotation, Token equalsToken, ExpressionSyntax initializer)
+        public ConstDeclarationSyntax(SyntaxTree syntaxTree, Token constKeyword, Token identifierToken,
+            TypeAnnotationSyntax typeAnnotation, Token equalsToken, ExpressionSyntax initializer)
+            : base(syntaxTree)
         {
             ConstKeyword = constKeyword;
             IdentifierToken = identifierToken;

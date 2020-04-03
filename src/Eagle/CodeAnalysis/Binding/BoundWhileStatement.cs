@@ -5,12 +5,16 @@ namespace Repl.CodeAnalysis.Binding
     public class BoundWhileStatement : BoundStatement
     {
         public BoundExpression Condition { get; }
-        public BoundBlockStatement Body { get; }
+        public BoundStatement Body { get; }
+        public BoundLabel BreakLabel { get; }
+        public BoundLabel ContinueLabel { get; }
 
-        public BoundWhileStatement(BoundExpression condition, BoundBlockStatement body)
+        public BoundWhileStatement(BoundExpression condition, BoundStatement body, BoundLabel breakLabel, BoundLabel continueLabel)
         {
             Condition = condition;
             Body = body;
+            BreakLabel = breakLabel;
+            ContinueLabel = continueLabel;
         }
 
         public override IEnumerable<BoundNode> GetChildren()

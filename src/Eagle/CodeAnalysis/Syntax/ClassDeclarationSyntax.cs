@@ -12,7 +12,10 @@ namespace Repl.CodeAnalysis.Syntax
         public ImmutableArray<MemberDeclarationSyntax> Members { get; }
         public Token CloseBraceToken { get; }
 
-        public ClassDeclarationSyntax(Token classKeyword, Token identifierToken, BaseTypeSyntax baseType, Token openBraceToken, ImmutableArray<MemberDeclarationSyntax> members, Token closeBraceToken)
+        public ClassDeclarationSyntax(SyntaxTree syntaxTree, Token classKeyword, Token identifierToken,
+            BaseTypeSyntax baseType, Token openBraceToken, ImmutableArray<MemberDeclarationSyntax> members,
+            Token closeBraceToken)
+            : base(syntaxTree)
         {
             ClassKeyword = classKeyword;
             IdentifierToken = identifierToken;

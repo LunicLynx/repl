@@ -9,7 +9,8 @@ namespace Repl.CodeAnalysis.Syntax
         public ImmutableArray<StatementSyntax> Statements { get; }
         public Token CloseBraceToken { get; }
 
-        public BlockStatementSyntax(Token openBraceToken, ImmutableArray<StatementSyntax> statements, Token closeBraceToken)
+        public BlockStatementSyntax(SyntaxTree syntaxTree, Token openBraceToken, ImmutableArray<StatementSyntax> statements, Token closeBraceToken)
+            : base(syntaxTree)
         {
             OpenBraceToken = openBraceToken;
             Statements = statements;

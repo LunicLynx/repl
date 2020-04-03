@@ -9,7 +9,7 @@ namespace Repl.CodeAnalysis.Syntax
         //{
         //}
 
-        public PropertyDeclarationSyntax(Token identifierToken, TypeAnnotationSyntax typeAnnotation, ExpressionBodySyntax expressionBody) : base(identifierToken, typeAnnotation)
+        public PropertyDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, TypeAnnotationSyntax typeAnnotation, ExpressionBodySyntax expressionBody) : base(syntaxTree, identifierToken, typeAnnotation)
         {
             ExpressionBody = expressionBody;
         }

@@ -9,7 +9,9 @@ namespace Repl.CodeAnalysis.Syntax
         public ImmutableArray<SyntaxNode> Parameters { get; }
         public Token CloseParenthesisToken { get; }
 
-        public ParameterListSyntax(Token openParenthesisToken, ImmutableArray<SyntaxNode> parameters, Token closeParenthesisToken)
+        public ParameterListSyntax(SyntaxTree syntaxTree, Token openParenthesisToken,
+            ImmutableArray<SyntaxNode> parameters, Token closeParenthesisToken)
+            : base(syntaxTree)
         {
             OpenParenthesisToken = openParenthesisToken;
             Parameters = parameters;

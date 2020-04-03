@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token ReturnKeyword { get; }
         public ExpressionSyntax Value { get; }
 
-        public ReturnStatementSyntax(Token returnKeyword, ExpressionSyntax value)
+        public ReturnStatementSyntax(SyntaxTree syntaxTree, Token returnKeyword, ExpressionSyntax value) 
+            : base(syntaxTree)
         {
             ReturnKeyword = returnKeyword;
             Value = value;

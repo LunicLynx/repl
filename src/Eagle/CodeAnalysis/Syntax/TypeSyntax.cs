@@ -6,7 +6,8 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token TypeOrIdentifierToken { get; }
 
-        public TypeSyntax(Token typeOrIdentifierToken)
+        public TypeSyntax(SyntaxTree syntaxTree, Token typeOrIdentifierToken)
+            : base(syntaxTree)
         {
             TypeOrIdentifierToken = typeOrIdentifierToken;
         }

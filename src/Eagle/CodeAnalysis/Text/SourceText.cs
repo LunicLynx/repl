@@ -5,13 +5,17 @@ namespace Repl.CodeAnalysis.Text
     public class SourceText
     {
         private readonly string _text;
-
-
-
-        private SourceText(string text)
+        
+        private SourceText(string text, string fileName)
         {
             _text = text;
-            Lines = ParseLines(this, _text);
+            FileName = fileName;
+            Lines = ParseLines(this, text);
+        }
+
+        public static SourceText From(string text, string fileName = "")
+        {
+            return new SourceText(text, fileName);
         }
 
         public ImmutableArray<TextLine> Lines { get; }
@@ -94,12 +98,7 @@ namespace Repl.CodeAnalysis.Text
             return 0;
         }
 
-        public static SourceText From(string text)
-        {
-            return new SourceText(text);
-        }
-
-
+        public string FileName { get; }
 
         public override string ToString() => _text;
 

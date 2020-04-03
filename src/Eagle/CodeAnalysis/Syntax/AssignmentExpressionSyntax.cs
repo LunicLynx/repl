@@ -8,7 +8,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token EqualsToken { get; }
         public ExpressionSyntax Expression { get; }
 
-        public AssignmentExpressionSyntax(ExpressionSyntax target, Token equalsToken, ExpressionSyntax expression)
+        public AssignmentExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax target, Token equalsToken, ExpressionSyntax expression)
+        :base(syntaxTree)
         {
             Target = target;
             EqualsToken = equalsToken;

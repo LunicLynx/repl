@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Repl.CodeAnalysis.Binding;
@@ -13,15 +14,15 @@ namespace Repl.CodeAnalysis
     {
         private BoundGlobalScope _globalScope;
         public Compilation Previous { get; }
-        public SyntaxTree SyntaxTree { get; }
+        public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
 
-        public Compilation(SyntaxTree syntaxTree)
-        : this(null, syntaxTree) { }
+        public Compilation(params SyntaxTree[] syntaxTrees)
+        : this(null, syntaxTrees) { }
 
-        private Compilation(Compilation previous, SyntaxTree syntaxTree)
+        private Compilation(Compilation previous, params SyntaxTree[] syntaxTrees)
         {
             Previous = previous;
-            SyntaxTree = syntaxTree;
+            SyntaxTrees = syntaxTrees.ToImmutableArray();
         }
 
         internal BoundGlobalScope GlobalScope
@@ -30,7 +31,7 @@ namespace Repl.CodeAnalysis
             {
                 if (_globalScope == null)
                 {
-                    var globalScope = Binder.BindGlobalScope(Previous?.GlobalScope, SyntaxTree.Root);
+                    var globalScope = Binder.BindGlobalScope(Previous?.GlobalScope, SyntaxTrees);
                     Interlocked.CompareExchange(ref _globalScope, globalScope, null);
                 }
 
@@ -45,39 +46,51 @@ namespace Repl.CodeAnalysis
 
         public EvaluationResult Evaluate(Dictionary<Symbol, object> variables)
         {
-            var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
+            var parseDiagnostics = SyntaxTrees.SelectMany(st => st.Diagnostics);
+
+            var diagnostics = parseDiagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics, null);
 
-            var unit = GetUnit();
-            var evaluator = new Evaluator(unit, variables);
+            var program = Binder.BindProgram(GlobalScope);
 
-            //try
-            {
-                var value = evaluator.Evaluate();
-                return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
-            }
-            //catch (Exception e)
-            //{
-            //    return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, 0);
-            //    //return new EvaluationResult(ImmutableArray.Create(new Diagnostic(SyntaxTree.Root.Span, e.Message)), 0);
-            //}
+            var appPath = Environment.GetCommandLineArgs()[0];
+            var appDirectory = Path.GetDirectoryName(appPath);
+            var cfgPath = Path.Combine(appDirectory, "cfg.dot");
+            //var cfgStatement = !program.Statement.Statements.Any() && program.Functions.Any()
+            //    ? program.Functions.Last().Value
+            //    : program.Statement;
+            //var cfg = ControlFlowGraph.Create(cfgStatement);
+            //using (var streamWriter = new StreamWriter(cfgPath))
+            //    cfg.WriteTo(streamWriter);
+
+            //if (program.Diagnostics.Any())
+            //    return new EvaluationResult(program.Diagnostics.ToImmutableArray(), null);
+
+            var evaluator = new Evaluator(program, variables);
+            var value = evaluator.Evaluate();
+            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
         }
 
-        public void Emit(string fileName)
-        {
+        //public void EmitTree(TextWriter writer)
+        //{
+        //    var program = Binder.BindProgram(GlobalScope);
 
-        }
+        //    if (program.Statement.Statements.Any())
+        //    {
+        //        program.Statement.WriteTo(writer);
+        //    }
+        //    else
+        //    {
+        //        foreach (var functionBody in program.Functions)
+        //        {
+        //            if (!GlobalScope.Functions.Contains(functionBody.Key))
+        //                continue;
 
-        private BoundUnit GetUnit()
-        {
-            var statement = Lowerer.Lower(GlobalScope);
-            return statement;
-        }
-
-        public void Print(Action<BoundNode> print)
-        {
-            print(GetUnit());
-        }
+        //            functionBody.Key.WriteTo(writer);
+        //            functionBody.Value.WriteTo(writer);
+        //        }
+        //    }
+        //}
     }
 }

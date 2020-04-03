@@ -4,10 +4,16 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class ParserBase
     {
+        public SyntaxTree SyntaxTree { get; }
         protected Token[] Tokens;
 
         private int _position = 0;
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
+
+        public ParserBase(SyntaxTree syntaxTree)
+        {
+            SyntaxTree = syntaxTree;
+        }
 
         protected Token NextToken()
         {
@@ -32,8 +38,8 @@ namespace Repl.CodeAnalysis.Syntax
             if (Current.Kind == kind)
                 return NextToken();
 
-            Diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
-            return new Token(kind, new TextSpan(0, 0), "");
+            Diagnostics.ReportUnexpectedToken(Current.Location, Current.Kind, kind);
+            return new Token(SyntaxTree, kind, new TextSpan(0, 0), "");
         }
 
         protected int GetPosition()

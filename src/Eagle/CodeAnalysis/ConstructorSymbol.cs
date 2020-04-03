@@ -1,12 +1,13 @@
-﻿using System.Linq;
+﻿using System.Collections.Immutable;
+using System.Linq;
 
 namespace Repl.CodeAnalysis
 {
     public class ConstructorSymbol : MemberSymbol
     {
-        public ParameterSymbol[] Parameters { get; }
+        public ImmutableArray<ParameterSymbol> Parameters { get; }
 
-        public ConstructorSymbol(TypeSymbol type, ParameterSymbol[] parameters)
+        public ConstructorSymbol(TypeSymbol type, ImmutableArray<ParameterSymbol> parameters)
         : base(type.Name, type)
         {
             Type = type;
@@ -17,5 +18,7 @@ namespace Repl.CodeAnalysis
         {
             return $"{Name}({string.Join(", ", Parameters.Select(p => p.ToString()))})";
         }
+
+        public override SymbolKind Kind => SymbolKind.Constructor;
     }
 }

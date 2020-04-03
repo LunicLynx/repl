@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token ColonToken { get; }
         public SyntaxNode Type { get; }
 
-        public TypeAnnotationSyntax(Token colonToken, SyntaxNode type)
+        public TypeAnnotationSyntax(SyntaxTree syntaxTree, Token colonToken, SyntaxNode type)
+            : base(syntaxTree)
         {
             ColonToken = colonToken;
             Type = type;

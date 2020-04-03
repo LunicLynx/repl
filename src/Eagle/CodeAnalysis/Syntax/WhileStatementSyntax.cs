@@ -8,7 +8,8 @@ namespace Repl.CodeAnalysis.Syntax
         public ExpressionSyntax Condition { get; }
         public BlockStatementSyntax Body { get; }
 
-        public WhileStatementSyntax(Token whileKeyword, ExpressionSyntax condition, BlockStatementSyntax body)
+        public WhileStatementSyntax(SyntaxTree syntaxTree, Token whileKeyword, ExpressionSyntax condition, BlockStatementSyntax body)
+            : base(syntaxTree)
         {
             WhileKeyword = whileKeyword;
             Condition = condition;

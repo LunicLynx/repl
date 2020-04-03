@@ -7,7 +7,8 @@ namespace Repl.CodeAnalysis.Syntax
         public Token EqualsToken { get; }
         public ExpressionSyntax Expression { get; }
 
-        public InitializerSyntax(Token equalsToken, ExpressionSyntax expression)
+        public InitializerSyntax(SyntaxTree syntaxTree, Token equalsToken, ExpressionSyntax expression)
+            : base(syntaxTree)
         {
             EqualsToken = equalsToken;
             Expression = expression;

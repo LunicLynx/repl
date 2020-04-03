@@ -7,16 +7,13 @@ namespace Repl.CodeAnalysis.Lowering
 {
     internal class Lowerer : BoundTreeRewriter
     {
-        private static int _labelId;
+        private static int _labelCount;
 
-        private Lowerer(ImmutableArray<Symbol> symbols)
-        {
-            _intType = symbols.OfType<TypeSymbol>().FirstOrDefault(s => s.Name == "Int64");
-        }
+        private Lowerer() { }
 
         public static BoundUnit Lower(BoundGlobalScope globalScope)
         {
-            var lowerer = new Lowerer(globalScope.Symbols);
+            var lowerer = new Lowerer();
 
             var unit = globalScope.Unit;
             var statements = unit.GetChildren().OfType<BoundStatement>().ToImmutableArray();
@@ -52,37 +49,18 @@ namespace Repl.CodeAnalysis.Lowering
             return new BoundBlockStatement(builder.ToImmutable());
         }
 
-        private static LabelSymbol GenerateLabel(string prefix)
+        private static BoundLabel GenerateLabel()
         {
-            return new LabelSymbol($"{prefix}-L{++_labelId}");
-        }
-
-        private LabelSymbol _continueLabel;
-        private LabelSymbol _breakLabel;
-        private readonly TypeSymbol _intType;
-
-        protected override BoundStatement RewriteContinueStatement(BoundContinueStatement node)
-        {
-            return new BoundGotoStatement(_continueLabel);
-        }
-
-        protected override BoundStatement RewriteBreakStatement(BoundBreakStatement node)
-        {
-            return new BoundGotoStatement(_breakLabel);
+            var name = $"Label{++_labelCount}";
+            return new BoundLabel(name);
         }
 
         protected override BoundStatement RewriteLoopStatement(BoundLoopStatement node)
         {
-            var continueLabel = GenerateLabel("continue");
-            // checkLabel
-            var endLabel = GenerateLabel("end");
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
 
-            // gotoCheck
-            var continueLabelStatement = new BoundLabelStatement(continueLabel);
-            // checkLabelStatement
-
-            var gotoStart = new BoundGotoStatement(continueLabel);
-            var endLabelStatement = new BoundLabelStatement(endLabel);
+            var gotoStart = new BoundGotoStatement(node.ContinueLabel);
+            var endLabelStatement = new BoundLabelStatement(node.BreakLabel);
 
             var result = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(
                 // gotoCheck
@@ -93,60 +71,38 @@ namespace Repl.CodeAnalysis.Lowering
                 endLabelStatement
                 ));
 
-            var oldContinue = _continueLabel;
-            var oldBreak = _breakLabel;
-            _continueLabel = continueLabel;
-            _breakLabel = endLabel;
-
-            var r = RewriteStatement(result);
-
-            _continueLabel = oldContinue;
-            _breakLabel = oldBreak;
-
-            return r;
+            return RewriteStatement(result);
         }
 
         protected override BoundStatement RewriteWhileStatement(BoundWhileStatement node)
         {
             // TODO Lower into loop statement
             // can be done by inverting the check as break eg. gotoEnd;
-            var continueLabel = GenerateLabel("continue");
-            var checkLabel = GenerateLabel("check");
-            var endLabel = GenerateLabel("end");
+            var bodyLabel = GenerateLabel();
 
-            var gotoCheck = new BoundGotoStatement(checkLabel);
-            var continueLabelStatement = new BoundLabelStatement(continueLabel);
-            var checkLabelStatement = new BoundLabelStatement(checkLabel);
+            var gotoContinue = new BoundGotoStatement(node.ContinueLabel);
+            var bodyLabelStatement = new BoundLabelStatement(bodyLabel);
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
+            var gotoTrue = new BoundConditionalGotoStatement(bodyLabel, node.Condition);
+            var breakLabelStatement = new BoundLabelStatement(node.BreakLabel);
 
-            var gotoTrue = new BoundConditionalGotoStatement(continueLabel, node.Condition);
-            var endLabelStatement = new BoundLabelStatement(endLabel);
-
-            var result = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(
-                gotoCheck,
-                continueLabelStatement,
+            var result = new BoundBlockStatement(ImmutableArray.Create(
+                gotoContinue,
+                bodyLabelStatement,
                 node.Body,
-                checkLabelStatement,
+                continueLabelStatement,
                 gotoTrue,
-                endLabelStatement));
+                breakLabelStatement
+            ));
 
-            var oldContinue = _continueLabel;
-            var oldBreak = _breakLabel;
-            _continueLabel = continueLabel;
-            _breakLabel = endLabel;
-
-            var r = RewriteStatement(result);
-
-            _continueLabel = oldContinue;
-            _breakLabel = oldBreak;
-
-            return r;
+            return RewriteStatement(result);
         }
 
         protected override BoundStatement RewriteIfStatement(BoundIfStatement node)
         {
             if (node.ElseStatement == null)
             {
-                var endLabel = GenerateLabel("end");
+                var endLabel = GenerateLabel();
 
                 var gotoFalse = new BoundConditionalGotoStatement(endLabel, node.Condition, false);
                 var endLabelStatement = new BoundLabelStatement(endLabel);
@@ -160,8 +116,8 @@ namespace Repl.CodeAnalysis.Lowering
             }
             else
             {
-                var elseLabel = GenerateLabel("else");
-                var endLabel = GenerateLabel("end");
+                var elseLabel = GenerateLabel();
+                var endLabel = GenerateLabel();
 
                 var gotoFalse = new BoundConditionalGotoStatement(elseLabel, node.Condition, false);
                 var gotoEndStatement = new BoundGotoStatement(endLabel);
@@ -185,24 +141,30 @@ namespace Repl.CodeAnalysis.Lowering
             var variableDeclaration = new BoundVariableDeclaration(node.Variable, node.LowerBound);
             var variableExpression = new BoundVariableExpression(node.Variable);
 
-            var upperBoundVariable = new VariableSymbol("upperBound", true, _intType);
+            var upperBoundVariable = new VariableSymbol("upperBound", true, TypeSymbol.Int);
             var upperBoundDeclaration = new BoundVariableDeclaration(upperBoundVariable, node.UpperBound);
             var condition = new BoundBinaryExpression(
                 variableExpression,
-                BoundBinaryOperator.Bind(Syntax.TokenKind.LessEquals, _intType, _intType),
+                BoundBinaryOperator.Bind(Syntax.TokenKind.LessEquals, TypeSymbol.Int, TypeSymbol.Int),
                 new BoundVariableExpression(upperBoundVariable)
             );
 
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
             var increment = new BoundExpressionStatement(
                 new BoundAssignmentExpression(
                     new BoundVariableExpression(node.Variable),
                     new BoundBinaryExpression(
                         variableExpression,
-                        BoundBinaryOperator.Bind(Syntax.TokenKind.Plus, _intType, _intType),
-                        new BoundLiteralExpression(_intType, 1))));
+                        BoundBinaryOperator.Bind(Syntax.TokenKind.Plus, TypeSymbol.Int, TypeSymbol.Int),
+                        new BoundLiteralExpression(TypeSymbol.Int, 1))));
 
-            var whileBody = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(node.Body, increment));
-            var whileStatement = new BoundWhileStatement(condition, whileBody);
+            var whileBody = new BoundBlockStatement(ImmutableArray.Create(
+                node.Body,
+                continueLabelStatement,
+                increment
+            ));
+
+            var whileStatement = new BoundWhileStatement(condition, whileBody, node.BreakLabel, node.ContinueLabel);
 
             var result = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(
                 variableDeclaration,

@@ -4,15 +4,16 @@ namespace Repl.CodeAnalysis.Syntax
 {
     abstract class LexerBase
     {
+        public SyntaxTree SyntaxTree { get; }
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
         protected int Position = 0;
 
-        protected readonly SourceText Text;
+        protected SourceText Text => SyntaxTree.Text;
 
-        protected LexerBase(SourceText text)
+        protected LexerBase(SyntaxTree syntaxTree)
         {
-            Text = text;
+            SyntaxTree = syntaxTree;
         }
 
         protected char Current

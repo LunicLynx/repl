@@ -1,13 +1,14 @@
-﻿using Repl.CodeAnalysis.Binding;
+﻿using System.Collections.Immutable;
+using Repl.CodeAnalysis.Binding;
 
 namespace Repl.CodeAnalysis
 {
     public class BB : IInvokable
     {
         private readonly BoundBlockStatement _bbs;
-        private readonly ParameterSymbol[] _parameters;
+        private readonly ImmutableArray<ParameterSymbol> _parameters;
 
-        public BB(BoundBlockStatement bbs, ParameterSymbol[] parameters)
+        public BB(BoundBlockStatement bbs, ImmutableArray<ParameterSymbol> parameters)
         {
             _bbs = bbs;
             _parameters = parameters;

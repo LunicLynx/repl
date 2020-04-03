@@ -7,9 +7,11 @@ namespace Repl.CodeAnalysis.Syntax
         public Token IdentifierToken { get; }
         public ParameterListSyntax ParameterList { get; }
 
-        public TypeAnnotationSyntax ReturnType { get; }
+        public TypeAnnotationSyntax? ReturnType { get; }
 
-        public PrototypeSyntax(Token identifierToken, ParameterListSyntax parameterList, TypeAnnotationSyntax returnType)
+        public PrototypeSyntax(SyntaxTree syntaxTree, Token identifierToken,
+            ParameterListSyntax parameterList, TypeAnnotationSyntax? returnType)
+            : base(syntaxTree)
         {
             IdentifierToken = identifierToken;
             ParameterList = parameterList;

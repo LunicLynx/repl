@@ -6,8 +6,8 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public InitializerSyntax Initializer { get; }
 
-        public FieldDeclarationSyntax(Token identifierToken, TypeAnnotationSyntax typeAnnotation, InitializerSyntax initializer)
-            : base(identifierToken, typeAnnotation)
+        public FieldDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, TypeAnnotationSyntax typeAnnotation, InitializerSyntax initializer)
+            : base(syntaxTree, identifierToken, typeAnnotation)
         {
             Initializer = initializer;
         }

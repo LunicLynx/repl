@@ -376,16 +376,16 @@ namespace Repl.CodeAnalysis.CodeGen
             return target;
         }
 
-        private BasicBlock GetOrAppend(LabelSymbol labelSymbol, bool addPhi = false)
+        private BasicBlock GetOrAppend(BoundLabel labelSymbol, bool addPhi = false)
         {
-            if (_context.Symbols.TryGetValue(labelSymbol, out var label))
-            {
-                return label.AsBasicBlock();
-            }
+            //if (_context.Symbols.TryGetValue(labelSymbol, out var label))
+            //{
+            //    return label.AsBasicBlock();
+            //}
 
             var target = Append(addPhi, labelSymbol.Name);
 
-            _context.Symbols[labelSymbol] = target.AsValue();
+            //_context.Symbols[labelSymbol] = target.AsValue();
             return target;
         }
 
@@ -461,7 +461,7 @@ namespace Repl.CodeAnalysis.CodeGen
                     return GenerateFunctionCallExpression(i);
                 case BoundParameterExpression p:
                     return GenerateParameterExpression(p);
-                case BoundCastExpression c:
+                case BoundConversionExpression c:
                     return GenerateCastExpression(c);
                 case BoundConstExpression c:
                     return GenerateConstExpression(c);
@@ -528,7 +528,7 @@ namespace Repl.CodeAnalysis.CodeGen
             return value;
         }
 
-        private Value GenerateCastExpression(BoundCastExpression node)
+        private Value GenerateCastExpression(BoundConversionExpression node)
         {
             var type = GetXType(node.Type);
             var value = GenerateExpression(node.Expression);
