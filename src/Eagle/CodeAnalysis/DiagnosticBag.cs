@@ -34,7 +34,7 @@ namespace Repl.CodeAnalysis
 
         public void ReportUnexpectedToken(TextLocation location, TokenKind actual, TokenKind expected)
         {
-            Report(location, $"Unexpected token '{actual}', expected '{expected}'.");
+            Report(location, $"Unexpected token <{actual}>, expected <{expected}>.");
         }
 
         public void ReportUndefinedUnaryOperator(TextLocation location, string operatorText, TypeSymbol type)

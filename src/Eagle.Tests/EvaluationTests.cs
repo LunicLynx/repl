@@ -116,8 +116,8 @@ namespace Repl.Tests
             ";
 
             var diagnostics = @"
-                Unexpected token <CloseParenthesisToken>, expected <IdentifierToken>.
-                Unexpected token <EndOfFileToken>, expected <CloseBraceToken>.
+                Unexpected token <CloseParenthesis>, expected <Identifier>.
+                Unexpected token <EndOfFile>, expected <CloseBrace>.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -395,7 +395,7 @@ namespace Repl.Tests
             ";
 
             var diagnostics = @"
-                Cannot convert type 'Boolean' to 'Int64'.
+                Cannot convert type 'bool' to 'int'.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -601,13 +601,13 @@ namespace Repl.Tests
         public void Evaluator_Bad_Type()
         {
             var text = @"
-                function test(n: [invalidtype])
+                test(n: [invalidtype])
                 {
                 }
             ";
 
             var diagnostics = @"
-                Type 'invalidtype' doesn't exist.
+                Symbol 'invalidtype' doesn't exist.
             ";
 
             AssertDiagnostics(text, diagnostics);

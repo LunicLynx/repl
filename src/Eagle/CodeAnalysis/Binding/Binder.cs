@@ -254,29 +254,29 @@ namespace Repl.CodeAnalysis.Binding
             }
             DeclareSymbol(symbol, identifierToken);
 
-            switch (symbol.Name)
-            {
-                // TODO should be in namespace std
-                case "Void": TypeSymbol.Void = symbol; break;
-                case "Boolean": TypeSymbol.Bool = symbol; break;
-                case "Int8": TypeSymbol.I8 = symbol; break;
-                case "Int16": TypeSymbol.I16 = symbol; break;
-                case "Int32": TypeSymbol.I32 = symbol; break;
-                case "Int64":
-                    TypeSymbol.I64 = symbol;
-                    TypeSymbol.Int = symbol;
-                    break;
-                case "UInt8": TypeSymbol.U8 = symbol; break;
-                case "UInt16": TypeSymbol.U16 = symbol; break;
-                case "UInt32": TypeSymbol.U32 = symbol; break;
-                case "UInt64":
-                    TypeSymbol.U64 = symbol;
-                    TypeSymbol.Uint = symbol;
-                    break;
-                case "String": TypeSymbol.String = symbol; break;
-                default:
-                    break;
-            }
+            //switch (symbol.Name)
+            //{
+            //    // TODO should be in namespace std
+            //    case "Void": TypeSymbol.Void = symbol; break;
+            //    case "Boolean": TypeSymbol.Bool = symbol; break;
+            //    case "Int8": TypeSymbol.I8 = symbol; break;
+            //    case "Int16": TypeSymbol.I16 = symbol; break;
+            //    case "Int32": TypeSymbol.I32 = symbol; break;
+            //    case "Int64":
+            //        TypeSymbol.I64 = symbol;
+            //        TypeSymbol.Int = symbol;
+            //        break;
+            //    case "UInt8": TypeSymbol.U8 = symbol; break;
+            //    case "UInt16": TypeSymbol.U16 = symbol; break;
+            //    case "UInt32": TypeSymbol.U32 = symbol; break;
+            //    case "UInt64":
+            //        TypeSymbol.U64 = symbol;
+            //        TypeSymbol.UInt = symbol;
+            //        break;
+            //    case "String": TypeSymbol.String = symbol; break;
+            //    default:
+            //        break;
+            //}
         }
 
         private static BoundScope CreateParentScopes(BoundGlobalScope previous)

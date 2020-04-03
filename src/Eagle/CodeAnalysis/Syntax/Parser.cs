@@ -326,52 +326,37 @@ namespace Repl.CodeAnalysis.Syntax
             return new ExternDeclarationSyntax(SyntaxTree, externKeyword, prototype);
         }
 
-        private bool TryParseFunctionDeclaration([NotNullWhen(true)] out FunctionDeclarationSyntax? syntax)
+        private SyntaxNode ParseFunctionDeclaration()
         {
-            // case 1: IDENTIFIER ( ) { 
-            // case 2: IDENTIFIER ( ) :
-            // case 2: IDENTIFIER ( IDENTIFIER :
-
-            syntax = default;
-            var position = GetPosition();
-
-            if (!TryParsePrototype(out var prototype))
-            {
-                ResetPosition(position);
-                return false;
-            }
-
-            if (Current.Kind != TokenKind.OpenBrace)
-            {
-                ResetPosition(position);
-                return false;
-            }
-
+            var prototype = ParsePrototype();
             var body = ParseBlockStatement();
-            syntax = new FunctionDeclarationSyntax(SyntaxTree, prototype, body);
-            return true;
+            return new FunctionDeclarationSyntax(SyntaxTree, prototype, body);
         }
 
-        private bool TryParsePrototype([NotNullWhen(true)]out PrototypeSyntax? syntax)
+        private bool TryParseFunctionDeclaration([NotNullWhen(true)] out FunctionDeclarationSyntax? syntax)
         {
             syntax = null;
 
-            var position = GetPosition();
+            // case 1: IDENTIFIER ( ) { 
+            // case 2: IDENTIFIER ( ) :
+            // case 3: IDENTIFIER ( IDENTIFIER :
+            var t1 = Current.Kind;
+            var t2 = Peek(1).Kind;
+            var t3 = Peek(2).Kind;
+            var t4 = Peek(3).Kind;
 
-            var identifierToken = MatchToken(TokenKind.Identifier);
-            if (!TryParseParameterList(out var parameterList))
-            {
-                ResetPosition(position);
+            // all cases expect IDENTIFIER (
+            if (t1 != TokenKind.Identifier || t2 != TokenKind.OpenParenthesis)
                 return false;
-            }
 
-            TypeAnnotationSyntax? returnTypeAnnotation = null;
-            if (Current.Kind == TokenKind.Colon)
-            {
-                returnTypeAnnotation = ParseTypeAnnotation();
-            }
+            // case 1 & 2
+            var case1And2 = t3 == TokenKind.CloseParenthesis && (t4 == TokenKind.OpenBrace || t4 == TokenKind.Colon);
+            var case3 = t3 == TokenKind.Identifier && t4 == TokenKind.Colon;
 
-            syntax = new PrototypeSyntax(SyntaxTree, identifierToken, parameterList, returnTypeAnnotation);
+            if (!case1And2 && !case3)
+                return false;
+
+            syntax = (FunctionDeclarationSyntax)ParseFunctionDeclaration();
             return true;
         }
 

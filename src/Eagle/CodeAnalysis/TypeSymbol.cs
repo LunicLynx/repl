@@ -4,6 +4,26 @@ using System.Diagnostics;
 
 namespace Repl.CodeAnalysis
 {
+    public enum SpecialType
+    {
+        None,
+        String,
+        Void,
+        I8,
+        I16,
+        I32,
+        I64,
+        U8,
+        U16,
+        U32,
+        U64,
+        Bool,
+        UInt,
+        Int,
+        Char,
+        Error
+    }
+
     [DebuggerDisplay("{Name}")]
     public class TypeSymbol : Symbol
     {
@@ -13,8 +33,10 @@ namespace Repl.CodeAnalysis
         private ImmutableArray<MemberSymbol> _members;
         private ImmutableArray<TypeSymbol> _baseType;
 
-        private string _name;
+        private readonly string _name;
         public override SymbolKind Kind => SymbolKind.Type;
+
+        public SpecialType SpecialType { get; } = SpecialType.None;
 
         public override string Name
         {
@@ -46,20 +68,26 @@ namespace Repl.CodeAnalysis
             }
         }
 
-        public static readonly TypeSymbol Error = new TypeSymbol("?");
-        public static TypeSymbol String = new TypeSymbol("String");
-        public static TypeSymbol Void = new TypeSymbol("Void");
-        public static TypeSymbol I8 = new TypeSymbol("Int8");
-        public static TypeSymbol I16 = new TypeSymbol("Int16");
-        public static TypeSymbol I32 = new TypeSymbol("Int32");
-        public static TypeSymbol I64 = new TypeSymbol("Int64");
-        public static TypeSymbol U8 = new TypeSymbol("UInt8");
-        public static TypeSymbol U16 = new TypeSymbol("UInt16");
-        public static TypeSymbol U32 = new TypeSymbol("UInt32");
-        public static TypeSymbol U64 = new TypeSymbol("UInt64");
-        public static TypeSymbol Bool = new TypeSymbol("Boolean");
-        public static TypeSymbol Uint = U64;
-        public static TypeSymbol Int = I64;
+        public static readonly TypeSymbol Error = new TypeSymbol("?", SpecialType.Error);
+        public static TypeSymbol String = new TypeSymbol("String", SpecialType.String);
+        public static TypeSymbol Char = new TypeSymbol("Char", SpecialType.Char);
+        public static TypeSymbol Void = new TypeSymbol("Void", SpecialType.Void);
+        public static TypeSymbol I8 = new TypeSymbol("Int8", SpecialType.I8);
+        public static TypeSymbol I16 = new TypeSymbol("Int16", SpecialType.I16);
+        public static TypeSymbol I32 = new TypeSymbol("Int32", SpecialType.I32);
+        public static TypeSymbol I64 = new TypeSymbol("Int64", SpecialType.I64);
+        public static TypeSymbol U8 = new TypeSymbol("UInt8", SpecialType.U8);
+        public static TypeSymbol U16 = new TypeSymbol("UInt16", SpecialType.U16);
+        public static TypeSymbol U32 = new TypeSymbol("UInt32", SpecialType.U32);
+        public static TypeSymbol U64 = new TypeSymbol("UInt64", SpecialType.U64);
+        public static TypeSymbol Bool = new TypeSymbol("Boolean", SpecialType.Bool);
+        public static TypeSymbol UInt = new TypeSymbol("UInt", SpecialType.UInt);
+        public static TypeSymbol Int = new TypeSymbol("Int", SpecialType.Int);
+
+        private TypeSymbol(string name, SpecialType specialType) : this(name)
+        {
+            SpecialType = specialType;
+        }
 
         public TypeSymbol(string name, ImmutableArray<TypeSymbol> baseType, ImmutableArray<MemberSymbol> members)
         {
@@ -92,6 +120,8 @@ namespace Repl.CodeAnalysis
 
         public override string ToString()
         {
+            if (SpecialType != SpecialType.None && SpecialType != SpecialType.Error)
+                return SpecialType.ToString().ToLower();
             return Name;
         }
 
