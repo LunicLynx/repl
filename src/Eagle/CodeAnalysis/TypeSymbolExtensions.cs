@@ -18,6 +18,9 @@ namespace Repl.CodeAnalysis
             {"UInt64", typeof(ulong) },
             {"Boolean", typeof(bool) },
             {"String", typeof(string) },
+
+            {"UInt", typeof(ulong) },
+            {"Int", typeof(long) },
         };
 
         public static Type GetClrType(this TypeSymbol typeSymbol) =>

@@ -28,7 +28,7 @@ namespace Repl.CodeAnalysis.Binding
                 TypeSymbol.I16,
                 TypeSymbol.I32,
                 TypeSymbol.I64,
-                //TypeSymbol.Int,
+                TypeSymbol.Int,
             }.Where(x => x != null);
 
             var numericalTypesUnsigned = new[]
@@ -40,7 +40,7 @@ namespace Repl.CodeAnalysis.Binding
                 TypeSymbol.U16,
                 TypeSymbol.U32,
                 TypeSymbol.U64,
-                //TypeSymbol.Uint
+                TypeSymbol.UInt
             }.Where(x => x != null);
 
 

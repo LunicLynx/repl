@@ -407,7 +407,7 @@ namespace Repl.Tests
             var text = @"[foo](42)";
 
             var diagnostics = @"
-                Function 'foo' doesn't exist.
+                Symbol 'foo' doesn't exist.
             ";
 
             AssertDiagnostics(text, diagnostics);
