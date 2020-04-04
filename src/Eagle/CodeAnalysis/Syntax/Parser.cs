@@ -170,7 +170,9 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var returnKeyword = MatchToken(TokenKind.ReturnKeyword);
 
-            var value = ParseExpression();
+            ExpressionSyntax? value = null;
+            if (Current.Kind != TokenKind.CloseBrace)
+                value = ParseExpression();
 
             return new ReturnStatementSyntax(SyntaxTree, returnKeyword, value);
         }
@@ -459,7 +461,7 @@ namespace Repl.CodeAnalysis.Syntax
             var lowerBound = ParseExpression();
             var toKeyword = MatchToken(TokenKind.ToKeyword);
             var upperBound = ParseExpression();
-            var body = ParseBlockStatement();
+            var body = ParseStatement();
             return new ForStatementSyntax(SyntaxTree, forKeyword, identifierToken, equalsToken, lowerBound, toKeyword, upperBound, body);
         }
 
@@ -482,7 +484,7 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var ifKeyword = MatchToken(TokenKind.IfKeyword);
             var expression = ParseExpression();
-            var thenBlock = ParseBlockStatement();
+            var thenBlock = ParseStatement();
 
             var elseClause = ParseElseClause();
 
@@ -495,11 +497,9 @@ namespace Repl.CodeAnalysis.Syntax
                 return null;
 
             var elseKeyword = MatchToken(TokenKind.ElseKeyword);
-            var elseIfStatement = Current.Kind == TokenKind.IfKeyword
-                ? (StatementSyntax)ParseIfStatement()
-                : ParseBlockStatement();
+            var elseStatement = ParseStatement();
 
-            return new ElseClauseSyntax(SyntaxTree, elseKeyword, elseIfStatement);
+            return new ElseClauseSyntax(SyntaxTree, elseKeyword, elseStatement);
         }
 
         private StatementSyntax ParseVariableDeclaration()
@@ -634,6 +634,9 @@ namespace Repl.CodeAnalysis.Syntax
         public ExpressionSyntax ParsePrimaryExpression()
         {
             var result = ParsePrimaryExpressionStart();
+
+            if (result is LiteralExpressionSyntax)
+                return result;
 
             var done = false;
             while (!done)

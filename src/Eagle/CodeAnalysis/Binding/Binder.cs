@@ -316,10 +316,12 @@ namespace Repl.CodeAnalysis.Binding
             result.TryDeclare(TypeSymbol.I16);
             result.TryDeclare(TypeSymbol.I32);
             result.TryDeclare(TypeSymbol.I64);
+            result.TryDeclare(TypeSymbol.Int);
             result.TryDeclare(TypeSymbol.U8);
             result.TryDeclare(TypeSymbol.U16);
             result.TryDeclare(TypeSymbol.U32);
             result.TryDeclare(TypeSymbol.U64);
+            result.TryDeclare(TypeSymbol.UInt);
 
             //foreach (var f in BuiltinFunctions.GetAll())
             //    result.TryDeclareFunction(f);
@@ -462,7 +464,9 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
         {
-            var value = BindExpression(syntax.Value);
+            BoundExpression? value = null;
+            if (syntax.Value != null)
+                value = BindExpression(syntax.Value);
             return new BoundReturnStatement(value);
         }
 
@@ -783,12 +787,12 @@ namespace Repl.CodeAnalysis.Binding
         {
             var condition = BindExpression(syntax.Condition, TypeSymbol.Bool);
 
-            var thenBlock = BindBlockStatement(syntax.ThenBlock);
+            var thenStatement = BindStatement(syntax.ThenStatement);
 
             // Example for ?: operator -> if null its null of the right expression.type
             // var elseStatement = syntax.ElseClause ?: BindStatement(syntax.ElseClause.ElseStatement);
             var elseStatement = syntax.ElseClause == null ? null : BindStatement(syntax.ElseClause.ElseStatement);
-            return new BoundIfStatement(condition, thenBlock, elseStatement);
+            return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
 
         private BoundStatement BindVariableDeclaration(VariableDeclarationSyntax syntax)
@@ -865,7 +869,19 @@ namespace Repl.CodeAnalysis.Binding
             return BindConversion(syntax, targetType);
         }
 
-        private BoundExpression BindExpression(ExpressionSyntax syntax, bool allowTypes = true)
+        private BoundExpression BindExpression(ExpressionSyntax syntax, bool canBeVoid = false)
+        {
+            var result = BindExpressionInternal(syntax);
+            if (!canBeVoid && result.Type == TypeSymbol.Void)
+            {
+                Diagnostics.ReportExpressionMustHaveValue(syntax.Location);
+                return new BoundErrorExpression();
+            }
+
+            return result;
+        }
+
+        private BoundExpression BindExpressionInternal(ExpressionSyntax syntax, bool allowTypes = true)
         {
             switch (syntax)
             {
@@ -996,8 +1012,10 @@ namespace Repl.CodeAnalysis.Binding
                 return new BoundMethodCallExpression(t, method, boundArguments);
             }
 
+            var isNewExpression = false;
             if (target is NewExpressionSyntax ne)
             {
+                isNewExpression = true;
                 target = ne.TypeName;
             }
 
@@ -1007,13 +1025,7 @@ namespace Repl.CodeAnalysis.Binding
                 return new BoundErrorExpression();
             }
 
-            var allowedTypes = new[]
-            {
-                typeof(TypeSymbol),
-                typeof(FunctionSymbol),
-                typeof(MethodSymbol)
-            };
-            var symbol = GetSymbol(allowedTypes, n.IdentifierToken);
+            var symbol = GetSymbol(n.IdentifierToken);
 
             if (symbol is FunctionSymbol function)
             {
@@ -1026,7 +1038,7 @@ namespace Repl.CodeAnalysis.Binding
                 return new BoundFunctionCallExpression(function, boundArguments);
             }
 
-            if (symbol is TypeSymbol type)
+            if (symbol is TypeSymbol type && isNewExpression)
             {
                 var constructor = type.Members.OfType<ConstructorSymbol>().First();
 
@@ -1041,7 +1053,6 @@ namespace Repl.CodeAnalysis.Binding
 
             if (symbol is MethodSymbol method1)
             {
-
                 //syntax.Target
                 var arguments = syntax.Arguments.OfType<ExpressionSyntax>().ToArray();
                 var parameters = method1.Parameters;
@@ -1051,6 +1062,9 @@ namespace Repl.CodeAnalysis.Binding
 
                 return new BoundMethodCallExpression(null, method1, boundArguments);
             }
+
+            if (symbol != null)
+                Diagnostics.ReportNotAFunction(n.Location, symbol);
 
             return new BoundErrorExpression();
         }
@@ -1189,7 +1203,7 @@ namespace Repl.CodeAnalysis.Binding
                 case TokenKind.StringKeyword:
                     return "String";
                 case TokenKind.IntKeyword:
-                    return "Int64";
+                    return "Int";
                 case TokenKind.I8Keyword:
                     return "Int8";
                 case TokenKind.I16Keyword:
@@ -1199,7 +1213,7 @@ namespace Repl.CodeAnalysis.Binding
                 case TokenKind.I64Keyword:
                     return "Int64";
                 case TokenKind.UintKeyword:
-                    return "UInt64";
+                    return "UInt";
                 case TokenKind.U8Keyword:
                     return "UInt8";
                 case TokenKind.U16Keyword:
@@ -1242,7 +1256,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
         {
-            var target = BindExpression(syntax.Target);
+            var target = BindExpressionInternal(syntax.Target);
             var expression = BindExpression(syntax.Expression);
 
             var type = TypeSymbol.Error;
@@ -1289,6 +1303,7 @@ namespace Repl.CodeAnalysis.Binding
                     break;
                 case TokenKind.StringLiteral:
                     value = token.Text.Substring(1, token.Text.Length - 2)
+                        .Replace(@"\""", "\"")
                         .Replace(@"\t", "\t")
                         .Replace(@"\r", "\r")
                         .Replace(@"\n", "\n");
@@ -1321,6 +1336,9 @@ namespace Repl.CodeAnalysis.Binding
         {
             var left = BindExpression(syntax.Left, false);
             var right = BindExpression(syntax.Right);
+
+            if (left.Type == TypeSymbol.Error || right.Type == TypeSymbol.Error)
+                return new BoundErrorExpression();
 
             var operatorToken = syntax.OperatorToken;
             var boundOperator = BoundBinaryOperator.Bind(operatorToken.Kind, left.Type, right.Type);

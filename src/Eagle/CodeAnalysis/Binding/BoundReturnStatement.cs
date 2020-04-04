@@ -4,9 +4,9 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class BoundReturnStatement : BoundStatement
     {
-        public BoundExpression Value { get; }
+        public BoundExpression? Value { get; }
 
-        public BoundReturnStatement(BoundExpression value)
+        public BoundReturnStatement(BoundExpression? value)
         {
             Value = value;
         }

@@ -63,7 +63,7 @@ namespace Repl.Tests
         [InlineData("!false", true)]
         [InlineData("var a = 10", 10L)]
         [InlineData("\"test\"", "test")]
-        [InlineData("\"te\"\"st\"", "te\"st")]
+        [InlineData("\"te\\\"st\"", "te\"st")]
         [InlineData("\"test\" == \"test\"", true)]
         [InlineData("\"test\" != \"test\"", false)]
         [InlineData("\"test\" == \"abc\"", false)]
@@ -78,9 +78,9 @@ namespace Repl.Tests
         [InlineData("{ var i = 10 var result = 0 while i > 0 { result = result + i i = i - 1} result }", 55L)]
         [InlineData("{ var result = 0 for i = 1 to 10 { result = result + i } result }", 55L)]
         [InlineData("{ var a = 10 for i = 1 to (a = a - 1) { } a }", 9L)]
-        [InlineData("{ var a = 0 do a = a + 1 while a < 10 a}", 10L)]
+        //[InlineData("{ var a = 0 do a = a + 1 while a < 10 a}", 10L)]
         [InlineData("{ var i = 0 while i < 5 { i = i + 1 if i == 5 continue } i }", 5L)]
-        [InlineData("{ var i = 0 do { i = i + 1 if i == 5 continue } while i < 5 i }", 5L)]
+        //[InlineData("{ var i = 0 do { i = i + 1 if i == 5 continue } while i < 5 i }", 5L)]
         public void Evaluator_Computes_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
@@ -240,24 +240,24 @@ namespace Repl.Tests
             AssertDiagnostics(text, diagnostics);
         }
 
-        [Fact]
-        public void Evaluator_DoWhileStatement_Reports_CannotConvert()
-        {
-            var text = @"
-                {
-                    var x = 0
-                    do
-                        x = 10
-                    while [10]
-                }
-            ";
+        //[Fact]
+        //public void Evaluator_DoWhileStatement_Reports_CannotConvert()
+        //{
+        //    var text = @"
+        //        {
+        //            var x = 0
+        //            do
+        //                x = 10
+        //            while [10]
+        //        }
+        //    ";
 
-            var diagnostics = @"
-                Cannot convert type 'int' to 'bool'.
-            ";
+        //    var diagnostics = @"
+        //        Cannot convert type 'int' to 'bool'.
+        //    ";
 
-            AssertDiagnostics(text, diagnostics);
-        }
+        //    AssertDiagnostics(text, diagnostics);
+        //}
 
         [Fact]
         public void Evaluator_ForStatement_Reports_CannotConvert_LowerBound()
@@ -424,7 +424,7 @@ namespace Repl.Tests
             ";
 
             var diagnostics = @"
-                'foo' is not a function.
+                Reference 'foo' is a 'Variable'. The target must be a function, method or delegate.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -503,7 +503,7 @@ namespace Repl.Tests
         public void Evaluator_Expression_Must_Have_Value()
         {
             var text = @"
-                function test(n: int)
+                test(n: int)
                 {
                     return
                 }

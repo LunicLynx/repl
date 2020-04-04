@@ -98,7 +98,14 @@ namespace Repl.CodeAnalysis.Syntax
             else if (c == '"')
             {
                 while (Current != '"' && Current != '\0')
+                {
+                    if (Current == '\\')
+                    {
+                        Next();
+                    }
+
                     Next();
+                }
 
                 if (Current == '"')
                     Next();

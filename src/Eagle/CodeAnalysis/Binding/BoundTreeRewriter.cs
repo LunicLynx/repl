@@ -50,7 +50,9 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundStatement RewriteReturnStatement(BoundReturnStatement node)
         {
-            var value = RewriteExpression(node.Value);
+            BoundExpression? value = null;
+            if (node.Value != null)
+                value = RewriteExpression(node.Value);
             if (value == node.Value)
                 return node;
             return new BoundReturnStatement(value);
@@ -150,11 +152,11 @@ namespace Repl.CodeAnalysis.Binding
         protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)
         {
             var condition = RewriteExpression(node.Condition);
-            var thenBlock = RewriteBlockStatement(node.ThenBlock);
+            var thenStatement = RewriteStatement(node.ThenStatement);
             var elseStatement = RewriteStatement(node.ElseStatement);
-            if (condition == node.Condition && thenBlock == node.ThenBlock && elseStatement == node.ElseStatement)
+            if (condition == node.Condition && thenStatement == node.ThenStatement && elseStatement == node.ElseStatement)
                 return node;
-            return new BoundIfStatement(condition, thenBlock, elseStatement);
+            return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
 
         protected virtual BoundStatement RewriteForStatement(BoundForStatement node)

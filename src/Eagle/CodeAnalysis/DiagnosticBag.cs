@@ -165,5 +165,17 @@ namespace Repl.CodeAnalysis
             var message = $"Reference '{symbol.Name}' is a '{symbol.Kind}'. The assignment target must be an assignable variable, field, property or indexer.";
             Report(location, message);
         }
+
+        public void ReportNotAFunction(TextLocation location, Symbol symbol)
+        {
+            var message = $"Reference '{symbol.Name}' is a '{symbol.Kind}'. The target must be a function, method or delegate.";
+            Report(location, message);
+        }
+
+        public void ReportExpressionMustHaveValue(TextLocation location)
+        {
+            var message = "Expression must have a value.";
+            Report(location, message);
+        }
     }
 }

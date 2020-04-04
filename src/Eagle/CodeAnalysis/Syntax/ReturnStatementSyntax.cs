@@ -5,9 +5,9 @@ namespace Repl.CodeAnalysis.Syntax
     public class ReturnStatementSyntax : StatementSyntax
     {
         public Token ReturnKeyword { get; }
-        public ExpressionSyntax Value { get; }
+        public ExpressionSyntax? Value { get; }
 
-        public ReturnStatementSyntax(SyntaxTree syntaxTree, Token returnKeyword, ExpressionSyntax value) 
+        public ReturnStatementSyntax(SyntaxTree syntaxTree, Token returnKeyword, ExpressionSyntax? value) 
             : base(syntaxTree)
         {
             ReturnKeyword = returnKeyword;

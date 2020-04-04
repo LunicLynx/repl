@@ -109,7 +109,7 @@ namespace Repl.CodeAnalysis.Lowering
 
                 var result = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(
                     gotoFalse,
-                    node.ThenBlock,
+                    node.ThenStatement,
                     endLabelStatement));
 
                 return RewriteStatement(result);
@@ -126,7 +126,7 @@ namespace Repl.CodeAnalysis.Lowering
 
                 var result = new BoundBlockStatement(ImmutableArray.Create(
                     gotoFalse,
-                    node.ThenBlock,
+                    node.ThenStatement,
                     gotoEndStatement,
                     elseLabelStatement,
                     node.ElseStatement,
@@ -164,7 +164,7 @@ namespace Repl.CodeAnalysis.Lowering
                 increment
             ));
 
-            var whileStatement = new BoundWhileStatement(condition, whileBody, node.BreakLabel, node.ContinueLabel);
+            var whileStatement = new BoundWhileStatement(condition, whileBody, node.BreakLabel, GenerateLabel());
 
             var result = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(
                 variableDeclaration,

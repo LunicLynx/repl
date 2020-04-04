@@ -6,15 +6,15 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token IfKeyword { get; }
         public ExpressionSyntax Condition { get; }
-        public BlockStatementSyntax ThenBlock { get; }
+        public StatementSyntax ThenStatement { get; }
         public ElseClauseSyntax ElseClause { get; }
 
-        public IfStatementSyntax(SyntaxTree syntaxTree, Token ifKeyword, ExpressionSyntax condition, BlockStatementSyntax thenBlock, ElseClauseSyntax elseClause)
+        public IfStatementSyntax(SyntaxTree syntaxTree, Token ifKeyword, ExpressionSyntax condition, StatementSyntax thenStatement, ElseClauseSyntax elseClause)
             : base(syntaxTree)
         {
             IfKeyword = ifKeyword;
             Condition = condition;
-            ThenBlock = thenBlock;
+            ThenStatement = thenStatement;
             ElseClause = elseClause;
         }
 
@@ -22,7 +22,7 @@ namespace Repl.CodeAnalysis.Syntax
         {
             yield return IfKeyword;
             yield return Condition;
-            yield return ThenBlock;
+            yield return ThenStatement;
 
             if (ElseClause != null)
             {

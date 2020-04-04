@@ -188,7 +188,9 @@ namespace Repl.CodeAnalysis
                         index++;
                         break;
                     case BoundReturnStatement r:
-                        return EvaluateExpression(r.Value);
+                        if (r.Value != null)
+                            return EvaluateExpression(r.Value);
+                        return _lastValue;
                     default:
                         throw new Exception($"Unexpected node {s.GetType()}");
                 }
