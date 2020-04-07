@@ -6,9 +6,9 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public TokenKind Kind { get; }
         public override TextSpan Span { get; }
-        public string Text { get; }
+        public string? Text { get; }
 
-        public Token(SyntaxTree syntaxTree, TokenKind kind, TextSpan span, string text) : base(syntaxTree)
+        public Token(SyntaxTree syntaxTree, TokenKind kind, TextSpan span, string? text) : base(syntaxTree)
         {
             Kind = kind;
             Span = span;

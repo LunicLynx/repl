@@ -171,18 +171,19 @@ namespace Repl.Tests
         public void Evaluator_FunctionParameters_NoInfiniteLoop()
         {
             var text = @"
-                function hi(name: string[[[=]]][)]
+                extern Print(s: string)
+                hi(name: string[[[=]]][)]
                 {
-                    print(""Hi "" + name + ""!"" )
+                    Print(""Hi "" + name + ""!"" )
                 }[]
             ";
 
             var diagnostics = @"
-                Unexpected token <EqualsToken>, expected <CloseParenthesisToken>.
-                Unexpected token <EqualsToken>, expected <OpenBraceToken>.
-                Unexpected token <EqualsToken>, expected <IdentifierToken>.
-                Unexpected token <CloseParenthesisToken>, expected <IdentifierToken>.
-                Unexpected token <EndOfFileToken>, expected <CloseBraceToken>.
+                Unexpected token <Equals>, expected <CloseParenthesis>.
+                Unexpected token <Equals>, expected <OpenBrace>.
+                Unexpected token <Equals>, expected <Identifier>.
+                Unexpected token <CloseParenthesis>, expected <Identifier>.
+                Unexpected token <EndOfFile>, expected <CloseBrace>.
             ";
 
             AssertDiagnostics(text, diagnostics);

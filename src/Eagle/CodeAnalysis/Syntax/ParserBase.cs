@@ -39,7 +39,7 @@ namespace Repl.CodeAnalysis.Syntax
                 return NextToken();
 
             Diagnostics.ReportUnexpectedToken(Current.Location, Current.Kind, kind);
-            return new Token(SyntaxTree, kind, new TextSpan(0, 0), "");
+            return new Token(SyntaxTree, kind, new TextSpan(Current.Span.Start, 0), null);
         }
 
         protected int GetPosition()

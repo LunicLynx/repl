@@ -382,20 +382,23 @@ namespace Repl.CodeAnalysis.Syntax
 
             var parameters = ImmutableArray.CreateBuilder<SyntaxNode>();
 
-            var first = true;
-            while (Current.Kind != TokenKind.CloseParenthesis &&
+            var parseNextParameter = true;
+            while (parseNextParameter &&
+                Current.Kind != TokenKind.CloseParenthesis &&
                    Current.Kind != TokenKind.EndOfFile)
             {
-                if (!first)
+                var parameter = ParseParameter();
+                parameters.Add(parameter);
+
+                if (Current.Kind == TokenKind.Comma)
                 {
                     var commaToken = MatchToken(TokenKind.Comma);
                     parameters.Add(commaToken);
                 }
-
-                first = false;
-
-                var parameter = ParseParameter();
-                parameters.Add(parameter);
+                else
+                {
+                    parseNextParameter = false;
+                }
             }
 
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
@@ -527,18 +530,18 @@ namespace Repl.CodeAnalysis.Syntax
 
             var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
 
-            var startToken = Current;
+
             while (Current.Kind != TokenKind.EndOfFile &&
                    Current.Kind != TokenKind.CloseBrace)
             {
+                var startToken = Current;
+
                 var statement = ParseStatement();
                 statements.Add(statement);
 
                 // Make sure we consume tokens
                 if (Current == startToken)
                     NextToken();
-
-                startToken = Current;
             }
 
             var closeBraceToken = MatchToken(TokenKind.CloseBrace);
