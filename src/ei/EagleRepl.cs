@@ -110,7 +110,7 @@ namespace Repl
             if (_showTree)
             {
                 var printer = new Printer();
-                foreach (var statement in syntaxTree.Root.Nodes)
+                foreach (var statement in syntaxTree.Root.Members)
                 {
                     printer.Print(statement);
                 }

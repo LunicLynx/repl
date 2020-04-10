@@ -5,19 +5,19 @@ namespace Repl.CodeAnalysis.Binding
 {
     public abstract class BoundTreeRewriter
     {
-        public virtual BoundNode RewriteNode(BoundNode node)
-        {
-            switch (node)
-            {
-                case BoundStatement s: return RewriteStatement(s);
-                case BoundExternDeclaration e: return RewriteExternDeclaration(e);
-                case BoundFunctionDeclaration f: return RewriteFunctionDeclaration(f);
-                case BoundStructDeclaration s: return RewriteStructDeclaration(s);
-                case BoundAliasDeclaration a: return RewriteAliasDeclaration(a);
-                case BoundConstDeclaration c: return RewriteConstDeclaration(c);
-                default: throw new Exception($"Unexpected node '{node.GetType().Name}'");
-            }
-        }
+        //public virtual BoundNode RewriteNode(BoundNode node)
+        //{
+        //    switch (node)
+        //    {
+        //        case BoundStatement s: return RewriteStatement(s);
+        //        case BoundExternDeclaration e: return RewriteExternDeclaration(e);
+        //        case BoundFunctionDeclaration f: return RewriteFunctionDeclaration(f);
+        //        case BoundStructDeclaration s: return RewriteStructDeclaration(s);
+        //        case BoundAliasDeclaration a: return RewriteAliasDeclaration(a);
+        //        case BoundConstDeclaration c: return RewriteConstDeclaration(c);
+        //        default: throw new Exception($"Unexpected node '{node.GetType().Name}'");
+        //    }
+        //}
 
         protected virtual BoundNode RewriteConstDeclaration(BoundConstDeclaration node)
         {

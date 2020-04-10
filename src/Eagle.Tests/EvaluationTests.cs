@@ -193,7 +193,7 @@ namespace Repl.Tests
         public void Evaluator_FunctionReturn_Missing()
         {
             var text = @"
-                function [add](a: int, b: int): int
+                [add](a: int, b: int): int
                 {
                 }
             ";

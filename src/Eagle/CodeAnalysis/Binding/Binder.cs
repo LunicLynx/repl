@@ -10,44 +10,74 @@ namespace Repl.CodeAnalysis.Binding
 {
     public class Binder
     {
-        private Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
+        private readonly bool _isScript;
+        private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
         private int _labelCounter;
         private IScope _scope;
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
-        public Binder(BoundScope parent)
+        public Binder(bool isScript, BoundScope parent)
         {
+            _isScript = isScript;
             _scope = new BoundScope(parent);
         }
 
-        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, ImmutableArray<SyntaxTree> syntaxTrees)
+        public static BoundGlobalScope BindGlobalScope(bool isScript, BoundGlobalScope previous, ImmutableArray<SyntaxTree> syntaxTrees)
         {
-            var builtInSymbols = ImmutableArray.Create<Symbol>();
+            var parent = CreateParentScope(previous);
+            var binder = new Binder(isScript, parent);
 
-            previous = previous ?? new BoundGlobalScope(null, ImmutableArray<Diagnostic>.Empty,
-                           builtInSymbols, null);
-            var parent = CreateParentScopes(previous);
-            var binder = new Binder(parent);
+            // get all declarations
+            var nodes = syntaxTrees.SelectMany(st => st.Root.Members)
+                .OfType<FunctionDeclarationSyntax>()
 
-            var nodes = syntaxTrees.SelectMany(st => st.Root.Nodes).ToImmutableArray();
+            // get all statements
 
+            var nodes = syntaxTrees.SelectMany(st => st.Root.Members).ToImmutableArray();
             // create types
             binder.DeclareTypes(nodes);
-
             // create members
             binder.DeclareMembers(nodes);
-
             // bind together
             var boundNodes = binder.BindNodes(nodes);
-            var diagnostics = binder.Diagnostics.ToImmutableArray();
+
             var symbols = binder._scope.GetDeclaredSymbols();
+            var diagnostics = binder.Diagnostics.ToImmutableArray();
+
+            if (previous != null)
+                diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
+
             return new BoundGlobalScope(previous, diagnostics, symbols, new BoundScriptUnit(boundNodes));
         }
 
         public static BoundUnit BindProgram(BoundGlobalScope globalScope)
         {
-            return Lowerer.Lower(globalScope);
+            var parentScope = CreateParentScope(globalScope);
+
+            var scope = globalScope;
+
+            // the logic here is to rebind the function bodies again
+            // if there are new implementation in a new submission
+            // we want to use this new implementation also in old
+            // function bodies
+            while (scope != null)
+            {
+                // TODO iterate throug every symbol that has a statement body
+
+                scope = scope.Previous;
+            }
+
+            var statements = unit.GetChildren().OfType<BoundStatement>().ToImmutableArray();
+            var declarations = unit.GetChildren().Except(statements);//.Select(lowerer.RewriteNode);
+
+            var boundBlockStatement = new BoundBlockStatement(statements);
+            var x = Lowerer.Lower(boundBlockStatement);
+
+            return new BoundScriptUnit(declarations.Concat(new[] { x }).ToImmutableArray());
+
+
+            //return Lowerer.Lower(globalScope);
         }
 
         private void DeclareMembers(ImmutableArray<SyntaxNode> nodes)
@@ -279,7 +309,7 @@ namespace Repl.CodeAnalysis.Binding
             //}
         }
 
-        private static BoundScope CreateParentScopes(BoundGlobalScope previous)
+        private static BoundScope CreateParentScope(BoundGlobalScope previous)
         {
             var stack = new Stack<BoundGlobalScope>();
             while (previous != null)
@@ -615,7 +645,7 @@ namespace Repl.CodeAnalysis.Binding
 
             DeclareParameters(parameterList, parameterSymbols);
 
-            var body = BindBlockStatement(syntax.Body);
+            var body = BindStatement(syntax.Body);
             _scope = _scope.Parent;
 
             return new BoundFunctionDeclaration(function, body);
@@ -860,7 +890,7 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
         {
-            var expression = BindExpression(syntax.Expression);
+            var expression = BindExpression(syntax.Expression, canBeVoid: true);
             return new BoundExpressionStatement(expression);
         }
 

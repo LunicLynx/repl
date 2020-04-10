@@ -5,19 +5,19 @@ namespace Repl.CodeAnalysis.Syntax
 {
     public class CompilationUnitSyntax : SyntaxNode
     {
-        public ImmutableArray<SyntaxNode> Nodes { get; }
+        public ImmutableArray<MemberSyntax> Members { get; }
         public Token EndOfFileToken { get; }
 
-        public CompilationUnitSyntax(SyntaxTree syntaxTree, ImmutableArray<SyntaxNode> nodes, Token endOfFileToken)
+        public CompilationUnitSyntax(SyntaxTree syntaxTree, ImmutableArray<MemberSyntax> members, Token endOfFileToken)
             : base(syntaxTree)
         {
-            Nodes = nodes;
+            Members = members;
             EndOfFileToken = endOfFileToken;
         }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            foreach (var node in Nodes)
+            foreach (var node in Members)
             {
                 yield return node;
             }

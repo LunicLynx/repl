@@ -585,7 +585,14 @@ namespace Repl.CodeAnalysis.Syntax
             //    return new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
             //}
 
+            var startToken = Current;
+
+            // if this did not advance
             var syntax = ParseBinaryExpression();
+
+            // we did not parse anything
+            if (Current == startToken) return syntax;
+
             if (Current.Kind == TokenKind.Equals)
             {
                 var equalsToken = MatchToken(TokenKind.Equals);

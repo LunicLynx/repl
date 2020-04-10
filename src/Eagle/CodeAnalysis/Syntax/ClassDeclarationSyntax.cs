@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Syntax
 {
-    public class ClassDeclarationSyntax : SyntaxNode
+    public class ClassDeclarationSyntax : MemberSyntax
     {
         public Token ClassKeyword { get; }
         public Token IdentifierToken { get; }
