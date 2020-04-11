@@ -16,8 +16,4 @@
     <ProjectReference Include="..\Eagle\Eagle.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="CodeAnalysis\" />
-  </ItemGroup>
-
 </Project>

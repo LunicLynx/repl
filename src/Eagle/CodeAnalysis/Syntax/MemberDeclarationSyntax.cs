@@ -15,7 +15,5 @@ namespace Repl.CodeAnalysis.Syntax
             IdentifierToken = identifierToken;
             TypeAnnotation = typeAnnotation;
         }
-
-        public abstract override IEnumerable<SyntaxNode> GetChildren();
     }
 }

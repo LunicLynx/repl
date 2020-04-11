@@ -34,9 +34,10 @@ namespace Repl.CodeAnalysis.CodeGen
         private TypeSymbol _intType;
         private TypeSymbol _uintType;
 
-        public Value Generate(BoundUnit unit)
+        public Value Generate(BoundProgram program)
         {
-            var children = unit.GetChildren().ToList();
+
+            BoundNode[] children = null;
 
             var decl = children.OfType<BoundStructDeclaration>().ToList();
 
@@ -105,9 +106,9 @@ namespace Repl.CodeAnalysis.CodeGen
                 case BoundFunctionDeclaration f:
                     GenerateFunctionDeclaration(f);
                     break;
-                case BoundExternDeclaration e:
-                    GenerateExternDeclaration(e);
-                    break;
+                //case BoundExternDeclaration e:
+                //    GenerateExternDeclaration(e);
+                //    break;
                 case BoundConstDeclaration c:
                     GenerateConstDeclaration(c);
                     break;
@@ -265,12 +266,12 @@ namespace Repl.CodeAnalysis.CodeGen
             }
         }
 
-        private void GenerateExternDeclaration(BoundExternDeclaration node)
-        {
-            var ft = CreateFunctionType(node.Function);
-            var f = _context.Module.AddFunction(ft, node.Function.Name);
-            _context.Symbols[node.Function] = f;
-        }
+        //private void GenerateExternDeclaration(BoundExternDeclaration node)
+        //{
+        //    var ft = CreateFunctionType(node.Function);
+        //    var f = _context.Module.AddFunction(ft, node.Function.Name);
+        //    _context.Symbols[node.Function] = f;
+        //}
 
         private void GenerateFunctionDeclaration(BoundFunctionDeclaration node)
         {

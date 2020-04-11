@@ -11,10 +11,5 @@ namespace Repl.CodeAnalysis.Syntax
         {
             Expression = expression;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return Expression;
-        }
     }
 }

@@ -17,17 +17,5 @@ namespace Repl.CodeAnalysis.Syntax
             ThenStatement = thenStatement;
             ElseClause = elseClause;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return IfKeyword;
-            yield return Condition;
-            yield return ThenStatement;
-
-            if (ElseClause != null)
-            {
-                yield return ElseClause;
-            }
-        }
     }
 }

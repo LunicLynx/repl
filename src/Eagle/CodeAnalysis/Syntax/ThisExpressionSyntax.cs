@@ -11,10 +11,5 @@ namespace Repl.CodeAnalysis.Syntax
         {
             ThisKeyword = thisKeyword;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return ThisKeyword;
-        }
     }
 }

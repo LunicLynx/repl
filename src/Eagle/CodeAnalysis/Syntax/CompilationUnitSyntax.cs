@@ -14,14 +14,5 @@ namespace Repl.CodeAnalysis.Syntax
             Members = members;
             EndOfFileToken = endOfFileToken;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            foreach (var node in Members)
-            {
-                yield return node;
-            }
-            yield return EndOfFileToken;
-        }
     }
 }

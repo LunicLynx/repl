@@ -5,7 +5,7 @@
         // Other
         EndOfFile,
         Bad,
-        WhiteSpace,
+        Whitespace,
         SingleLineComment,
         MultiLineComment,
 
@@ -54,8 +54,7 @@
         ContinueKeyword,
         ToKeyword,
         ExternKeyword,
-        StructKeyword,
-        ClassKeyword,
+        ObjectKeyword,
         NewKeyword,
         AliasKeyword,
         ConstKeyword,

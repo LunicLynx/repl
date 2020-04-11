@@ -18,12 +18,5 @@ namespace Repl.CodeAnalysis.Syntax
             Arguments = arguments;
             CloseParenthesisToken = closeParenthesisToken;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return Target;
-            yield return OpenParenthesisToken;
-            yield return CloseParenthesisToken;
-        }
     }
 }

@@ -16,7 +16,6 @@ namespace Repl.CodeAnalysis.Binding
         public bool IsIdentity { get; }
         public bool IsExplicit => Exists && !IsImplicit;
 
-
         private Conversion(bool exists, bool isIdentity, bool isImplicit)
         {
             IsImplicit = isImplicit;
@@ -28,6 +27,32 @@ namespace Repl.CodeAnalysis.Binding
         {
             if (from == to)
                 return Identity;
+
+            if (from != TypeSymbol.Void && to == TypeSymbol.Any)
+            {
+                return Implicit;
+            }
+
+            if (from == TypeSymbol.Any && to != TypeSymbol.Void)
+            {
+                return Explicit;
+            }
+
+            // TODO remove, if we want something like this
+            // then we should have a ToString method or something like that
+            // better would be a trait / interface
+            if (from == TypeSymbol.Bool || from.IsInteger())
+            {
+                if (to == TypeSymbol.String)
+                    return Explicit;
+            }
+
+            // TODO "same" as above. There should be a parse function or convertible trait / interface.
+            if (from == TypeSymbol.String)
+            {
+                if (to == TypeSymbol.Bool || to.IsInteger())
+                    return Explicit;
+            }
 
             if (from.IsInteger() && to.IsInteger())
             {

@@ -4,6 +4,11 @@
     {
         public abstract SymbolKind Kind { get; }
         // Type ?
-        public abstract string Name { get; }
+        public string Name { get; }
+
+        protected Symbol(string name)
+        {
+            Name = name;
+        }
     }
 }

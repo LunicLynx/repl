@@ -11,10 +11,5 @@ namespace Repl.CodeAnalysis.Syntax
         {
             TypeOrIdentifierToken = typeOrIdentifierToken;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return TypeOrIdentifierToken;
-        }
     }
 }

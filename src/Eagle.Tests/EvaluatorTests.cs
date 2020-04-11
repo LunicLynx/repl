@@ -80,8 +80,8 @@ A().b
         private static object Evaluate(string source)
         {
             var tree = SyntaxTree.Parse(source);
-            var compilation = new Compilation(tree);
-            var evaluationResult = compilation.Evaluate(new Dictionary<Symbol, object>());
+            var compilation = Compilation.CreateScript(null, tree);
+            var evaluationResult = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
             if (evaluationResult.Diagnostics.Any())
             {
                 throw new Exception(evaluationResult.Diagnostics.First().Message);

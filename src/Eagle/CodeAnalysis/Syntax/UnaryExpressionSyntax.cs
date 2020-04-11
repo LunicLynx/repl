@@ -13,12 +13,5 @@ namespace Repl.CodeAnalysis.Syntax
             OperatorToken = operatorToken;
             Operand = operand;
         }
-
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return OperatorToken;
-            yield return Operand;
-        }
     }
 }

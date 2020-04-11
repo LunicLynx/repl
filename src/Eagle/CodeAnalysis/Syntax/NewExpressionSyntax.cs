@@ -13,11 +13,5 @@ namespace Repl.CodeAnalysis.Syntax
             NewKeyword = newKeyword;
             TypeName = typeName;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return NewKeyword;
-            yield return TypeName;
-        }
     }
 }

@@ -11,10 +11,5 @@ namespace Repl.CodeAnalysis.Syntax
         {
             IdentifierToken = identifierToken;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return IdentifierToken;
-        }
     }
 }

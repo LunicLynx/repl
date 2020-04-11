@@ -2,7 +2,7 @@
 
 namespace Repl.CodeAnalysis.Syntax
 {
-    public class ConstDeclarationSyntax : SyntaxNode
+    public class ConstDeclarationSyntax : MemberSyntax
     {
         public Token ConstKeyword { get; }
         public Token IdentifierToken { get; }
@@ -19,16 +19,6 @@ namespace Repl.CodeAnalysis.Syntax
             TypeAnnotation = typeAnnotation;
             EqualsToken = equalsToken;
             Initializer = initializer;
-        }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return ConstKeyword;
-            yield return IdentifierToken;
-            if (TypeAnnotation != null)
-                yield return TypeAnnotation;
-            yield return EqualsToken;
-            yield return Initializer;
         }
     }
 }

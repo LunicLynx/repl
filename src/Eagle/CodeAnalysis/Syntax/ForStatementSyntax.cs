@@ -23,16 +23,5 @@ namespace Repl.CodeAnalysis.Syntax
             UpperBound = upperBound;
             Body = body;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return ForKeyword;
-            yield return IdentifierToken;
-            yield return EqualsToken;
-            yield return LowerBound;
-            yield return ToKeyword;
-            yield return UpperBound;
-            yield return Body;
-        }
     }
 }

@@ -11,10 +11,5 @@ namespace Repl.CodeAnalysis.Syntax
         {
             BreakKeyword = breakKeyword;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return BreakKeyword;
-        }
     }
 }

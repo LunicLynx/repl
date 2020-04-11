@@ -14,14 +14,5 @@ namespace Repl.CodeAnalysis.Syntax
             ColonToken = colonToken;
             Types = types;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return ColonToken;
-            foreach (var syntaxNode in Types)
-            {
-                yield return syntaxNode;
-            }
-        }
     }
 }

@@ -15,7 +15,7 @@ namespace Repl.Tests
 
             var syntaxTree = SyntaxTree.Parse(source);
 
-            var scope = Binder.BindGlobalScope(null, ImmutableArray.Create(syntaxTree));
+            //var scope = Binder.BindGlobalScope(null, ImmutableArray.Create(syntaxTree));
         }
     }
 }

@@ -8,9 +8,8 @@ namespace Repl.CodeAnalysis
         public ImmutableArray<ParameterSymbol> Parameters { get; }
 
         public ConstructorSymbol(TypeSymbol type, ImmutableArray<ParameterSymbol> parameters)
-        : base(type.Name, type)
+            : base(type.Name, type)
         {
-            Type = type;
             Parameters = parameters;
         }
         

@@ -19,7 +19,7 @@ namespace Repl.CodeAnalysis.Syntax
             {
                 token = lexer.Lex();
 
-                if (token.Kind != TokenKind.WhiteSpace &&
+                if (token.Kind != TokenKind.Whitespace &&
                     token.Kind != TokenKind.SingleLineComment &&
                     token.Kind != TokenKind.MultiLineComment &&
                     token.Kind != TokenKind.Bad)
@@ -32,12 +32,12 @@ namespace Repl.CodeAnalysis.Syntax
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
-            var nodes = ParseStatementsOrDeclarations();
+            var members = ParseMembers();
             var endOfFileToken = MatchToken(TokenKind.EndOfFile);
-            return new CompilationUnitSyntax(SyntaxTree, nodes, endOfFileToken);
+            return new CompilationUnitSyntax(SyntaxTree, members, endOfFileToken);
         }
 
-        public bool TryParseDeclaration([NotNullWhen(true)]out SyntaxNode? node)
+        public bool TryParseDeclaration([NotNullWhen(true)]out MemberSyntax? node)
         {
             node = null;
             switch (Current.Kind)
@@ -48,11 +48,8 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.ExternKeyword:
                     node = ParseExternDeclaration();
                     return true;
-                case TokenKind.StructKeyword:
-                    node = ParseStructDeclaration();
-                    return true;
-                case TokenKind.ClassKeyword:
-                    node = ParseClassKeyword();
+                case TokenKind.ObjectKeyword:
+                    node = ParseObjectDeclaration();
                     return true;
                 case TokenKind.ConstKeyword:
                     node = ParseConstDeclaration();
@@ -81,12 +78,12 @@ namespace Repl.CodeAnalysis.Syntax
             }
         }
 
-        private SyntaxNode ParseClassKeyword()
+        private MemberSyntax ParseObjectDeclaration()
         {
-            var structKeyword = MatchToken(TokenKind.ClassKeyword);
+            var objectKeyword = MatchToken(TokenKind.ObjectKeyword);
             var identifierToken = MatchToken(TokenKind.Identifier);
 
-            _structIdentifier = identifierToken;
+            //_structIdentifier = identifierToken;
 
             BaseTypeSyntax baseType = null;
             if (Current.Kind == TokenKind.Colon)
@@ -111,10 +108,10 @@ namespace Repl.CodeAnalysis.Syntax
                 startToken = Current;
             }
             var closeBraceToken = MatchToken(TokenKind.CloseBrace);
-            return new ClassDeclarationSyntax(SyntaxTree, structKeyword, identifierToken, baseType, openBraceToken, builder.ToImmutable(), closeBraceToken);
+            return new ObjectDeclarationSyntax(SyntaxTree, objectKeyword, identifierToken, baseType, openBraceToken, builder.ToImmutable(), closeBraceToken);
         }
 
-        private SyntaxNode ParseConstDeclaration()
+        private MemberSyntax ParseConstDeclaration()
         {
             var constKeyword = MatchToken(TokenKind.ConstKeyword);
             var identifierToken = MatchToken(TokenKind.Identifier);
@@ -128,7 +125,7 @@ namespace Repl.CodeAnalysis.Syntax
             return new ConstDeclarationSyntax(SyntaxTree, constKeyword, identifierToken, typeAnnotation, equalsToken, expression);
         }
 
-        private SyntaxNode ParseAliasDeclaration()
+        private MemberSyntax ParseAliasDeclaration()
         {
             var aliasKeyword = MatchToken(TokenKind.AliasKeyword);
             var identifierToken = MatchToken(TokenKind.Identifier);
@@ -177,40 +174,6 @@ namespace Repl.CodeAnalysis.Syntax
             return new ReturnStatementSyntax(SyntaxTree, returnKeyword, value);
         }
 
-        private Token _structIdentifier;
-        private SyntaxNode ParseStructDeclaration()
-        {
-            var structKeyword = MatchToken(TokenKind.StructKeyword);
-            var identifierToken = MatchToken(TokenKind.Identifier);
-
-            _structIdentifier = identifierToken;
-
-            BaseTypeSyntax baseType = null;
-            if (Current.Kind == TokenKind.Colon)
-            {
-                baseType = ParseBaseType();
-            }
-
-            var openBraceToken = MatchToken(TokenKind.OpenBrace);
-
-            var builder = ImmutableArray.CreateBuilder<MemberDeclarationSyntax>();
-            Token startToken = null;
-            while (Current.Kind != TokenKind.CloseBrace &&
-                   Current.Kind != TokenKind.EndOfFile)
-            {
-                var member = ParseMemberDeclaration();
-                builder.Add(member);
-
-                // Make sure we consume tokens
-                if (Current == startToken)
-                    NextToken();
-
-                startToken = Current;
-            }
-            var closeBraceToken = MatchToken(TokenKind.CloseBrace);
-            return new StructDeclarationSyntax(SyntaxTree, structKeyword, identifierToken, baseType, openBraceToken, builder.ToImmutable(), closeBraceToken);
-        }
-
         private BaseTypeSyntax ParseBaseType()
         {
             var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
@@ -237,12 +200,14 @@ namespace Repl.CodeAnalysis.Syntax
         private MemberDeclarationSyntax ParseMemberDeclaration()
         {
             var peek = Peek(1);
-            if (Current.Kind == TokenKind.Identifier && Current.Text == _structIdentifier.Text &&
-                peek.Kind == TokenKind.OpenParenthesis)
-            {
-                // ctor
-                return ParseConstructorDeclaration();
-            }
+
+            // TODO fix constructors
+            //if (Current.Kind == TokenKind.Identifier && Current.Text == _structIdentifier.Text &&
+            //    peek.Kind == TokenKind.OpenParenthesis)
+            //{
+            //    // ctor
+            //    return ParseConstructorDeclaration();
+            //}
 
             if (peek.Kind == TokenKind.OpenParenthesis)
             {
@@ -271,9 +236,11 @@ namespace Repl.CodeAnalysis.Syntax
         private MemberDeclarationSyntax ParseConstructorDeclaration()
         {
             var identifierToken = MatchToken(TokenKind.Identifier);
+            var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
             var parameterList = ParseParameterList();
+            var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
             var body = ParseBlockStatement();
-            return new ConstructorDeclarationSyntax(SyntaxTree, identifierToken, parameterList, body);
+            return new ConstructorDeclarationSyntax(SyntaxTree, identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, body);
         }
 
         private MemberDeclarationSyntax ParseFieldDeclaration(Token identifierToken, TypeAnnotationSyntax typeAnnotation)
@@ -316,23 +283,23 @@ namespace Repl.CodeAnalysis.Syntax
 
         private MemberDeclarationSyntax ParseMethodDeclaration()
         {
-            var prototype = ParsePrototype();
+            var (identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, returnTypeAnnotation) = ParsePrototype();
             var body = ParseBlockStatement();
-            return new MethodDeclarationSyntax(SyntaxTree, prototype, body);
+            return new MethodDeclarationSyntax(SyntaxTree, identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, returnTypeAnnotation, body);
         }
 
-        private SyntaxNode ParseExternDeclaration()
+        private MemberSyntax ParseExternDeclaration()
         {
             var externKeyword = MatchToken(TokenKind.ExternKeyword);
-            var prototype = ParsePrototype();
-            return new ExternDeclarationSyntax(SyntaxTree, externKeyword, prototype);
+            var (identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, returnTypeAnnotation) = ParsePrototype();
+            return new ExternDeclarationSyntax(SyntaxTree, externKeyword, identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, returnTypeAnnotation);
         }
 
         private SyntaxNode ParseFunctionDeclaration()
         {
-            var prototype = ParsePrototype();
+            var (identifierToken, openParenthesisToken, parameters, closeParenthesisToken, type) = ParsePrototype();
             var body = ParseBlockStatement();
-            return new FunctionDeclarationSyntax(SyntaxTree, prototype, body);
+            return new FunctionDeclarationSyntax(SyntaxTree, identifierToken, openParenthesisToken, parameters, closeParenthesisToken, type, body);
         }
 
         private bool TryParseFunctionDeclaration([NotNullWhen(true)] out FunctionDeclarationSyntax? syntax)
@@ -362,25 +329,26 @@ namespace Repl.CodeAnalysis.Syntax
             return true;
         }
 
-        private PrototypeSyntax ParsePrototype()
+        private (Token identifierToken, Token openParenthesisToken, SeparatedSyntaxList<ParameterSyntax> parameters, Token closeParenthesisToken, TypeAnnotationSyntax? type) ParsePrototype()
         {
             var identifierToken = MatchToken(TokenKind.Identifier);
-            var parameterList = ParseParameterList();
 
-            TypeAnnotationSyntax returnTypeAnnotation = null;
+            var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
+            var parameterList = ParseParameterList();
+            var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
+
+            TypeAnnotationSyntax? returnTypeAnnotation = null;
             if (Current.Kind == TokenKind.Colon)
             {
                 returnTypeAnnotation = ParseTypeAnnotation();
             }
 
-            return new PrototypeSyntax(SyntaxTree, identifierToken, parameterList, returnTypeAnnotation);
+            return (identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, returnTypeAnnotation);
         }
 
-        private ParameterListSyntax ParseParameterList()
+        private SeparatedSyntaxList<ParameterSyntax> ParseParameterList()
         {
-            var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
-
-            var parameters = ImmutableArray.CreateBuilder<SyntaxNode>();
+            var nodesAndSeparators = ImmutableArray.CreateBuilder<SyntaxNode>();
 
             var parseNextParameter = true;
             while (parseNextParameter &&
@@ -388,12 +356,12 @@ namespace Repl.CodeAnalysis.Syntax
                    Current.Kind != TokenKind.EndOfFile)
             {
                 var parameter = ParseParameter();
-                parameters.Add(parameter);
+                nodesAndSeparators.Add(parameter);
 
                 if (Current.Kind == TokenKind.Comma)
                 {
                     var commaToken = MatchToken(TokenKind.Comma);
-                    parameters.Add(commaToken);
+                    nodesAndSeparators.Add(commaToken);
                 }
                 else
                 {
@@ -401,8 +369,7 @@ namespace Repl.CodeAnalysis.Syntax
                 }
             }
 
-            var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
-            return new ParameterListSyntax(SyntaxTree, openParenthesisToken, parameters.ToImmutable(), closeParenthesisToken);
+            return new SeparatedSyntaxList<ParameterSyntax>(nodesAndSeparators.ToImmutable());
         }
 
         private TypeAnnotationSyntax ParseTypeAnnotation()
@@ -549,24 +516,37 @@ namespace Repl.CodeAnalysis.Syntax
             return new BlockStatementSyntax(SyntaxTree, openBraceToken, statements.ToImmutable(), closeBraceToken);
         }
 
-        private ImmutableArray<SyntaxNode> ParseStatementsOrDeclarations()
+        private ImmutableArray<MemberSyntax> ParseMembers()
         {
-            var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+            var members = ImmutableArray.CreateBuilder<MemberSyntax>();
 
             while (Current.Kind != TokenKind.EndOfFile)
             {
                 var startToken = Current;
 
-                if (!TryParseDeclaration(out var node))
-                    node = ParseStatement();
-                builder.Add(node);
+                var member = ParseMember();
+                members.Add(member);
 
                 // Make sure we consume tokens
                 if (Current == startToken)
                     NextToken();
             }
 
-            return builder.ToImmutable();
+            return members.ToImmutable();
+        }
+
+        private MemberSyntax ParseMember()
+        {
+            if (!TryParseDeclaration(out var node))
+                node = ParseGlobalStatement();
+
+            return node;
+        }
+
+        private MemberSyntax ParseGlobalStatement()
+        {
+            var statement = ParseStatement();
+            return new GlobalStatementSyntax(SyntaxTree, statement);
         }
 
         public ExpressionSyntax ParseExpression()

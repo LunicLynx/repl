@@ -1,23 +1,25 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Syntax
 {
-    internal class MethodDeclarationSyntax : MemberDeclarationSyntax
+    public class MethodDeclarationSyntax : MemberDeclarationSyntax, IInvokableDeclarationSyntax
     {
-        public PrototypeSyntax Prototype { get; }
+        public Token OpenParenthesisToken { get; }
+        public SeparatedSyntaxList<ParameterSyntax> Parameters { get; }
+        public Token CloseParenthesisToken { get; }
         public BlockStatementSyntax Body { get; }
 
-        public MethodDeclarationSyntax(SyntaxTree syntaxTree, PrototypeSyntax prototype, BlockStatementSyntax body)
-        : base(syntaxTree, prototype.IdentifierToken, prototype.ReturnType)
-        {
-            Prototype = prototype;
-            Body = body;
-        }
+        Token IInvokableDeclarationSyntax.IdentifierToken => IdentifierToken;
+        TypeAnnotationSyntax? IInvokableDeclarationSyntax.Type => TypeAnnotation;
 
-        public override IEnumerable<SyntaxNode> GetChildren()
+        public MethodDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, Token openParenthesisToken, SeparatedSyntaxList<ParameterSyntax> parameters, Token closeParenthesisToken, TypeAnnotationSyntax? type, BlockStatementSyntax body)
+        : base(syntaxTree, identifierToken, type)
         {
-            yield return Prototype;
-            yield return Body;
+            OpenParenthesisToken = openParenthesisToken;
+            Parameters = parameters;
+            CloseParenthesisToken = closeParenthesisToken;
+            Body = body;
         }
     }
 }

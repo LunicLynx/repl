@@ -13,11 +13,5 @@ namespace Repl.CodeAnalysis.Syntax
             LoopKeyword = loopKeyword;
             Body = body;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return LoopKeyword;
-            yield return Body;
-        }
     }
 }

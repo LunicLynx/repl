@@ -1,16 +1,13 @@
 ﻿namespace Repl.CodeAnalysis
 {
-    public class ParameterSymbol : Symbol
+    public class ParameterSymbol : LocalVariableSymbol
     {
-        public TypeSymbol Type { get; }
         public override SymbolKind Kind => SymbolKind.Parameter;
-        public override string Name { get; }
         public int Index { get; }
 
         public ParameterSymbol(TypeSymbol type, string name, int index)
+            : base(name, isReadOnly: true, type)
         {
-            Type = type;
-            Name = name;
             Index = index;
         }
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 using Repl.CodeAnalysis.Text;
 
 namespace Repl.CodeAnalysis.Syntax
@@ -20,29 +21,28 @@ namespace Repl.CodeAnalysis.Syntax
             {"break", TokenKind.BreakKeyword},
             {"continue", TokenKind.ContinueKeyword},
             {"extern", TokenKind.ExternKeyword},
-            {"struct", TokenKind.StructKeyword },
-            {"class", TokenKind.ClassKeyword },
-            {"new", TokenKind.NewKeyword },
-            {"alias", TokenKind.AliasKeyword },
-            {"const", TokenKind.ConstKeyword },
-            {"this", TokenKind.ThisKeyword },
-            { "return", TokenKind.ReturnKeyword},
+            {"object", TokenKind.ObjectKeyword},
+            {"new", TokenKind.NewKeyword},
+            {"alias", TokenKind.AliasKeyword},
+            {"const", TokenKind.ConstKeyword},
+            {"this", TokenKind.ThisKeyword},
+            {"return", TokenKind.ReturnKeyword},
 
             {"void", TokenKind.VoidKeyword},
             {"bool", TokenKind.BoolKeyword},
-            {"i8", TokenKind.I8Keyword },
-            {"i16", TokenKind.I16Keyword },
-            {"i32", TokenKind.I32Keyword },
-            {"i64", TokenKind.I64Keyword },
-            {"i128", TokenKind.I128Keyword },
-            {"u8", TokenKind.U8Keyword },
-            {"u16", TokenKind.U16Keyword },
-            {"u32", TokenKind.U32Keyword },
-            {"u64", TokenKind.U64Keyword },
-            {"u128", TokenKind.U128Keyword },
+            {"i8", TokenKind.I8Keyword},
+            {"i16", TokenKind.I16Keyword},
+            {"i32", TokenKind.I32Keyword},
+            {"i64", TokenKind.I64Keyword},
+            {"i128", TokenKind.I128Keyword},
+            {"u8", TokenKind.U8Keyword},
+            {"u16", TokenKind.U16Keyword},
+            {"u32", TokenKind.U32Keyword},
+            {"u64", TokenKind.U64Keyword},
+            {"u128", TokenKind.U128Keyword},
             {"int", TokenKind.IntKeyword},
             {"uint", TokenKind.UintKeyword},
-            {"string", TokenKind.StringKeyword },
+            {"string", TokenKind.StringKeyword},
         };
 
         public Lexer(SyntaxTree syntaxTree)
@@ -52,6 +52,7 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var start = Position;
             var kind = TokenKind.EndOfFile;
+            object value = null;
 
             var c = Current;
             Next();
@@ -61,7 +62,7 @@ namespace Repl.CodeAnalysis.Syntax
                 while (char.IsWhiteSpace(Current))
                     Next();
 
-                kind = TokenKind.WhiteSpace;
+                kind = TokenKind.Whitespace;
             }
             else if (c == '/' && Current == '/')
             {
@@ -97,8 +98,10 @@ namespace Repl.CodeAnalysis.Syntax
             }
             else if (c == '"')
             {
+                var sb = new StringBuilder();
                 while (Current != '"' && Current != '\0')
                 {
+                    sb.Append(Current);
                     if (Current == '\\')
                     {
                         Next();
@@ -110,6 +113,7 @@ namespace Repl.CodeAnalysis.Syntax
                 if (Current == '"')
                     Next();
 
+                value = sb.ToString();
                 kind = TokenKind.StringLiteral;
             }
             else if (IsIdentifierStart(c))
@@ -233,7 +237,8 @@ namespace Repl.CodeAnalysis.Syntax
                 }
             }
 
-            return new Token(SyntaxTree, kind, TextSpan.FromBounds(start, Position), Text.ToString(start, Position - start));
+            
+            return new Token(SyntaxTree, kind, start, Text.ToString(start, Position - start), value);
         }
 
         private bool IsIdentifierStart(char c)

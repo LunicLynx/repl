@@ -16,15 +16,5 @@ namespace Repl.CodeAnalysis.Syntax
             Statements = statements;
             CloseBraceToken = closeBraceToken;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return OpenBraceToken;
-            foreach (var statement in Statements)
-            {
-                yield return statement;
-            }
-            yield return CloseBraceToken;
-        }
     }
 }

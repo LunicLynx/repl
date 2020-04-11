@@ -4,20 +4,19 @@ namespace Repl.CodeAnalysis.Syntax
 {
     internal class ConstructorDeclarationSyntax : MemberDeclarationSyntax
     {
-        public ParameterListSyntax ParameterList { get; }
+        public Token OpenParenthesisToken { get; }
+        public SeparatedSyntaxList<ParameterSyntax> Parameters { get; }
+        public Token CloseParenthesisToken { get; }
+
         public BlockStatementSyntax Body { get; }
 
-        public ConstructorDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, ParameterListSyntax parameterList, BlockStatementSyntax body)
+        public ConstructorDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, Token openParenthesisToken, SeparatedSyntaxList<ParameterSyntax> parameters, Token closeParenthesisToken, BlockStatementSyntax body)
             : base(syntaxTree, identifierToken, null)
         {
-            ParameterList = parameterList;
+            OpenParenthesisToken = openParenthesisToken;
+            Parameters = parameters;
+            CloseParenthesisToken = closeParenthesisToken;
             Body = body;
-        }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return IdentifierToken;
-            yield return ParameterList;
         }
     }
 }

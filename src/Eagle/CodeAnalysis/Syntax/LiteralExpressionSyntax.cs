@@ -11,10 +11,5 @@ namespace Repl.CodeAnalysis.Syntax
         {
             LiteralToken = literalToken;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return LiteralToken;
-        }
     }
 }

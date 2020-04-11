@@ -29,10 +29,12 @@ namespace Repl.CodeAnalysis
                 : typeof(object);
 
         public static bool IsInteger(this TypeSymbol typeSymbol) =>
+            typeSymbol == TypeSymbol.Int ||
             typeSymbol == TypeSymbol.I8 ||
             typeSymbol == TypeSymbol.I16 ||
             typeSymbol == TypeSymbol.I32 ||
             typeSymbol == TypeSymbol.I64 ||
+            typeSymbol == TypeSymbol.UInt ||
             typeSymbol == TypeSymbol.U8 ||
             typeSymbol == TypeSymbol.U16 ||
             typeSymbol == TypeSymbol.U32 ||
@@ -40,10 +42,12 @@ namespace Repl.CodeAnalysis
 
         public static int GetBits(this TypeSymbol typeSymbol)
         {
+            if (typeSymbol == TypeSymbol.Int) return 64; /* TODO */
             if (typeSymbol == TypeSymbol.I8) return 8;
             if (typeSymbol == TypeSymbol.I16) return 16;
             if (typeSymbol == TypeSymbol.I32) return 32;
             if (typeSymbol == TypeSymbol.I64) return 64;
+            if (typeSymbol == TypeSymbol.UInt) return 64; /* TODO */
             if (typeSymbol == TypeSymbol.U8) return 8;
             if (typeSymbol == TypeSymbol.U16) return 16;
             if (typeSymbol == TypeSymbol.U32) return 32;
@@ -53,10 +57,12 @@ namespace Repl.CodeAnalysis
 
         public static bool IsSigned(this TypeSymbol typeSymbol)
         {
+            if (typeSymbol == TypeSymbol.Int) return true;
             if (typeSymbol == TypeSymbol.I8) return true;
             if (typeSymbol == TypeSymbol.I16) return true;
             if (typeSymbol == TypeSymbol.I32) return true;
             if (typeSymbol == TypeSymbol.I64) return true;
+            if (typeSymbol == TypeSymbol.UInt) return false;
             if (typeSymbol == TypeSymbol.U8) return false;
             if (typeSymbol == TypeSymbol.U16) return false;
             if (typeSymbol == TypeSymbol.U32) return false;

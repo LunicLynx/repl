@@ -1,31 +1,47 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace Repl.CodeAnalysis.Syntax
 {
-    public class ParameterListSyntax : SyntaxNode
+    public abstract class SeparatedSyntaxList
     {
-        public Token OpenParenthesisToken { get; }
-        public ImmutableArray<SyntaxNode> Parameters { get; }
-        public Token CloseParenthesisToken { get; }
+        public abstract ImmutableArray<SyntaxNode> GetWithSeparators();
+    }
 
-        public ParameterListSyntax(SyntaxTree syntaxTree, Token openParenthesisToken,
-            ImmutableArray<SyntaxNode> parameters, Token closeParenthesisToken)
-            : base(syntaxTree)
+    public sealed class SeparatedSyntaxList<T> : SeparatedSyntaxList, IEnumerable<T>
+        where T : SyntaxNode
+    {
+        private readonly ImmutableArray<SyntaxNode> _nodesAndSeparators;
+
+        public SeparatedSyntaxList(ImmutableArray<SyntaxNode> nodesAndSeparators)
         {
-            OpenParenthesisToken = openParenthesisToken;
-            Parameters = parameters;
-            CloseParenthesisToken = closeParenthesisToken;
+            _nodesAndSeparators = nodesAndSeparators;
         }
 
-        public override IEnumerable<SyntaxNode> GetChildren()
+        public int Count => (_nodesAndSeparators.Length + 1) / 2;
+
+        public T this[int index] => (T)_nodesAndSeparators[index * 2];
+
+        public Token GetSeparator(int index)
         {
-            yield return OpenParenthesisToken;
-            foreach (var parameter in Parameters)
-            {
-                yield return parameter;
-            }
-            yield return CloseParenthesisToken;
+            if (index == Count - 1)
+                return null;
+
+            return (Token)_nodesAndSeparators[index * 2 + 1];
+        }
+
+        public override ImmutableArray<SyntaxNode> GetWithSeparators() => _nodesAndSeparators;
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            for (var i = 0; i < Count; i++)
+                yield return this[i];
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

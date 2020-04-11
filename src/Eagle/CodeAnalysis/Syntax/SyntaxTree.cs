@@ -56,6 +56,12 @@ namespace Repl.CodeAnalysis.Syntax
             return ParseTokens(sourceText);
         }
 
+        public static ImmutableArray<Token> ParseTokens(string text, out ImmutableArray<Diagnostic> diagnostics)
+        {
+            var sourceText = SourceText.From(text);
+            return ParseTokens(sourceText, out diagnostics);
+        }
+
         public static ImmutableArray<Token> ParseTokens(SourceText text)
         {
             return ParseTokens(text, out _);
@@ -75,7 +81,7 @@ namespace Repl.CodeAnalysis.Syntax
                     var token = l.Lex();
                     if (token.Kind == TokenKind.EndOfFile)
                     {
-                        root = new CompilationUnitSyntax(st, ImmutableArray<SyntaxNode>.Empty, token);
+                        root = new CompilationUnitSyntax(st, ImmutableArray<MemberSyntax>.Empty, token);
                         break;
                     }
 

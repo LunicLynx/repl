@@ -59,7 +59,7 @@ namespace Repl.CodeAnalysis.CodeGen
                 builder.PositionAtEnd(_basicBlock);
 
                 var codeGenerator = new CodeGenerator(_context, builder);
-                var value = codeGenerator.Generate(Lowerer.Lower(globalScope));
+                Value value = null;//codeGenerator.Generate(Lowerer.Lower(globalScope.Statements[0]));
                 _basicBlock = builder.GetInsertBlock();
 
                 v = builder.Ret(value);

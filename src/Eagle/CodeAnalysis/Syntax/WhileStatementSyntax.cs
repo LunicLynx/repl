@@ -15,12 +15,5 @@ namespace Repl.CodeAnalysis.Syntax
             Condition = condition;
             Body = body;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return WhileKeyword;
-            yield return Condition;
-            yield return Body;
-        }
     }
 }

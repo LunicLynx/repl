@@ -13,11 +13,5 @@ namespace Repl.CodeAnalysis.Syntax
             ColonToken = colonToken;
             Type = type;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return ColonToken;
-            yield return Type;
-        }
     }
 }

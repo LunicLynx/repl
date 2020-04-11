@@ -13,11 +13,5 @@ namespace Repl.CodeAnalysis.Syntax
             ElseKeyword = elseKeyword;
             ElseStatement = elseStatement;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return ElseKeyword;
-            yield return ElseStatement;
-        }
     }
 }

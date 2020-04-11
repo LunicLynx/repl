@@ -17,13 +17,5 @@ namespace Repl.CodeAnalysis.Syntax
             EqualsToken = equalsToken;
             Initializer = initializer;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return Keyword;
-            yield return IdentifierToken;
-            yield return EqualsToken;
-            yield return Initializer;
-        }
     }
 }

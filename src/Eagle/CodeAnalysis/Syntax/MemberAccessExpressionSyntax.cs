@@ -15,12 +15,5 @@ namespace Repl.CodeAnalysis.Syntax
             DotToken = dotToken;
             IdentifierToken = identifierToken;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return Target;
-            yield return DotToken;
-            yield return IdentifierToken;
-        }
     }
 }

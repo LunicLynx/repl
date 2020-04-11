@@ -153,10 +153,10 @@ namespace Repl.CodeAnalysis
             var message = $"The cast from '{from}' to '{to}' is not supported.";
             Report(location, message);
         }
-
-        public void ReportCannotConvertImplicitly(TextLocation location, TypeSymbol from, TypeSymbol to)
+        
+        public void ReportCannotConvertImplicitly(TextLocation location, TypeSymbol fromType, TypeSymbol toType)
         {
-            var message = $"The cast from '{from}' to '{to}' is not implicitly supported.";
+            var message = $"Cannot convert type '{fromType}' to '{toType}'. An explicit conversion exists (are you missing a cast?)";
             Report(location, message);
         }
 
@@ -175,6 +175,42 @@ namespace Repl.CodeAnalysis
         public void ReportExpressionMustHaveValue(TextLocation location)
         {
             var message = "Expression must have a value.";
+            Report(location, message);
+        }
+
+        public void ReportInvalidExpressionStatement(TextLocation location)
+        {
+            var message = $"Only assignment and call expressions can be used as a statement.";
+            Report(location, message);
+        }
+
+        public void ReportOnlyOneFileCanHaveGlobalStatements(TextLocation location)
+        {
+            var message = $"At most one file can have global statements.";
+            Report(location, message);
+        }
+
+        public void ReportMainMustHaveCorrectSignature(TextLocation location)
+        {
+            var message = $"main must not take arguments and not return anything.";
+            Report(location, message);
+        }
+
+        public void ReportCannotMixMainAndGlobalStatements(TextLocation location)
+        {
+            var message = $"Cannot declare main function when global statements are used.";
+            Report(location, message);
+        }
+
+        public void ReportAllPathsMustReturn(TextLocation location)
+        {
+            var message = "Not all code paths return a value.";
+            Report(location, message);
+        }
+
+        public void ReportUndefinedType(TextLocation location, string name)
+        {
+            var message = $"Type '{name}' doesn't exist.";
             Report(location, message);
         }
     }

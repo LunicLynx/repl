@@ -12,78 +12,81 @@ namespace Eagle.IO
 {
     public static class TextWriterExtensions
     {
-        //private static bool IsConsoleOut(this TextWriter writer)
-        //{
-        //    if (writer == Console.Out)
-        //        return true;
+        private static bool IsConsole(this TextWriter writer)
+        {
+            if (writer == Console.Out)
+                return !Console.IsOutputRedirected;
 
-        //    if (writer is IndentedTextWriter iw && iw.InnerWriter.IsConsoleOut())
-        //        return true;
+            if (writer == Console.Error)
+                return !Console.IsErrorRedirected && !Console.IsOutputRedirected; // Color codes are always output to Console.Out
 
-        //    return false;
-        //}
+            if (writer is IndentedTextWriter iw && iw.InnerWriter.IsConsole())
+                return true;
 
-        //private static void SetForeground(this TextWriter writer, ConsoleColor color)
-        //{
-        //    if (writer.IsConsoleOut())
-        //        Console.ForegroundColor = color;
-        //}
+            return false;
+        }
 
-        //private static void ResetColor(this TextWriter writer)
-        //{
-        //    if (writer.IsConsoleOut())
-        //        Console.ResetColor();
-        //}
+        private static void SetForeground(this TextWriter writer, ConsoleColor color)
+        {
+            if (writer.IsConsole())
+                Console.ForegroundColor = color;
+        }
+
+        private static void ResetColor(this TextWriter writer)
+        {
+            if (writer.IsConsole())
+                Console.ResetColor();
+        }
 
         //public static void WriteKeyword(this TextWriter writer, SyntaxKind kind)
         //{
         //    writer.WriteKeyword(SyntaxFacts.GetText(kind));
         //}
 
-        //public static void WriteKeyword(this TextWriter writer, string text)
-        //{
-        //    writer.SetForeground(ConsoleColor.Blue);
-        //    writer.Write(text);
-        //    writer.ResetColor();
-        //}
+        public static void WriteKeyword(this TextWriter writer, string text)
+        {
+            writer.SetForeground(ConsoleColor.Blue);
+            writer.Write(text);
+            writer.ResetColor();
+        }
 
-        //public static void WriteIdentifier(this TextWriter writer, string text)
-        //{
-        //    writer.SetForeground(ConsoleColor.DarkYellow);
-        //    writer.Write(text);
-        //    writer.ResetColor();
-        //}
+        public static void WriteIdentifier(this TextWriter writer, string text)
+        {
+            writer.SetForeground(ConsoleColor.DarkYellow);
+            writer.Write(text);
+            writer.ResetColor();
+        }
 
-        //public static void WriteNumber(this TextWriter writer, string text)
-        //{
-        //    writer.SetForeground(ConsoleColor.Cyan);
-        //    writer.Write(text);
-        //    writer.ResetColor();
-        //}
+        public static void WriteNumber(this TextWriter writer, string text)
+        {
+            writer.SetForeground(ConsoleColor.Cyan);
+            writer.Write(text);
+            writer.ResetColor();
+        }
 
-        //public static void WriteString(this TextWriter writer, string text)
-        //{
-        //    writer.SetForeground(ConsoleColor.Magenta);
-        //    writer.Write(text);
-        //    writer.ResetColor();
-        //}
+        public static void WriteString(this TextWriter writer, string text)
+        {
+            writer.SetForeground(ConsoleColor.Magenta);
+            writer.Write(text);
+            writer.ResetColor();
+        }
 
-        //public static void WriteSpace(this TextWriter writer)
-        //{
-        //    writer.WritePunctuation(" ");
-        //}
+        public static void WriteSpace(this TextWriter writer)
+        {
+            writer.WritePunctuation(" ");
+        }
 
         //public static void WritePunctuation(this TextWriter writer, SyntaxKind kind)
         //{
         //    writer.WritePunctuation(SyntaxFacts.GetText(kind));
         //}
 
-        //public static void WritePunctuation(this TextWriter writer, string text)
-        //{
-        //    writer.SetForeground(ConsoleColor.DarkGray);
-        //    writer.Write(text);
-        //    writer.ResetColor();
-        //}
+        public static void WritePunctuation(this TextWriter writer, string text)
+        {
+            writer.SetForeground(ConsoleColor.DarkGray);
+            writer.Write(text);
+            writer.ResetColor();
+        }
 
         public static void WriteDiagnostics(this TextWriter writer, IEnumerable<Diagnostic> diagnostics)
         {
@@ -102,12 +105,12 @@ namespace Eagle.IO
                 var lineIndex = text.GetLineIndex(span.Start);
                 var line = text.Lines[lineIndex];
 
-                Console.WriteLine();
+                writer.WriteLine();
 
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.Write($"{fileName}({startLine},{startCharacter},{endLine},{endCharacter}): ");
-                Console.WriteLine(diagnostic);
-                Console.ResetColor();
+                writer.SetForeground(ConsoleColor.DarkRed);
+                writer.Write($"{fileName}({startLine},{startCharacter},{endLine},{endCharacter}): ");
+                writer.WriteLine(diagnostic);
+                writer.ResetColor();
 
                 var prefixSpan = TextSpan.FromBounds(line.Start, span.Start);
                 var suffixSpan = TextSpan.FromBounds(span.End, line.End);
@@ -116,19 +119,19 @@ namespace Eagle.IO
                 var error = text.ToString(span);
                 var suffix = text.ToString(suffixSpan);
 
-                Console.Write("    ");
-                Console.Write(prefix);
+                writer.Write("    ");
+                writer.Write(prefix);
 
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.Write(error);
-                Console.ResetColor();
+                writer.SetForeground(ConsoleColor.DarkRed);
+                writer.Write(error);
+                writer.ResetColor();
 
-                Console.Write(suffix);
+                writer.Write(suffix);
 
-                Console.WriteLine();
+                writer.WriteLine();
             }
 
-            Console.WriteLine();
+            writer.WriteLine();
         }
     }
 }

@@ -5,14 +5,18 @@ namespace Repl.CodeAnalysis.Syntax
     public class Token : SyntaxNode
     {
         public TokenKind Kind { get; }
-        public override TextSpan Span { get; }
+        public int Position { get; }
         public string? Text { get; }
+        public object? Value { get; }
+        public override TextSpan Span => new TextSpan(Position, Text?.Length ?? 0);
 
-        public Token(SyntaxTree syntaxTree, TokenKind kind, TextSpan span, string? text) : base(syntaxTree)
+        public Token(SyntaxTree syntaxTree, TokenKind kind, int position, string? text, object? value)
+            : base(syntaxTree)
         {
             Kind = kind;
-            Span = span;
+            Position = position;
             Text = text;
+            Value = value;
         }
 
         public override string ToString()

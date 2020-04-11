@@ -11,14 +11,5 @@ namespace Repl.CodeAnalysis.Syntax
         {
             Initializer = initializer;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return IdentifierToken;
-            if (TypeAnnotation != null)
-                yield return TypeAnnotation;
-            if (Initializer != null)
-                yield return Initializer;
-        }
     }
 }

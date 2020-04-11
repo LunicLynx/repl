@@ -5,30 +5,6 @@ namespace Repl.CodeAnalysis.Binding
 {
     public abstract class BoundTreeRewriter
     {
-        //public virtual BoundNode RewriteNode(BoundNode node)
-        //{
-        //    switch (node)
-        //    {
-        //        case BoundStatement s: return RewriteStatement(s);
-        //        case BoundExternDeclaration e: return RewriteExternDeclaration(e);
-        //        case BoundFunctionDeclaration f: return RewriteFunctionDeclaration(f);
-        //        case BoundStructDeclaration s: return RewriteStructDeclaration(s);
-        //        case BoundAliasDeclaration a: return RewriteAliasDeclaration(a);
-        //        case BoundConstDeclaration c: return RewriteConstDeclaration(c);
-        //        default: throw new Exception($"Unexpected node '{node.GetType().Name}'");
-        //    }
-        //}
-
-        protected virtual BoundNode RewriteConstDeclaration(BoundConstDeclaration node)
-        {
-            return node;
-        }
-
-        protected virtual BoundNode RewriteAliasDeclaration(BoundAliasDeclaration node)
-        {
-            return node;
-        }
-
         public virtual BoundStatement RewriteStatement(BoundStatement statement)
         {
             switch (statement)
@@ -116,19 +92,6 @@ namespace Repl.CodeAnalysis.Binding
             if (initializer == node.Initializer)
                 return node;
             return new BoundFieldDeclaration(node.Field, initializer);
-        }
-
-        protected virtual BoundFunctionDeclaration RewriteFunctionDeclaration(BoundFunctionDeclaration node)
-        {
-            var body = RewriteBlockStatement(node.Body);
-            if (body == node.Body)
-                return node;
-            return new BoundFunctionDeclaration(node.Function, body);
-        }
-
-        protected virtual BoundExternDeclaration RewriteExternDeclaration(BoundExternDeclaration node)
-        {
-            return node;
         }
 
         protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)

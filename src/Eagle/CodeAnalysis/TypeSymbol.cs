@@ -1,44 +1,39 @@
 ﻿using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Net;
 
 namespace Repl.CodeAnalysis
 {
-    public enum SpecialType
-    {
-        None,
-        String,
-        Void,
-        I8,
-        I16,
-        I32,
-        I64,
-        U8,
-        U16,
-        U32,
-        U64,
-        Bool,
-        UInt,
-        Int,
-        Char,
-        Error
-    }
-
     [DebuggerDisplay("{Name}")]
     public class TypeSymbol : Symbol
     {
+        public static readonly TypeSymbol Error = new TypeSymbol("?", SpecialType.Error);
+        public static readonly TypeSymbol String = new TypeSymbol("String", SpecialType.String);
+        public static readonly TypeSymbol Char = new TypeSymbol("Char", SpecialType.Char);
+        public static readonly TypeSymbol Void = new TypeSymbol("Void", SpecialType.Void);
+        public static readonly TypeSymbol I8 = new TypeSymbol("Int8", SpecialType.I8);
+        public static readonly TypeSymbol I16 = new TypeSymbol("Int16", SpecialType.I16);
+        public static readonly TypeSymbol I32 = new TypeSymbol("Int32", SpecialType.I32);
+        public static readonly TypeSymbol I64 = new TypeSymbol("Int64", SpecialType.I64);
+        public static readonly TypeSymbol U8 = new TypeSymbol("UInt8", SpecialType.U8);
+        public static readonly TypeSymbol U16 = new TypeSymbol("UInt16", SpecialType.U16);
+        public static readonly TypeSymbol U32 = new TypeSymbol("UInt32", SpecialType.U32);
+        public static readonly TypeSymbol U64 = new TypeSymbol("UInt64", SpecialType.U64);
+        public static readonly TypeSymbol Bool = new TypeSymbol("Boolean", SpecialType.Bool);
+        public static readonly TypeSymbol UInt = new TypeSymbol("UInt", SpecialType.UInt);
+        public static readonly TypeSymbol Int = new TypeSymbol("Int", SpecialType.Int);
+        public static readonly TypeSymbol Any = new TypeSymbol("Any", SpecialType.Any);
+
         public TypeSymbol ElementType { get; }
         public bool IsPointer { get; }
-        private bool _locked;
-        private ImmutableArray<MemberSymbol> _members;
-        private ImmutableArray<TypeSymbol> _baseType;
 
-        private readonly string _name;
         public override SymbolKind Kind => SymbolKind.Type;
 
         public SpecialType SpecialType { get; } = SpecialType.None;
 
-        public override string Name
+        private readonly string _name;
+        public string Name
         {
             get
             {
@@ -48,41 +43,9 @@ namespace Repl.CodeAnalysis
             }
         }
 
-        public ImmutableArray<TypeSymbol> BaseType
-        {
-            get => _baseType;
-            set
-            {
-                ThrowIfLocked();
-                _baseType = value;
-            }
-        }
+        public ImmutableArray<TypeSymbol> BaseType { get; set; }
 
-        public ImmutableArray<MemberSymbol> Members
-        {
-            get => _members;
-            set
-            {
-                ThrowIfLocked();
-                _members = value;
-            }
-        }
-
-        public static readonly TypeSymbol Error = new TypeSymbol("?", SpecialType.Error);
-        public static TypeSymbol String = new TypeSymbol("String", SpecialType.String);
-        public static TypeSymbol Char = new TypeSymbol("Char", SpecialType.Char);
-        public static TypeSymbol Void = new TypeSymbol("Void", SpecialType.Void);
-        public static TypeSymbol I8 = new TypeSymbol("Int8", SpecialType.I8);
-        public static TypeSymbol I16 = new TypeSymbol("Int16", SpecialType.I16);
-        public static TypeSymbol I32 = new TypeSymbol("Int32", SpecialType.I32);
-        public static TypeSymbol I64 = new TypeSymbol("Int64", SpecialType.I64);
-        public static TypeSymbol U8 = new TypeSymbol("UInt8", SpecialType.U8);
-        public static TypeSymbol U16 = new TypeSymbol("UInt16", SpecialType.U16);
-        public static TypeSymbol U32 = new TypeSymbol("UInt32", SpecialType.U32);
-        public static TypeSymbol U64 = new TypeSymbol("UInt64", SpecialType.U64);
-        public static TypeSymbol Bool = new TypeSymbol("Boolean", SpecialType.Bool);
-        public static TypeSymbol UInt = new TypeSymbol("UInt", SpecialType.UInt);
-        public static TypeSymbol Int = new TypeSymbol("Int", SpecialType.Int);
+        public ImmutableArray<MemberSymbol> Members { get; set; }
 
         private TypeSymbol(string name, SpecialType specialType) : this(name)
         {
@@ -90,6 +53,7 @@ namespace Repl.CodeAnalysis
         }
 
         public TypeSymbol(string name, ImmutableArray<TypeSymbol> baseType, ImmutableArray<MemberSymbol> members)
+            : base(name)
         {
             _name = name;
             BaseType = baseType;
@@ -101,21 +65,10 @@ namespace Repl.CodeAnalysis
 
 
         private TypeSymbol(TypeSymbol elementType, bool pointer)
+            : base(null)
         {
             ElementType = elementType;
             IsPointer = pointer;
-            _locked = true;
-        }
-
-        public void Lock()
-        {
-            _locked = true;
-        }
-
-        private void ThrowIfLocked()
-        {
-            if (_locked)
-                throw new Exception("Locked");
         }
 
         public override string ToString()
@@ -130,7 +83,7 @@ namespace Repl.CodeAnalysis
             return new TypeSymbol(this, true);
         }
 
-        public static bool operator ==(TypeSymbol a, TypeSymbol b)
+        public static bool operator ==(TypeSymbol? a, TypeSymbol? b)
         {
             var aNull = ReferenceEquals(null, a);
             var bNull = ReferenceEquals(null, b);
@@ -143,7 +96,7 @@ namespace Repl.CodeAnalysis
             return ReferenceEquals(a, b);
         }
 
-        public static bool operator !=(TypeSymbol a, TypeSymbol b)
+        public static bool operator !=(TypeSymbol? a, TypeSymbol? b)
         {
             return !(a == b);
         }

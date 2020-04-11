@@ -11,10 +11,5 @@ namespace Repl.CodeAnalysis.Syntax
         {
             ContinueKeyword = continueKeyword;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return ContinueKeyword;
-        }
     }
 }

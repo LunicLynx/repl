@@ -13,11 +13,5 @@ namespace Repl.CodeAnalysis.Syntax
             Type = type;
             AsteriskToken = asteriskToken;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return Type;
-            yield return AsteriskToken;
-        }
     }
 }

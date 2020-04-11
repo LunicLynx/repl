@@ -134,7 +134,7 @@ namespace Repl.CodeAnalysis.Lowering
             var variableDeclaration = new BoundVariableDeclaration(node.Variable, node.LowerBound);
             var variableExpression = new BoundVariableExpression(node.Variable);
 
-            var upperBoundVariable = new VariableSymbol("upperBound", true, TypeSymbol.Int);
+            var upperBoundVariable = new LocalVariableSymbol("upperBound", true, TypeSymbol.Int);
             var upperBoundDeclaration = new BoundVariableDeclaration(upperBoundVariable, node.UpperBound);
             var condition = new BoundBinaryExpression(
                 variableExpression,
@@ -262,5 +262,6 @@ namespace Repl.CodeAnalysis.Lowering
             }
             return base.RewriteAssignmentExpression(node);
         }
+
     }
 }

@@ -13,11 +13,5 @@ namespace Repl.CodeAnalysis.Syntax
             EqualsGreaterToken = equalsGreaterToken;
             Expression = expression;
         }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return EqualsGreaterToken;
-            yield return Expression;
-        }
     }
 }

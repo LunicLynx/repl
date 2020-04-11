@@ -7,7 +7,5 @@ namespace Repl.CodeAnalysis.Syntax
         protected ExpressionSyntax(SyntaxTree syntaxTree) : base(syntaxTree)
         {
         }
-
-        public abstract override IEnumerable<SyntaxNode> GetChildren();
     }
 }
