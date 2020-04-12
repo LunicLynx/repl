@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Linq;
 
-namespace Repl.CodeAnalysis.Binding
+namespace Eagle.CodeAnalysis.Binding
 {
     public class TypeScope : IScope
     {

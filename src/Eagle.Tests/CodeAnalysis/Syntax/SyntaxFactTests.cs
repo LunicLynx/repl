@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Repl.CodeAnalysis.Syntax;
+using Eagle.CodeAnalysis.Syntax;
 using Xunit;
 
-namespace Repl.Tests
+namespace Eagle.Tests.CodeAnalysis.Syntax
 {
     public class SyntaxFactTests
     {

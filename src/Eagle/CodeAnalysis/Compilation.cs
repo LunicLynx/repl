@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using Repl.CodeAnalysis.Binding;
-using Repl.CodeAnalysis.Lowering;
-using Repl.CodeAnalysis.Syntax;
-
+using Eagle.CodeAnalysis.Binding;
+using Eagle.CodeAnalysis.Syntax;
 using ReflectionBindingFlags = System.Reflection.BindingFlags;
 
-namespace Repl.CodeAnalysis
+namespace Eagle.CodeAnalysis
 {
     public class Compilation
     {

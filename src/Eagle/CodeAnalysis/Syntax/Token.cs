@@ -1,6 +1,6 @@
-﻿using Repl.CodeAnalysis.Text;
+﻿using Eagle.CodeAnalysis.Text;
 
-namespace Repl.CodeAnalysis.Syntax
+namespace Eagle.CodeAnalysis.Syntax
 {
     public class Token : SyntaxNode
     {

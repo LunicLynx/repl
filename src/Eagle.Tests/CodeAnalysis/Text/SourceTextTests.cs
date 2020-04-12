@@ -1,7 +1,7 @@
-using Repl.CodeAnalysis.Text;
+using Eagle.CodeAnalysis.Text;
 using Xunit;
 
-namespace Repl.Tests
+namespace Eagle.Tests.CodeAnalysis.Text
 {
     public class SourceTextTests
     {

@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Repl.CodeAnalysis.Binding;
+using Eagle.CodeAnalysis.Binding;
 
-namespace Repl.CodeAnalysis.Lowering
+namespace Eagle.CodeAnalysis.Lowering
 {
     internal class Lowerer : BoundTreeRewriter
     {

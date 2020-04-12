@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
-namespace Repl.CodeAnalysis.Binding
+namespace Eagle.CodeAnalysis.Binding
 {
     public class BoundErrorExpression : BoundExpression
     {

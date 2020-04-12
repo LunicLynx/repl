@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Repl.CodeAnalysis
+﻿namespace Eagle.CodeAnalysis
 {
     public class ConstSymbol : Symbol
     {

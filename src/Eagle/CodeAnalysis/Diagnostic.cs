@@ -1,6 +1,6 @@
-﻿using Repl.CodeAnalysis.Text;
+﻿using Eagle.CodeAnalysis.Text;
 
-namespace Repl.CodeAnalysis
+namespace Eagle.CodeAnalysis
 {
     public class Diagnostic
     {

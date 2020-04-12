@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Linq;
 
-namespace Repl.CodeAnalysis
+namespace Eagle.CodeAnalysis
 {
     public class ConstructorSymbol : MemberSymbol
     {

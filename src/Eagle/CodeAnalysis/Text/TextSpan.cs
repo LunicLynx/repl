@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Repl.CodeAnalysis.Text
+﻿namespace Eagle.CodeAnalysis.Text
 {
     public struct TextSpan
     {

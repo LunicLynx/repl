@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Repl.CodeAnalysis;
-using Repl.CodeAnalysis.Syntax;
+using Eagle.CodeAnalysis;
+using Eagle.CodeAnalysis.Syntax;
 using Xunit;
 
-namespace Repl.Tests
+namespace Eagle.Tests
 {
     public class EvaluatorTests
     {

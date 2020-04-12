@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 
-namespace Repl.CodeAnalysis.Syntax
+namespace Eagle.CodeAnalysis.Syntax
 {
     public class BlockStatementSyntax : StatementSyntax
     {

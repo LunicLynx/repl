@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Net;
 
-namespace Repl.CodeAnalysis
+namespace Eagle.CodeAnalysis
 {
     [DebuggerDisplay("{Name}")]
     public class TypeSymbol : Symbol

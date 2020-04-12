@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Immutable;
 
-namespace Repl.CodeAnalysis.Binding
+namespace Eagle.CodeAnalysis.Binding
 {
     public abstract class BoundTreeRewriter
     {

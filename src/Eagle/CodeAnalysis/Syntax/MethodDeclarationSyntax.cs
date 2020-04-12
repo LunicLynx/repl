@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Collections.Immutable;
-
-namespace Repl.CodeAnalysis.Syntax
+﻿namespace Eagle.CodeAnalysis.Syntax
 {
     public class MethodDeclarationSyntax : MemberDeclarationSyntax, IInvokableDeclarationSyntax
     {

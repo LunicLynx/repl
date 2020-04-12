@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Eagle.CodeAnalysis;
+using Eagle.CodeAnalysis.Syntax;
 using Eagle.IO;
-using Repl.CodeAnalysis;
-using Repl.CodeAnalysis.Syntax;
 
 namespace Eagle
 {

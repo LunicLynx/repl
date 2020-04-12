@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.InteropServices;
-using Repl.CodeAnalysis.Lowering;
-using Repl.CodeAnalysis.Syntax;
-using Repl.CodeAnalysis.Text;
+using Eagle.CodeAnalysis.Lowering;
+using Eagle.CodeAnalysis.Syntax;
+using Eagle.CodeAnalysis.Text;
 
-namespace Repl.CodeAnalysis.Binding
+namespace Eagle.CodeAnalysis.Binding
 {
     public class Binder
     {

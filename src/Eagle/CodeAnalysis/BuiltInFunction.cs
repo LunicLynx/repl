@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Repl.CodeAnalysis
+namespace Eagle.CodeAnalysis
 {
     public class BuiltInFunction : IInvokable
     {

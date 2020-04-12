@@ -1,4 +1,4 @@
-﻿namespace Repl.CodeAnalysis
+﻿namespace Eagle.CodeAnalysis
 {
     public class BoundLabel
     {

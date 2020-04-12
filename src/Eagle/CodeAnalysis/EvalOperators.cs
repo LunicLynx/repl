@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using Repl.CodeAnalysis.Binding;
+using Eagle.CodeAnalysis.Binding;
 
-namespace Repl.CodeAnalysis
+namespace Eagle.CodeAnalysis
 {
     public class EvalOperators
     {

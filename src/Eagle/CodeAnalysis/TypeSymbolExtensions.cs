@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Repl.CodeAnalysis
+namespace Eagle.CodeAnalysis
 {
     public static class TypeSymbolExtensions
     {

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Text;
-using Repl.CodeAnalysis.Text;
+using Eagle.CodeAnalysis.Text;
 
-namespace Repl.Tests
+namespace Eagle.Tests.CodeAnalysis
 {
     internal sealed class AnnotatedText
     {

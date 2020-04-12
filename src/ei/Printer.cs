@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Repl.CodeAnalysis;
-using Repl.CodeAnalysis.Binding;
-using Repl.CodeAnalysis.Syntax;
+using Eagle.CodeAnalysis;
+using Eagle.CodeAnalysis.Binding;
+using Eagle.CodeAnalysis.Syntax;
 
-namespace Repl
+namespace Eagle
 {
     public class Printer
     {

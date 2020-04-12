@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Text;
-using Repl.CodeAnalysis.Text;
+using Eagle.CodeAnalysis.Text;
 
-namespace Repl.CodeAnalysis.Syntax
+namespace Eagle.CodeAnalysis.Syntax
 {
     internal class Lexer : LexerBase
     {

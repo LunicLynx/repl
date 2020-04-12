@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Repl.CodeAnalysis.Text;
+using Eagle.CodeAnalysis.Text;
 
-namespace Repl.CodeAnalysis.Syntax
+namespace Eagle.CodeAnalysis.Syntax
 {
     public abstract class SyntaxNode
     {

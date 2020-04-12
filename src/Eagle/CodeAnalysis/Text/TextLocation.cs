@@ -1,4 +1,4 @@
-﻿namespace Repl.CodeAnalysis.Text
+﻿namespace Eagle.CodeAnalysis.Text
 {
     public struct TextLocation
     {

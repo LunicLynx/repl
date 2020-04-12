@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using Repl.CodeAnalysis.Syntax;
+using Eagle.CodeAnalysis.Syntax;
 
-namespace Repl.CodeAnalysis.Binding
+namespace Eagle.CodeAnalysis.Binding
 {
     public class BoundUnaryOperator
     {

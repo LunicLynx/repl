@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Repl
+namespace Eagle
 {
     public class DelegateDisposable : IDisposable
     {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
 
-namespace Repl.CodeAnalysis.Text
+namespace Eagle.CodeAnalysis.Text
 {
     public class SourceText
     {

@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Repl.CodeAnalysis.Syntax;
-using Repl.CodeAnalysis.Text;
+using Eagle.CodeAnalysis.Syntax;
+using Eagle.CodeAnalysis.Text;
 using Xunit;
 
-namespace Repl.Tests
+namespace Eagle.Tests.CodeAnalysis.Syntax
 {
     public class LexerTests
     {

@@ -1,4 +1,4 @@
-﻿namespace Repl.CodeAnalysis.CodeGen
+﻿namespace Eagle.CodeAnalysis.CodeGen
 {
     public class NCompilation
     {

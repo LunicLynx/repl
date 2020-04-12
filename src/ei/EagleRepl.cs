@@ -2,15 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Eagle.CodeAnalysis;
+using Eagle.CodeAnalysis.Syntax;
 using Eagle.IO;
-using Repl.CodeAnalysis;
-using Repl.CodeAnalysis.CodeGen;
-using Repl.CodeAnalysis.Syntax;
-using Repl.CodeAnalysis.Text;
 
-namespace Repl
+namespace Eagle
 {
-    public class EagleRepl : Eagle.Repl
+    public class EagleRepl : Repl
     {
         private bool _loadingSubmission;
         private static readonly Compilation emptyCompilation = Compilation.CreateScript(null);

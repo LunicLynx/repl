@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Repl.CodeAnalysis.Lowering;
 using XLang.Codegen;
 using XLang.Codegen.Llvm;
 
-namespace Repl.CodeAnalysis.CodeGen
+namespace Eagle.CodeAnalysis.CodeGen
 {
     public class Compiler
     {

@@ -1,4 +1,4 @@
-﻿namespace Repl.CodeAnalysis.Syntax
+﻿namespace Eagle.CodeAnalysis.Syntax
 {
     public class GlobalStatementSyntax : MemberSyntax
     {

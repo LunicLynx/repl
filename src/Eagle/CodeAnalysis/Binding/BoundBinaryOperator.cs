@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using Repl.CodeAnalysis.Syntax;
+using Eagle.CodeAnalysis.Syntax;
 
-namespace Repl.CodeAnalysis.Binding
+namespace Eagle.CodeAnalysis.Binding
 {
     [DebuggerDisplay("{Kind} {LeftType} {RightType}")]
     public class BoundBinaryOperator

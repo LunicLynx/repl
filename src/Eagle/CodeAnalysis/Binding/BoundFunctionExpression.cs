@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Repl.CodeAnalysis.Binding
+namespace Eagle.CodeAnalysis.Binding
 {
     internal class BoundFunctionExpression : BoundExpression
     {

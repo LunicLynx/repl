@@ -1,10 +1,7 @@
-using System.Collections.Immutable;
-using Repl.CodeAnalysis.Binding;
-using Repl.CodeAnalysis.Syntax;
-using Repl.CodeAnalysis.Text;
+using Eagle.CodeAnalysis.Syntax;
 using Xunit;
 
-namespace Repl.Tests
+namespace Eagle.Tests
 {
     public class BinderTests
     {

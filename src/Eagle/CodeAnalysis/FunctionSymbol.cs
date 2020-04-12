@@ -1,8 +1,8 @@
 ﻿using System.Collections.Immutable;
 using System.Linq;
-using Repl.CodeAnalysis.Syntax;
+using Eagle.CodeAnalysis.Syntax;
 
-namespace Repl.CodeAnalysis
+namespace Eagle.CodeAnalysis
 {
     public interface IInvokableSymbol
     {

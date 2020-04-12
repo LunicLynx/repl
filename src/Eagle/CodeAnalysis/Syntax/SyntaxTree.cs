@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using Repl.CodeAnalysis.Text;
+using Eagle.CodeAnalysis.Text;
 
-namespace Repl.CodeAnalysis.Syntax
+namespace Eagle.CodeAnalysis.Syntax
 {
     public class SyntaxTree
     {

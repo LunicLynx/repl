@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
 
-namespace Repl.CodeAnalysis.Binding
+namespace Eagle.CodeAnalysis.Binding
 {
     public class BoundProgram
     {

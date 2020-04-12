@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Repl.CodeAnalysis.Syntax
+﻿namespace Eagle.CodeAnalysis.Syntax
 {
     public class PropertyDeclarationSyntax : MemberDeclarationSyntax
     {

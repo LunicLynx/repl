@@ -3,9 +3,9 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Repl.CodeAnalysis.Syntax;
+using Eagle.CodeAnalysis.Syntax;
 
-namespace Repl.CodeAnalysis.Binding
+namespace Eagle.CodeAnalysis.Binding
 {
     internal sealed class ControlFlowGraph
     {

@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Repl.CodeAnalysis;
-using Repl.CodeAnalysis.Syntax;
-using Repl.CodeAnalysis.Text;
+using Eagle.CodeAnalysis;
+using Eagle.CodeAnalysis.Text;
 
 namespace Eagle.IO
 {

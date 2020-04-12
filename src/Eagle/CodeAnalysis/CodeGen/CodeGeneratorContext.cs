@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using XLang.Codegen.Llvm;
 
-namespace Repl.CodeAnalysis.CodeGen
+namespace Eagle.CodeAnalysis.CodeGen
 {
     public class CodeGeneratorContext
     {
