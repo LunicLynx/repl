@@ -25,6 +25,6 @@ namespace Repl.CodeAnalysis
 
         IInvokableDeclarationSyntax IInvokableSymbol.Declaration => Declaration;
 
-        TypeSymbol IInvokableSymbol.ReturnType => Type;
+        TypeSymbol IInvokableSymbol.Type => Type;
     }
 }

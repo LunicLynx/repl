@@ -6,13 +6,16 @@ namespace Repl.CodeAnalysis
 {
     public interface IInvokableSymbol
     {
+        string Name { get; }
+        ImmutableArray<ParameterSymbol> Parameters { get; }
+        TypeSymbol Type { get; }
+
         IInvokableDeclarationSyntax Declaration { get; }
-        TypeSymbol ReturnType { get; }
     }
 
     public class FunctionSymbol : Symbol, IInvokableSymbol
     {
-        public TypeSymbol ReturnType { get; }
+        public TypeSymbol Type { get; }
         public FunctionDeclarationSyntax Declaration { get; }
         public bool Extern { get; }
         public override SymbolKind Kind => SymbolKind.Function;
@@ -24,14 +27,14 @@ namespace Repl.CodeAnalysis
             : base(name)
         {
             Parameters = parameters;
-            ReturnType = returnType;
+            Type = returnType;
             Declaration = declaration;
             Extern = @extern;
         }
 
         public override string ToString()
         {
-            return $"{Name}({string.Join(", ", Parameters.Select(p => p.ToString()))}): {ReturnType} ";
+            return $"{Name}({string.Join(", ", Parameters.Select(p => p.ToString()))}): {Type} ";
         }
     }
 }

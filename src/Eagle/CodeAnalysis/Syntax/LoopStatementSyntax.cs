@@ -5,9 +5,9 @@ namespace Repl.CodeAnalysis.Syntax
     internal class LoopStatementSyntax : StatementSyntax
     {
         public Token LoopKeyword { get; }
-        public BlockStatementSyntax Body { get; }
+        public StatementSyntax Body { get; }
 
-        public LoopStatementSyntax(SyntaxTree syntaxTree, Token loopKeyword, BlockStatementSyntax body)
+        public LoopStatementSyntax(SyntaxTree syntaxTree, Token loopKeyword, StatementSyntax body)
             : base(syntaxTree)
         {
             LoopKeyword = loopKeyword;

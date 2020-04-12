@@ -127,11 +127,12 @@ namespace Repl.Tests
         public void Evaluator_InvokeFunctionArguments_Missing()
         {
             var text = @"
-                print([)]
+                extern Print(s: string)
+                Print([)]
             ";
 
             var diagnostics = @"
-                Function 'print' requires 1 arguments but was given 0.
+                Function 'Print' requires 1 arguments but was given 0.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -141,11 +142,12 @@ namespace Repl.Tests
         public void Evaluator_InvokeFunctionArguments_Exceeding()
         {
             var text = @"
-                print(""Hello""[, "" "", "" world!""])
+                extern Print(s: string)
+                Print(""Hello""[, "" "", "" world!""])
             ";
 
             var diagnostics = @"
-                Function 'print' requires 1 arguments but was given 3.
+                Function 'Print' requires 1 arguments but was given 3.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -155,13 +157,14 @@ namespace Repl.Tests
         public void Evaluator_InvokeFunctionArguments_NoInfiniteLoop()
         {
             var text = @"
-                print(""Hi""[[=]][)]
+                extern Print(s: string)
+                Print(""Hi""[[=]][)]
             ";
 
             var diagnostics = @"
-                Unexpected token <EqualsToken>, expected <CloseParenthesisToken>.
-                Unexpected token <EqualsToken>, expected <IdentifierToken>.
-                Unexpected token <CloseParenthesisToken>, expected <IdentifierToken>.
+                Unexpected token <Equals>, expected <CloseParenthesis>.
+                Unexpected token <Equals>, expected <Identifier>.
+                Unexpected token <CloseParenthesis>, expected <Identifier>.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -302,7 +305,7 @@ namespace Repl.Tests
             var text = @"[x] * 10";
 
             var diagnostics = @"
-                Variable 'x' doesn't exist.
+                Symbol 'x' doesn't exist.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -314,7 +317,7 @@ namespace Repl.Tests
             var text = @"1 + []";
 
             var diagnostics = @"
-                Unexpected token <EndOfFileToken>, expected <IdentifierToken>.
+                Unexpected token <EndOfFile>, expected <Identifier>.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -381,7 +384,7 @@ namespace Repl.Tests
             var diagnostics = @"
                 Variable 'x' is read-only and cannot be assigned to.
             ";
-            
+
             AssertDiagnostics(text, diagnostics);
         }
 
@@ -435,14 +438,15 @@ namespace Repl.Tests
         public void Evaluator_Variables_Can_Shadow_Functions()
         {
             var text = @"
+                extern Print(s: string)
                 {
-                    let print = 42
-                    [print](""test"")
+                    let Print = 42
+                    [Print](""test"")
                 }
             ";
 
             var diagnostics = @"
-                'print' is not a function.
+                Reference 'Print' is a 'Variable'. The target must be a function, method or delegate.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -452,7 +456,7 @@ namespace Repl.Tests
         public void Evaluator_Void_Function_Should_Not_Return_Value()
         {
             var text = @"
-                function test()
+                test()
                 {
                     return [1]
                 }
@@ -532,17 +536,13 @@ namespace Repl.Tests
         }
 
         [Fact]
-        public void Evaluator_Invalid_Return()
+        public void Evaluator_Script_Return()
         {
             var text = @"
-                [return]
+                return
             ";
 
-            var diagnostics = @"
-                The 'return' keyword can only be used inside of functions.
-            ";
-
-            AssertDiagnostics(text, diagnostics);
+            AssertValue(text, "");
         }
 
         [Fact]

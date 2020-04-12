@@ -318,7 +318,7 @@ namespace Repl.CodeAnalysis.CodeGen
 
         private FunctionType CreateFunctionType(FunctionSymbol function)
         {
-            var returnType = GetXType(function.ReturnType);
+            var returnType = GetXType(function.Type);
             var parameterTypes = function.Parameters.Select(p => GetXType(p.Type)).ToArray();
             return new FunctionType(returnType, parameterTypes);
         }

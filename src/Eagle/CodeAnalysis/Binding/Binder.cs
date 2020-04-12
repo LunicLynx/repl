@@ -24,6 +24,14 @@ namespace Repl.CodeAnalysis.Binding
             _isScript = isScript;
             _invokable = invokable;
             _scope = new BoundScope(parent);
+
+            if (_invokable != null)
+            {
+                foreach (var p in _invokable.Parameters)
+                {
+                    _scope.TryDeclare(p);
+                }
+            }
         }
 
         public static BoundGlobalScope BindGlobalScope(bool isScript, BoundGlobalScope previous, ImmutableArray<SyntaxTree> syntaxTrees)
@@ -91,7 +99,7 @@ namespace Repl.CodeAnalysis.Binding
 
                 if (mainFunction != null)
                 {
-                    if (mainFunction.ReturnType != TypeSymbol.Void || mainFunction.Parameters.Any())
+                    if (mainFunction.Type != TypeSymbol.Void || mainFunction.Parameters.Any())
                         binder.Diagnostics.ReportMainMustHaveCorrectSignature(mainFunction.Declaration.IdentifierToken.Location);
                 }
 
@@ -140,7 +148,7 @@ namespace Repl.CodeAnalysis.Binding
                 var body = binder.BindStatement(function.Declaration.Body);
                 var loweredBody = Lowerer.Lower(body);
 
-                if (function.ReturnType != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
+                if (function.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
                     binder.Diagnostics.ReportAllPathsMustReturn(function.Declaration.IdentifierToken.Location);
 
                 functionBodies.Add(function, loweredBody);
@@ -614,10 +622,39 @@ namespace Repl.CodeAnalysis.Binding
 
         private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
         {
-            BoundExpression? value = null;
-            if (syntax.Value != null)
-                value = BindExpression(syntax.Value);
-            return new BoundReturnStatement(value);
+            var expression = syntax.Expression == null ? null : BindExpression(syntax.Expression);
+
+            if (_invokable == null)
+            {
+                if (_isScript)
+                {
+                    // Ignore because we allow both return with and without values.
+                    if (expression == null)
+                        expression = new BoundLiteralExpression(TypeSymbol.String, "");
+                }
+                else if (expression != null)
+                {
+                    // Main does not support return values.
+                    Diagnostics.ReportInvalidReturnExpression(syntax.Expression.Location, _invokable.Name);
+                }
+            }
+            else
+            {
+                if (_invokable.Type == TypeSymbol.Void)
+                {
+                    if (expression != null)
+                        Diagnostics.ReportInvalidReturnExpression(syntax.Expression.Location, _invokable.Name);
+                }
+                else
+                {
+                    if (expression == null)
+                        Diagnostics.ReportMissingReturnExpression(syntax.ReturnKeyword.Location, _invokable.Type);
+                    else
+                        expression = BindConversion(syntax.Expression.Location, expression, _invokable.Type);
+                }
+            }
+
+            return new BoundReturnStatement(expression);
         }
 
         //private BoundClassDeclaration BindClassDeclaration(ObjectDeclarationSyntax syntax)
@@ -770,20 +807,30 @@ namespace Repl.CodeAnalysis.Binding
         //    }
         //}
 
-        private ImmutableArray<ParameterSymbol> LookupParameterList(SeparatedSyntaxList<ParameterSyntax> parameterList)
+        private ImmutableArray<ParameterSymbol> LookupParameterList(SeparatedSyntaxList<ParameterSyntax> syntax)
         {
-            return parameterList.Select(BindParameter).ToImmutableArray();
+            var parameters = ImmutableArray.CreateBuilder<ParameterSymbol>();
+            var seenParameterNames = new HashSet<string>();
+
+            var index = 0;
+            foreach (var parameterSyntax in syntax)
+            {
+                var parameterName = parameterSyntax.IdentifierToken.Text;
+                var parameterType = BindTypeClause(parameterSyntax.Type);
+                if (!seenParameterNames.Add(parameterName))
+                {
+                    Diagnostics.ReportParameterAlreadyDeclared(parameterSyntax.Location, parameterName);
+                }
+                else
+                {
+                    var parameter = new ParameterSymbol(parameterName, parameterType, index++);
+                    parameters.Add(parameter);
+                }
+            }
+
+            return parameters.ToImmutable();
         }
-
-        private ParameterSymbol BindParameter(ParameterSyntax syntax, int index)
-        {
-            var type = BindTypeClause(syntax.Type);
-            var name = syntax.IdentifierToken.Text;
-            var parameter = new ParameterSymbol(type, name, index);
-
-            return parameter;
-        }
-
+        
         private TypeSymbol? BindTypeClause(TypeAnnotationSyntax? syntax)
         {
             if (syntax == null)
@@ -872,7 +919,7 @@ namespace Repl.CodeAnalysis.Binding
         {
             if (_loopStack.Count == 0)
             {
-                Diagnostics.ReportContinueOutsideLoop(syntax.ContinueKeyword.Location);
+                Diagnostics.ReportInvalidBreakOrContinue(syntax.ContinueKeyword.Location, syntax.ContinueKeyword.Text);
                 return BindErrorStatement();
             }
 
@@ -889,7 +936,7 @@ namespace Repl.CodeAnalysis.Binding
         {
             if (_loopStack.Count == 0)
             {
-                Diagnostics.ReportBreakOutsideLoop(syntax.BreakKeyword.Location);
+                Diagnostics.ReportInvalidBreakOrContinue(syntax.BreakKeyword.Location, syntax.BreakKeyword.Text);
                 return BindErrorStatement();
             }
 
@@ -1191,9 +1238,13 @@ namespace Repl.CodeAnalysis.Binding
                 TextSpan span;
                 if (arguments.Length > parameters.Length)
                 {
-                    var start = arguments.First().Span.Start;
-                    var end = arguments.Last().Span.End;
-                    span = TextSpan.FromBounds(start, end);
+                    SyntaxNode firstExceedingNode;
+                    if (parameters.Length > 0)
+                        firstExceedingNode = syntax.Arguments.GetSeparator(parameters.Length - 1);
+                    else
+                        firstExceedingNode = syntax.Arguments[0];
+                    var lastExceedingArgument = syntax.Arguments[syntax.Arguments.Count - 1];
+                    span = TextSpan.FromBounds(firstExceedingNode.Span.Start, lastExceedingArgument.Span.End);
                 }
                 else
                 {
@@ -1201,7 +1252,7 @@ namespace Repl.CodeAnalysis.Binding
                 }
 
                 var location = new TextLocation(syntax.SyntaxTree.Text, span);
-                Diagnostics.ReportParameterCount(location, name, parameters.Length, arguments.Length);
+                Diagnostics.ReportWrongArgumentCount(location, name, parameters.Length, arguments.Length);
                 return false;
             }
 
@@ -1326,7 +1377,7 @@ namespace Repl.CodeAnalysis.Binding
                     return "Int32";
                 case TokenKind.I64Keyword:
                     return "Int64";
-                case TokenKind.UintKeyword:
+                case TokenKind.UIntKeyword:
                     return "UInt";
                 case TokenKind.U8Keyword:
                     return "UInt8";
@@ -1339,7 +1390,7 @@ namespace Repl.CodeAnalysis.Binding
                 case TokenKind.BoolKeyword:
                     return "Boolean";
             }
-            
+
             throw new InvalidOperationException($"Unsupported Token kind {token.Kind}");
         }
 
@@ -1383,10 +1434,11 @@ namespace Repl.CodeAnalysis.Binding
                     type = v.Type;
                     break;
                 case BoundErrorExpression _: break;
+                case BoundLiteralExpression _: break;
                 default:
                     var symbol = target switch
                     {
-                        BoundFunctionExpression f => f.FunctionSymbol
+                        BoundFunctionExpression f => f.FunctionSymbol,
                     };
                     Diagnostics.ReportNotLValue(syntax.Target.Location, symbol);
                     break;

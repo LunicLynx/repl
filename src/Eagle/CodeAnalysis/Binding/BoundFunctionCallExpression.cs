@@ -22,6 +22,6 @@ namespace Repl.CodeAnalysis.Binding
             }
         }
 
-        public override TypeSymbol Type => Function.ReturnType;
+        public override TypeSymbol Type => Function.Type;
     }
 }

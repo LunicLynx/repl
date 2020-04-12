@@ -6,9 +6,9 @@ namespace Repl.CodeAnalysis.Syntax
     {
         public Token WhileKeyword { get; }
         public ExpressionSyntax Condition { get; }
-        public BlockStatementSyntax Body { get; }
+        public StatementSyntax Body { get; }
 
-        public WhileStatementSyntax(SyntaxTree syntaxTree, Token whileKeyword, ExpressionSyntax condition, BlockStatementSyntax body)
+        public WhileStatementSyntax(SyntaxTree syntaxTree, Token whileKeyword, ExpressionSyntax condition, StatementSyntax body)
             : base(syntaxTree)
         {
             WhileKeyword = whileKeyword;

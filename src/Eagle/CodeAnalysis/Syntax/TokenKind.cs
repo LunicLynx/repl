@@ -75,7 +75,7 @@
         U64Keyword,
         U128Keyword,
         IntKeyword,
-        UintKeyword,
+        UIntKeyword,
         StringKeyword,
 
         // Literals

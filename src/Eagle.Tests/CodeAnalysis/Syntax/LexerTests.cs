@@ -28,15 +28,17 @@ namespace Repl.Tests
         public void Lexer_Covers_AllTokens()
         {
             var tokenKinds = Enum.GetValues(typeof(TokenKind))
-                .Cast<TokenKind>()
-                .Where(k => k.ToString().EndsWith("Keyword") ||
-                            k.ToString().EndsWith("Token"));
+                .Cast<TokenKind>();
+                //.Where(k => k.ToString().EndsWith("Keyword") ||
+                //            k.ToString().EndsWith("Token"));
 
             var testedTokenKinds = GetTokens().Concat(GetSeparators()).Select(t => t.kind);
 
             var untestedTokenKinds = new SortedSet<TokenKind>(tokenKinds);
             untestedTokenKinds.Remove(TokenKind.Bad);
             untestedTokenKinds.Remove(TokenKind.EndOfFile);
+            untestedTokenKinds.Remove(TokenKind.SingleLineComment);
+            untestedTokenKinds.Remove(TokenKind.MultiLineComment);
             untestedTokenKinds.ExceptWith(testedTokenKinds);
 
             Assert.Empty(untestedTokenKinds);
@@ -108,6 +110,10 @@ namespace Repl.Tests
         {
             var fixedTokens = Enum.GetValues(typeof(TokenKind))
                 .Cast<TokenKind>()
+                .Where(tk => 
+                    tk != TokenKind.SingleLineComment &&
+                    tk != TokenKind.MultiLineComment
+                    )
                 .Select(k => (kind: k, text: SyntaxFacts.GetText(k)))
                 .Where(t => t.text != null);
 
@@ -119,7 +125,7 @@ namespace Repl.Tests
                 (TokenKind.Identifier, "a"),
                 (TokenKind.Identifier, "abc"),
                 (TokenKind.StringLiteral, "\"Test\""),
-                (TokenKind.StringLiteral, "\"Te\"\"st\""),
+                (TokenKind.StringLiteral, "\"Te\\\"st\""),
             };
 
             return fixedTokens.Concat(dynamicTokens);
@@ -154,6 +160,12 @@ namespace Repl.Tests
             if (t1Kind == TokenKind.Identifier && t2IsKeyword)
                 return true;
 
+            if (t1Kind == TokenKind.Identifier && t2Kind == TokenKind.NumberLiteral)
+                return true;
+
+            if (t1IsKeyword && t2Kind == TokenKind.NumberLiteral)
+                return true;
+
             if (t1Kind == TokenKind.NumberLiteral && t2Kind == TokenKind.NumberLiteral)
                 return true;
 
@@ -166,10 +178,22 @@ namespace Repl.Tests
             if (t1Kind == TokenKind.Bang && t2Kind == TokenKind.EqualsEquals)
                 return true;
 
+            if (t1Kind == TokenKind.Bang && t2Kind == TokenKind.EqualsGreater)
+                return true;
+
             if (t1Kind == TokenKind.Equals && t2Kind == TokenKind.Equals)
                 return true;
 
             if (t1Kind == TokenKind.Equals && t2Kind == TokenKind.EqualsEquals)
+                return true;
+
+            if (t1Kind == TokenKind.Equals && t2Kind == TokenKind.EqualsGreater)
+                return true;
+
+            if (t1Kind == TokenKind.Equals && t2Kind == TokenKind.Greater)
+                return true;
+
+            if (t1Kind == TokenKind.Equals && t2Kind == TokenKind.GreaterEquals)
                 return true;
 
             if (t1Kind == TokenKind.Less && t2Kind == TokenKind.Equals)
@@ -178,10 +202,16 @@ namespace Repl.Tests
             if (t1Kind == TokenKind.Less && t2Kind == TokenKind.EqualsEquals)
                 return true;
 
+            if (t1Kind == TokenKind.Less && t2Kind == TokenKind.EqualsGreater)
+                return true;
+
             if (t1Kind == TokenKind.Greater && t2Kind == TokenKind.Equals)
                 return true;
 
             if (t1Kind == TokenKind.Greater && t2Kind == TokenKind.EqualsEquals)
+                return true;
+
+            if (t1Kind == TokenKind.Greater && t2Kind == TokenKind.EqualsGreater)
                 return true;
 
             if (t1Kind == TokenKind.Ampersand && t2Kind == TokenKind.Ampersand)
@@ -194,6 +224,12 @@ namespace Repl.Tests
                 return true;
 
             if (t1Kind == TokenKind.Pipe && t2Kind == TokenKind.PipePipe)
+                return true;
+
+            if (t1Kind == TokenKind.Slash && t2Kind == TokenKind.Slash)
+                return true;
+
+            if (t1Kind == TokenKind.Slash && t2Kind == TokenKind.Star)
                 return true;
 
             return false;

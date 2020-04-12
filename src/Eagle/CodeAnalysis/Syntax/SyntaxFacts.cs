@@ -22,7 +22,7 @@ namespace Repl.CodeAnalysis.Syntax
                 case TokenKind.U64Keyword:
                 case TokenKind.U128Keyword:
                 case TokenKind.IntKeyword:
-                case TokenKind.UintKeyword:
+                case TokenKind.UIntKeyword:
                 case TokenKind.StringKeyword:
                     return true;
                 default:
@@ -208,6 +208,64 @@ namespace Repl.CodeAnalysis.Syntax
                     return "var";
                 case TokenKind.WhileKeyword:
                     return "while";
+                case TokenKind.EqualsGreater:
+                    return "=>";
+                case TokenKind.SingleLineComment:
+                    return "// comment";
+                case TokenKind.MultiLineComment:
+                    return "/* comment */";
+                case TokenKind.Percent:
+                    return "%";
+                case TokenKind.Dot:
+                    return ".";
+                case TokenKind.OpenBracket:
+                    return "[";
+                case TokenKind.CloseBracket:
+                    return "]";
+                case TokenKind.LoopKeyword:
+                    return "loop";
+                case TokenKind.ExternKeyword:
+                    return "extern";
+                case TokenKind.ObjectKeyword:
+                    return "object";
+                case TokenKind.NewKeyword:
+                    return "new";
+                case TokenKind.AliasKeyword:
+                    return "alias";
+                case TokenKind.ConstKeyword:
+                    return "const";
+                case TokenKind.ThisKeyword:
+                    return "this";
+                case TokenKind.VoidKeyword:
+                    return "void";
+                case TokenKind.BoolKeyword:
+                    return "bool";
+                case TokenKind.I8Keyword:
+                    return "i8";
+                case TokenKind.I16Keyword:
+                    return "i16";
+                case TokenKind.I32Keyword:
+                    return "i32";
+                case TokenKind.I64Keyword:
+                    return "i64";
+                case TokenKind.I128Keyword:
+                    return "i128";
+                case TokenKind.U8Keyword:
+                    return "u8";
+                case TokenKind.U16Keyword:
+                    return "u16";
+                case TokenKind.U32Keyword:
+                    return "u32";
+                case TokenKind.U64Keyword:
+                    return "u64";
+                case TokenKind.U128Keyword:
+                    return "u128";
+                case TokenKind.IntKeyword:
+                    return "int";
+                case TokenKind.UIntKeyword:
+                    return "uint";
+                case TokenKind.StringKeyword:
+                    return "string";
                 default:
                     return null;
             }

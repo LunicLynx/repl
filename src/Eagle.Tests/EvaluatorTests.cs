@@ -37,7 +37,7 @@ namespace Repl.Tests
         public void MethodCall_LastValue()
         {
             var source = @"
-struct A {
+object A {
     GetValue() {
         100
     }
@@ -52,7 +52,7 @@ A().GetValue()
         public void FieldInitializer_Value()
         {
             var source = @"
-struct A {
+object A {
     b: int = 100
 }
 A().b
@@ -65,7 +65,7 @@ A().b
         public void Ctor_FieldValue()
         {
             var source = @"
-struct A {
+object A {
     b: int
     A() {
         b = 100

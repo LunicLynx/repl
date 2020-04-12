@@ -5,7 +5,7 @@
         public override SymbolKind Kind => SymbolKind.Parameter;
         public int Index { get; }
 
-        public ParameterSymbol(TypeSymbol type, string name, int index)
+        public ParameterSymbol( string name, TypeSymbol type, int index)
             : base(name, isReadOnly: true, type)
         {
             Index = index;

@@ -168,7 +168,8 @@ namespace Repl.CodeAnalysis.Syntax
             var returnKeyword = MatchToken(TokenKind.ReturnKeyword);
 
             ExpressionSyntax? value = null;
-            if (Current.Kind != TokenKind.CloseBrace)
+            if (Current.Kind != TokenKind.CloseBrace &&
+                Current.Kind != TokenKind.EndOfFile)
                 value = ParseExpression();
 
             return new ReturnStatementSyntax(SyntaxTree, returnKeyword, value);
@@ -439,14 +440,14 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var whileKeyword = MatchToken(TokenKind.WhileKeyword);
             var condition = ParseExpression();
-            var body = ParseBlockStatement();
+            var body = ParseStatement();
             return new WhileStatementSyntax(SyntaxTree, whileKeyword, condition, body);
         }
 
         private StatementSyntax ParseLoopStatement()
         {
             var loopKeyword = MatchToken(TokenKind.LoopKeyword);
-            var body = ParseBlockStatement();
+            var body = ParseStatement();
             return new LoopStatementSyntax(SyntaxTree, loopKeyword, body);
         }
 
@@ -569,6 +570,13 @@ namespace Repl.CodeAnalysis.Syntax
 
             // if this did not advance
             var syntax = ParseBinaryExpression();
+
+            if (syntax is LiteralExpressionSyntax ||
+                syntax is InvokeExpressionSyntax)
+            {
+                // this is not assignable
+                return syntax;
+            }
 
             // we did not parse anything
             if (Current == startToken) return syntax;
@@ -701,31 +709,37 @@ namespace Repl.CodeAnalysis.Syntax
         {
             var openParenthesis = MatchToken(TokenKind.OpenParenthesis);
 
-            var arguments = ImmutableArray.CreateBuilder<SyntaxNode>();
-            var first = true;
-            Token startToken = null;
-            while (Current.Kind != TokenKind.CloseParenthesis &&
-                   Current.Kind != TokenKind.EndOfFile)
-            {
-                if (!first)
-                {
-                    var commaToken = MatchToken(TokenKind.Comma);
-                    arguments.Add(commaToken);
-                }
-                first = false;
-                var argument = ParseExpression();
-                arguments.Add(argument);
-
-                // Make sure we consume tokens
-                if (Current == startToken)
-                    NextToken();
-
-                startToken = Current;
-            }
+            var arguments = ParseArguments();
 
             var closeParenthesis = MatchToken(TokenKind.CloseParenthesis);
 
-            return new InvokeExpressionSyntax(SyntaxTree, target, openParenthesis, arguments.ToImmutable(), closeParenthesis);
+            return new InvokeExpressionSyntax(SyntaxTree, target, openParenthesis, arguments, closeParenthesis);
+        }
+
+        private SeparatedSyntaxList<ExpressionSyntax> ParseArguments()
+        {
+            var nodesAndSeparators = ImmutableArray.CreateBuilder<SyntaxNode>();
+
+            var parseNextArgument = true;
+            while (parseNextArgument &&
+                   Current.Kind != TokenKind.CloseParenthesis &&
+                   Current.Kind != TokenKind.EndOfFile)
+            {
+                var expression = ParseExpression();
+                nodesAndSeparators.Add(expression);
+
+                if (Current.Kind == TokenKind.Comma)
+                {
+                    var comma = MatchToken(TokenKind.Comma);
+                    nodesAndSeparators.Add(comma);
+                }
+                else
+                {
+                    parseNextArgument = false;
+                }
+            }
+
+            return new SeparatedSyntaxList<ExpressionSyntax>(nodesAndSeparators.ToImmutable());
         }
 
         private ExpressionSyntax ParseCastOrParenthesizedExpression()

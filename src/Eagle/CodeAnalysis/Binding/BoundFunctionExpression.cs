@@ -16,6 +16,6 @@ namespace Repl.CodeAnalysis.Binding
             yield break;
         }
 
-        public override TypeSymbol Type => FunctionSymbol.ReturnType;
+        public override TypeSymbol Type => FunctionSymbol.Type;
     }
 }

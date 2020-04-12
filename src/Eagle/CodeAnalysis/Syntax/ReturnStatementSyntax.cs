@@ -5,13 +5,13 @@ namespace Repl.CodeAnalysis.Syntax
     public class ReturnStatementSyntax : StatementSyntax
     {
         public Token ReturnKeyword { get; }
-        public ExpressionSyntax? Value { get; }
+        public ExpressionSyntax? Expression { get; }
 
-        public ReturnStatementSyntax(SyntaxTree syntaxTree, Token returnKeyword, ExpressionSyntax? value) 
+        public ReturnStatementSyntax(SyntaxTree syntaxTree, Token returnKeyword, ExpressionSyntax? expression) 
             : base(syntaxTree)
         {
             ReturnKeyword = returnKeyword;
-            Value = value;
+            Expression = expression;
         }
     }
 }

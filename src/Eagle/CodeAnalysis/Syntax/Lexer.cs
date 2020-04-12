@@ -41,7 +41,7 @@ namespace Repl.CodeAnalysis.Syntax
             {"u64", TokenKind.U64Keyword},
             {"u128", TokenKind.U128Keyword},
             {"int", TokenKind.IntKeyword},
-            {"uint", TokenKind.UintKeyword},
+            {"uint", TokenKind.UIntKeyword},
             {"string", TokenKind.StringKeyword},
         };
 
@@ -111,7 +111,15 @@ namespace Repl.CodeAnalysis.Syntax
                 }
 
                 if (Current == '"')
+                {
                     Next();
+                }
+                else
+                {
+                    var span = new TextSpan(start, 1);
+                    var location = new TextLocation(Text, span);
+                    Diagnostics.ReportUnterminatedString(location);
+                }
 
                 value = sb.ToString();
                 kind = TokenKind.StringLiteral;
@@ -237,7 +245,7 @@ namespace Repl.CodeAnalysis.Syntax
                 }
             }
 
-            
+
             return new Token(SyntaxTree, kind, start, Text.ToString(start, Position - start), value);
         }
 

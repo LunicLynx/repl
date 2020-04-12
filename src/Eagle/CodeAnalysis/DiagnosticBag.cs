@@ -27,6 +27,12 @@ namespace Repl.CodeAnalysis
             _diagnostics.Add(diagnostic);
         }
 
+        public void ReportUnterminatedString(TextLocation location)
+        {
+            var message = "Unterminated string literal.";
+            Report(location, message);
+        }
+
         public void ReportUnexpectedCharacter(TextLocation location, char c)
         {
             Report(location, $"Unexpected character '{c}'.");
@@ -58,6 +64,12 @@ namespace Repl.CodeAnalysis
             Report(location, message);
         }
 
+        public void ReportParameterAlreadyDeclared(TextLocation location, string parameterName)
+        {
+            var message = $"A parameter with the name '{parameterName}' already exists.";
+            Report(location, message);
+        }
+
         public void ReportCannotConvert(TextLocation location, TypeSymbol from, TypeSymbol to)
         {
             var message = $"Cannot convert type '{from}' to '{to}'.";
@@ -76,15 +88,9 @@ namespace Repl.CodeAnalysis
             Report(location, message);
         }
 
-        public void ReportContinueOutsideLoop(TextLocation location)
+        public void ReportInvalidBreakOrContinue(TextLocation location, string text)
         {
-            var message = "The 'continue'-Statement can only be used inside a loop";
-            Report(location, message);
-        }
-
-        public void ReportBreakOutsideLoop(TextLocation location)
-        {
-            var message = "The 'break'-Statement can only be used inside a loop";
+            var message = $"The keyword '{text}' can only be used inside of loops.";
             Report(location, message);
         }
 
@@ -106,9 +112,9 @@ namespace Repl.CodeAnalysis
             Report(location, message);
         }
 
-        public void ReportParameterCount(TextLocation location, string name, int expected, int actual)
+        public void ReportWrongArgumentCount(TextLocation location, string name, int expectedCount, int actualCount)
         {
-            var message = $"Function '{name}' is called with {actual} but only accepts {expected}.";
+            var message = $"Function '{name}' requires {expectedCount} arguments but was given {actualCount}.";
             Report(location, message);
         }
 
@@ -211,6 +217,18 @@ namespace Repl.CodeAnalysis
         public void ReportUndefinedType(TextLocation location, string name)
         {
             var message = $"Type '{name}' doesn't exist.";
+            Report(location, message);
+        }
+
+        public void ReportInvalidReturnExpression(TextLocation location, string functionName)
+        {
+            var message = $"Since the function '{functionName}' does not return a value the 'return' keyword cannot be followed by an expression.";
+            Report(location, message);
+        }
+
+        public void ReportMissingReturnExpression(TextLocation location, TypeSymbol returnType)
+        {
+            var message = $"An expression of type '{returnType}' is expected.";
             Report(location, message);
         }
     }
