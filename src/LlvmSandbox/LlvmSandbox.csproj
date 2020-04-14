@@ -3,10 +3,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\XLang.Codegen\XLang.Codegen.csproj" />
+    <PackageReference Include="LLVMSharp" Version="9.0.0-beta" />
   </ItemGroup>
 
 </Project>

@@ -164,6 +164,10 @@ namespace Eagle.CodeAnalysis
                     Console.WriteLine(args[0]);
                     return null;
                 }
+                else if (node.Function.Name == "Input")
+                {
+                    return Console.ReadLine();
+                }
 
                 Debugger.Break();
             }
