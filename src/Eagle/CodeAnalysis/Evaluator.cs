@@ -157,6 +157,14 @@ namespace Eagle.CodeAnalysis
             if (node.Function.Extern)
             {
                 var args = node.Arguments.Select(EvaluateExpression).ToArray();
+
+                // managed to native transition
+                if (node.Function.Name == "Print")
+                {
+                    Console.WriteLine(args[0]);
+                    return null;
+                }
+
                 Debugger.Break();
             }
 

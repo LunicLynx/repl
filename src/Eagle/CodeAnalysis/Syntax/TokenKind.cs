@@ -60,6 +60,7 @@
         ConstKeyword,
         ThisKeyword,
         ReturnKeyword,
+        CtorKeyword,
 
         // Types
         VoidKeyword,
@@ -77,6 +78,7 @@
         IntKeyword,
         UIntKeyword,
         StringKeyword,
+        CharKeyword,
 
         // Literals
         TrueKeyword,

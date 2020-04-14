@@ -39,7 +39,7 @@ namespace Eagle.CodeAnalysis.CodeGen
 
             BoundNode[] children = null;
 
-            var decl = children.OfType<BoundStructDeclaration>().ToList();
+            var decl = children.OfType<BoundClassDeclaration>().ToList();
 
             var lastCount = decl.Count;
             while (decl.Any())
@@ -112,7 +112,7 @@ namespace Eagle.CodeAnalysis.CodeGen
                 case BoundConstDeclaration c:
                     GenerateConstDeclaration(c);
                     break;
-                case BoundStructDeclaration s:
+                case BoundClassDeclaration s:
                     GenerateStructDeclaration(s);
                     break;
                 default:
@@ -168,7 +168,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             GenerateMethodBase(node, owner);
         }
 
-        private bool TryGenerateStructDeclaration(BoundStructDeclaration node)
+        private bool TryGenerateStructDeclaration(BoundClassDeclaration node)
         {
             if (NativeTypeNames.Names.Contains(node.Type.Name)) return true;
 
@@ -194,7 +194,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             return true;
         }
 
-        private void GenerateStructDeclaration(BoundStructDeclaration node)
+        private void GenerateStructDeclaration(BoundClassDeclaration node)
         {
             var fields = node.Members.OfType<BoundFieldDeclaration>().ToList();
             //var fieldTypes = fields.Select(f => GenerateMember(f, null)).ToList();

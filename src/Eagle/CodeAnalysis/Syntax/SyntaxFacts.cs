@@ -24,6 +24,7 @@ namespace Eagle.CodeAnalysis.Syntax
                 case TokenKind.IntKeyword:
                 case TokenKind.UIntKeyword:
                 case TokenKind.StringKeyword:
+                case TokenKind.CharKeyword:
                     return true;
                 default:
                     return false;
@@ -266,6 +267,8 @@ namespace Eagle.CodeAnalysis.Syntax
                     return "uint";
                 case TokenKind.StringKeyword:
                     return "string";
+                case TokenKind.CharKeyword:
+                    return "char";
                 default:
                     return null;
             }

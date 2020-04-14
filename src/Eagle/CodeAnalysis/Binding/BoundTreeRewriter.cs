@@ -34,7 +34,7 @@ namespace Eagle.CodeAnalysis.Binding
             return new BoundReturnStatement(value);
         }
 
-        protected virtual BoundStructDeclaration RewriteStructDeclaration(BoundStructDeclaration node)
+        protected virtual BoundClassDeclaration RewriteStructDeclaration(BoundClassDeclaration node)
         {
             var changed = false;
             var result = ImmutableArray.CreateBuilder<BoundMemberDeclaration>();
@@ -46,7 +46,7 @@ namespace Eagle.CodeAnalysis.Binding
                 result.Add(member);
             }
 
-            return changed ? new BoundStructDeclaration(node.Type, result.ToImmutable()) : node;
+            return changed ? new BoundClassDeclaration(node.Type, result.ToImmutable()) : node;
         }
 
         protected virtual BoundMemberDeclaration RewriteMember(BoundMemberDeclaration node)

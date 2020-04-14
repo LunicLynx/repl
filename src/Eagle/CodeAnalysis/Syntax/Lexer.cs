@@ -27,6 +27,7 @@ namespace Eagle.CodeAnalysis.Syntax
             {"const", TokenKind.ConstKeyword},
             {"this", TokenKind.ThisKeyword},
             {"return", TokenKind.ReturnKeyword},
+            {"ctor", TokenKind.CtorKeyword},
 
             {"void", TokenKind.VoidKeyword},
             {"bool", TokenKind.BoolKeyword},
@@ -42,6 +43,7 @@ namespace Eagle.CodeAnalysis.Syntax
             {"u128", TokenKind.U128Keyword},
             {"int", TokenKind.IntKeyword},
             {"uint", TokenKind.UIntKeyword},
+            {"char", TokenKind.CharKeyword},
             {"string", TokenKind.StringKeyword},
         };
 

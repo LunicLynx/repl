@@ -7,6 +7,7 @@ namespace Eagle.CodeAnalysis
     public class MethodSymbol : MemberSymbol, IInvokableSymbol
     {
         public ImmutableArray<ParameterSymbol> Parameters { get; }
+        public bool Extern { get; }
         public MethodDeclarationSyntax? Declaration { get; }
 
         public MethodSymbol(TypeSymbol returnType, string name, ImmutableArray<ParameterSymbol> parameters, MethodDeclarationSyntax? declaration = null)

@@ -143,6 +143,8 @@ namespace Eagle.CodeAnalysis.Binding
 
             foreach (var function in globalScope.Symbols.OfType<IInvokableSymbol>())
             {
+                if (function.Extern) continue;
+
                 var binder = new Binder(isScript, parentScope, function);
                 var body = binder.BindStatement(function.Declaration.Body);
                 var loweredBody = Lowerer.Lower(body);
@@ -446,6 +448,7 @@ namespace Eagle.CodeAnalysis.Binding
 
             result.TryDeclare(TypeSymbol.Bool);
             result.TryDeclare(TypeSymbol.String);
+            result.TryDeclare(TypeSymbol.Char);
             result.TryDeclare(TypeSymbol.Void);
             result.TryDeclare(TypeSymbol.I8);
             result.TryDeclare(TypeSymbol.I16);
@@ -829,7 +832,7 @@ namespace Eagle.CodeAnalysis.Binding
 
             return parameters.ToImmutable();
         }
-        
+
         private TypeSymbol? BindTypeClause(TypeAnnotationSyntax? syntax)
         {
             if (syntax == null)
@@ -1172,10 +1175,13 @@ namespace Eagle.CodeAnalysis.Binding
                 return new BoundMethodCallExpression(t, method, boundArguments);
             }
 
-            var isNewExpression = false;
+            // TODO this should be handled differently
+            // this actaully means that we need to allocate
+            // space on the heap
+            // which also means that whatever follows the new
+            // must be determinable in size
             if (target is NewExpressionSyntax ne)
             {
-                isNewExpression = true;
                 target = ne.TypeName;
             }
 
@@ -1198,7 +1204,7 @@ namespace Eagle.CodeAnalysis.Binding
                 return new BoundFunctionCallExpression(function, boundArguments);
             }
 
-            if (symbol is TypeSymbol type && isNewExpression)
+            if (symbol is TypeSymbol type)
             {
                 var constructor = type.Members.OfType<ConstructorSymbol>().First();
 
@@ -1366,6 +1372,8 @@ namespace Eagle.CodeAnalysis.Binding
                     return token.Text;
                 case TokenKind.StringKeyword:
                     return "String";
+                case TokenKind.CharKeyword:
+                    return "Char";
                 case TokenKind.IntKeyword:
                     return "Int";
                 case TokenKind.I8Keyword:

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Eagle.CodeAnalysis.Syntax
@@ -200,16 +201,12 @@ namespace Eagle.CodeAnalysis.Syntax
         {
             var peek = Peek(1);
 
-            // TODO fix constructors
-            //if (Current.Kind == TokenKind.Identifier && Current.Text == _structIdentifier.Text &&
-            //    peek.Kind == TokenKind.OpenParenthesis)
-            //{
-            //    // ctor
-            //    return ParseConstructorDeclaration();
-            //}
-
             if (peek.Kind == TokenKind.OpenParenthesis)
             {
+                if (Current.Kind == TokenKind.CtorKeyword)
+                    return ParseConstructorDeclaration();
+                else
+
                 // Method
                 return ParseMethodDeclaration();
             }
@@ -234,12 +231,12 @@ namespace Eagle.CodeAnalysis.Syntax
 
         private MemberDeclarationSyntax ParseConstructorDeclaration()
         {
-            var identifierToken = MatchToken(TokenKind.Identifier);
+            var ctorKeyword = MatchToken(TokenKind.CtorKeyword);
             var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
             var parameterList = ParseParameterList();
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
             var body = ParseBlockStatement();
-            return new ConstructorDeclarationSyntax(SyntaxTree, identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, body);
+            return new ConstructorDeclarationSyntax(SyntaxTree, ctorKeyword, openParenthesisToken, parameterList, closeParenthesisToken, body);
         }
 
         private MemberDeclarationSyntax ParseFieldDeclaration(Token identifierToken, TypeAnnotationSyntax typeAnnotation)
@@ -642,6 +639,9 @@ namespace Eagle.CodeAnalysis.Syntax
                     case TokenKind.OpenParenthesis:
                         result = ParseInvokeExpression(result);
                         break;
+                    case TokenKind.OpenBracket:
+                        result = ParseIndexExpression(result);
+                        break;
                     case TokenKind.Dot:
                         result = ParseMemberAccessExpression(result);
                         break;
@@ -701,6 +701,14 @@ namespace Eagle.CodeAnalysis.Syntax
         {
             var token = MatchToken(TokenKind.StringLiteral);
             return new LiteralExpressionSyntax(SyntaxTree, token);
+        }
+
+        private ExpressionSyntax ParseIndexExpression(ExpressionSyntax target)
+        {
+            var openBracket = MatchToken(TokenKind.OpenBracket);
+            var arguments = ParseArguments();
+            var closeBracket = MatchToken(TokenKind.CloseBracket);
+            return new IndexExpressionSyntax(SyntaxTree, target, openBracket, arguments, closeBracket);
         }
 
         private ExpressionSyntax ParseInvokeExpression(ExpressionSyntax target)

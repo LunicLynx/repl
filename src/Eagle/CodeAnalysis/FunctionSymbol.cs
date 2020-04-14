@@ -10,6 +10,8 @@ namespace Eagle.CodeAnalysis
         ImmutableArray<ParameterSymbol> Parameters { get; }
         TypeSymbol Type { get; }
 
+        bool Extern { get; }
+
         IInvokableDeclarationSyntax Declaration { get; }
     }
 

@@ -167,7 +167,7 @@ namespace Eagle.CodeAnalysis.Lowering
             return RewriteStatement(result);
         }
 
-        protected override BoundStructDeclaration RewriteStructDeclaration(BoundStructDeclaration node)
+        protected override BoundClassDeclaration RewriteStructDeclaration(BoundClassDeclaration node)
         {
             // TODO this should probably be at the end
             node = base.RewriteStructDeclaration(node);
@@ -232,7 +232,7 @@ namespace Eagle.CodeAnalysis.Lowering
 
 
 
-            return changed ? new BoundStructDeclaration(node.Type, members) : node;
+            return changed ? new BoundClassDeclaration(node.Type, members) : node;
         }
 
         // TODO lower property declaration 
