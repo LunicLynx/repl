@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ec": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\Florian\\Source\\repl\\samples\\hello"
+    }
+  }
+}
