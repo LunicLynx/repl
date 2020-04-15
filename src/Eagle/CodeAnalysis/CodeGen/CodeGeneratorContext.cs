@@ -1,18 +1,18 @@
 ﻿using System.Collections.Generic;
-using XLang.Codegen.Llvm;
+using LLVMSharp.Interop;
 
 namespace Eagle.CodeAnalysis.CodeGen
 {
     public class CodeGeneratorContext
     {
-        public CodeGeneratorContext(XModule module)
+        public CodeGeneratorContext(LLVMModuleRef module)
         {
             Module = module;
         }
 
-        public Dictionary<Symbol, Value> Symbols { get; } = new Dictionary<Symbol, Value>();
-        public Dictionary<TypeSymbol, XType> Types { get; } = new Dictionary<TypeSymbol, XType>();
+        public Dictionary<Symbol, LLVMValueRef> Symbols { get; } = new Dictionary<Symbol, LLVMValueRef>();
+        public Dictionary<TypeSymbol, LLVMTypeRef> Types { get; } = new Dictionary<TypeSymbol, LLVMTypeRef>();
         public Dictionary<FieldSymbol, int> FieldIndicies { get; } = new Dictionary<FieldSymbol, int>();
-        public XModule Module { get; }
+        public LLVMModuleRef Module { get; }
     }
 }

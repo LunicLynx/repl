@@ -33,8 +33,6 @@ namespace Eagle.CodeAnalysis
             return new Compilation(isScript: true, previous, syntaxTrees);
         }
 
-
-
         internal BoundGlobalScope GlobalScope
         {
             get
@@ -116,6 +114,21 @@ namespace Eagle.CodeAnalysis
             var evaluator = new Evaluator(program, variables);
             var value = evaluator.Evaluate();
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+        }
+
+        public void EmitBinary()
+        {
+            var parseDiagnostics = SyntaxTrees.SelectMany(st => st.Diagnostics);
+
+            var diagnostics = parseDiagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
+            if (diagnostics.Any())
+                return;
+
+            var program = GetProgram();
+            if (program.Diagnostics.Any())
+                return;
+
+            new CodeGen.CodeGenerator(program)
         }
 
         public void EmitTree(TextWriter writer)

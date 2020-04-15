@@ -5,17 +5,15 @@ VisualStudioVersion = 16.0.28902.138
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Eagle", "Eagle\Eagle.csproj", "{A7EC42B7-52B4-4BF6-8B9B-31ED67A34A5A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XLang.Codegen", "XLang.Codegen\XLang.Codegen.csproj", "{44337BF9-FA14-4FB4-BB2A-D90B4DC2BE8C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Eagle.Tests", "Eagle.Tests\Eagle.Tests.csproj", "{A50E4D8B-172F-4A88-9F36-045EA77C4C39}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LlvmSandbox", "LlvmSandbox\LlvmSandbox.csproj", "{CC12E639-CC7C-4483-BB1C-6D476F78179F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoAlgorithms", "DemoAlgorithms\DemoAlgorithms.csproj", "{F58B612B-645B-4CCA-8194-AE87BB46DC6A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoAlgorithms", "DemoAlgorithms\DemoAlgorithms.csproj", "{F58B612B-645B-4CCA-8194-AE87BB46DC6A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ei", "ei\ei.csproj", "{AB0B7EFB-2D49-48A4-B0E0-ABB46DA2DCC0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ei", "ei\ei.csproj", "{AB0B7EFB-2D49-48A4-B0E0-ABB46DA2DCC0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ec", "ec\ec.csproj", "{2C412110-EC35-42E2-8C06-979EF434480E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ec", "ec\ec.csproj", "{2C412110-EC35-42E2-8C06-979EF434480E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,10 +25,6 @@ Global
 		{A7EC42B7-52B4-4BF6-8B9B-31ED67A34A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A7EC42B7-52B4-4BF6-8B9B-31ED67A34A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A7EC42B7-52B4-4BF6-8B9B-31ED67A34A5A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{44337BF9-FA14-4FB4-BB2A-D90B4DC2BE8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{44337BF9-FA14-4FB4-BB2A-D90B4DC2BE8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{44337BF9-FA14-4FB4-BB2A-D90B4DC2BE8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{44337BF9-FA14-4FB4-BB2A-D90B4DC2BE8C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A50E4D8B-172F-4A88-9F36-045EA77C4C39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A50E4D8B-172F-4A88-9F36-045EA77C4C39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A50E4D8B-172F-4A88-9F36-045EA77C4C39}.Release|Any CPU.ActiveCfg = Release|Any CPU

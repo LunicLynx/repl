@@ -2,16 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using Eagle.CodeAnalysis.Binding;
-using XLang.Codegen.Llvm;
+using LLVMSharp.Interop;
+
 
 namespace Eagle.CodeAnalysis.CodeGen
 {
     public class CodeGenerator
     {
         private readonly CodeGeneratorContext _context;
-        private readonly Builder _builder;
+        private readonly LLVMBuilderRef _builder;
 
-        public CodeGenerator(CodeGeneratorContext context, Builder builder)
+        public CodeGenerator(CodeGeneratorContext context, LLVMBuilderRef builder)
         {
             _context = context;
             _builder = builder;
@@ -19,7 +20,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             InitializeTypes();
         }
 
-        private Value _lastValue = Value.Int32(0);
+        private LLVMValueRef _lastValue = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0);
         private TypeSymbol _i32Type;
         private TypeSymbol _i64Type;
         private readonly TypeSymbol _i16Type;
@@ -34,7 +35,7 @@ namespace Eagle.CodeAnalysis.CodeGen
         private TypeSymbol _intType;
         private TypeSymbol _uintType;
 
-        public Value Generate(BoundProgram program)
+        public LLVMValueRef Generate(BoundProgram program)
         {
 
             BoundNode[] children = null;
@@ -74,7 +75,7 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private void InitializeTypes(/*ImmutableArray<Symbol> symbols*/)
         {
-            var list = _context.Types.Cast<KeyValuePair<TypeSymbol, XType>?>().ToList();
+            var list = _context.Types.Cast<KeyValuePair<TypeSymbol, LLVMTypeRef>?>().ToList();
             _i64Type = list.FirstOrDefault(kv => kv.Value.Key.Name == "Int64")?.Key;
             _i32Type = list.FirstOrDefault(kv => kv.Value.Key.Name == "Int32")?.Key;
             _u64Type = list.FirstOrDefault(kv => kv.Value.Key.Name == "UInt64")?.Key;
@@ -120,13 +121,13 @@ namespace Eagle.CodeAnalysis.CodeGen
             }
         }
 
-        private XType GetFieldType(BoundFieldDeclaration node)
+        private LLVMTypeRef GetFieldType(BoundFieldDeclaration node)
         {
             _context.Types.TryGetValue(node.Field.Type, out var type);
             return type;
         }
 
-        private XType GenerateMember(BoundMemberDeclaration node, XType owner)
+        private LLVMTypeRef GenerateMember(BoundMemberDeclaration node, LLVMTypeRef owner)
         {
             switch (node)
             {
@@ -142,28 +143,28 @@ namespace Eagle.CodeAnalysis.CodeGen
             return null;
         }
 
-        private void GenerateConstructorDeclaration(BoundConstructorDeclaration node, XType owner)
+        private void GenerateConstructorDeclaration(BoundConstructorDeclaration node, LLVMTypeRef owner)
         {
             //node.Constructor
 
             var constructor = node.Constructor;
             var ft = CreateConstructorType(constructor, owner);
-            var f = _context.Module.AddFunction(ft, constructor.Name);
+            var f = _context.Module.AddFunction(constructor.Name, ft);
             _context.Symbols[constructor] = f;
             var entry = f.AppendBasicBlock("entry");
 
-            using (var builder = new Builder())
+            using (var builder = _context.Module.Context.CreateBuilder())
             {
                 builder.PositionAtEnd(entry);
 
                 var c = new CodeGenerator(_context, builder);
                 c.GenerateStatement(node.Body);
 
-                builder.Ret(c._lastValue);
+                builder.BuildRet(c._lastValue);
             }
         }
 
-        private void GenerateMethodDeclaration(BoundMethodDeclaration node, XType owner)
+        private void GenerateMethodDeclaration(BoundMethodDeclaration node, LLVMTypeRef owner)
         {
             GenerateMethodBase(node, owner);
         }
@@ -183,7 +184,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             }
 
             //var members = node.Members.Select(GenerateMember).ToList();
-            var structType = XType.Struct(fieldTypes.Select(ft => ft.Type));
+            var structType = LLVMTypeRef.CreateStruct(fieldTypes.Select(ft => ft.Type).ToArray(), false);
 
             //node.Members
             //    .Except(fields)
@@ -220,19 +221,19 @@ namespace Eagle.CodeAnalysis.CodeGen
             _context.Symbols[node.Const] = value;
         }
 
-        private Value GetAsValue(TypeSymbol type, object nodeValue)
+        private LLVMValueRef GetAsValue(TypeSymbol type, object nodeValue)
         {
-            Value value = null;
-            if (type == _boolType) value = Value.Int1((bool)nodeValue);
-            if (type == _i16Type) value = Value.Int16((short)Convert.ChangeType(nodeValue, typeof(short)));
-            if (type == _i32Type) value = Value.Int32((int)Convert.ChangeType(nodeValue, typeof(int)));
-            if (type == _i64Type) value = Value.Int64((long)Convert.ChangeType(nodeValue, typeof(long)));
-            if (type == _i8Type) value = Value.Int8((sbyte)Convert.ChangeType(nodeValue, typeof(sbyte)));
-            if (type == _stringType) value = Value.String((string)nodeValue);
-            if (type == _u16Type) value = Value.UInt16((ushort)Convert.ChangeType(nodeValue, typeof(ushort)));
-            if (type == _u32Type) value = Value.UInt32((uint)Convert.ChangeType(nodeValue, typeof(uint)));
-            if (type == _u64Type) value = Value.UInt64((ulong)Convert.ChangeType(nodeValue, typeof(ulong)));
-            if (type == _u8Type) value = Value.UInt8((byte)Convert.ChangeType(nodeValue, typeof(byte)));
+            LLVMValueRef value = null;
+            if (type == _boolType) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int1, (ulong)((bool)nodeValue ? 1 : 0));
+            if (type == _i16Type) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int16, (ulong)((short)Convert.ChangeType(nodeValue, typeof(short))));
+            if (type == _i32Type) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)((int)Convert.ChangeType(nodeValue, typeof(int))));
+            if (type == _i64Type) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)((long)Convert.ChangeType(nodeValue, typeof(long))));
+            if (type == _i8Type) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, (ulong)((sbyte)Convert.ChangeType(nodeValue, typeof(sbyte))));
+            //if (type == _stringType) value = LLVMValueRef.String((string)nodeValue);
+            if (type == _u16Type) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int16, ((ushort)Convert.ChangeType(nodeValue, typeof(ushort))));
+            if (type == _u32Type) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, ((uint)Convert.ChangeType(nodeValue, typeof(uint))));
+            if (type == _u64Type) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, ((ulong)Convert.ChangeType(nodeValue, typeof(ulong))));
+            if (type == _u8Type) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, ((byte)Convert.ChangeType(nodeValue, typeof(byte))));
 
             if (value == null) throw new Exception("");
             return value;
@@ -282,78 +283,85 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var function = node.Function;
             var ft = CreateFunctionType(function);
-            var f = _context.Module.AddFunction(ft, function.Name);
+            var f = _context.Module.AddFunction(function.Name, ft);
             _context.Symbols[function] = f;
             var entry = f.AppendBasicBlock("entry");
 
-            using (var builder = new Builder())
+            using (var builder = _context.Module.Context.CreateBuilder())
             {
                 builder.PositionAtEnd(entry);
 
                 var c = new CodeGenerator(_context, builder);
                 c.GenerateStatement(node.Body);
 
-                builder.Ret(c._lastValue);
+                builder.BuildRet(c._lastValue);
             }
         }
 
-        private void GenerateMethodBase(BoundMethodDeclaration node, XType owner)
+        private void GenerateMethodBase(BoundMethodDeclaration node, LLVMTypeRef owner)
         {
             var function = node.Method;
             var ft = CreateMethodType(function, owner);
-            var f = _context.Module.AddFunction(ft, function.Name);
+            var f = _context.Module.AddFunction(function.Name, ft);
             _context.Symbols[function] = f;
             var entry = f.AppendBasicBlock("entry");
 
-            using (var builder = new Builder())
+            using (var builder = _context.Module.Context.CreateBuilder())
             {
                 builder.PositionAtEnd(entry);
 
                 var c = new CodeGenerator(_context, builder);
                 c.GenerateStatement(node.Body);
 
-                builder.Ret(c._lastValue);
+                builder.BuildRet(c._lastValue);
             }
         }
 
-        private FunctionType CreateFunctionType(FunctionSymbol function)
+        private LLVMTypeRef CreateFunctionType(FunctionSymbol function)
         {
             var returnType = GetXType(function.Type);
             var parameterTypes = function.Parameters.Select(p => GetXType(p.Type)).ToArray();
-            return new FunctionType(returnType, parameterTypes);
+            return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
+            //return new FunctionType(returnType, parameterTypes);
         }
 
-        private FunctionType CreateMethodType(MethodSymbol method, XType owner)
+        private LLVMTypeRef CreateMethodType(MethodSymbol method, LLVMTypeRef owner)
         {
             var returnType = GetXType(method.Type);
             var parameterTypes = new[] { owner }.Concat(method.Parameters.Select(p => GetXType(p.Type))).ToArray();
-            return new FunctionType(returnType, parameterTypes);
+            return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
+            //return new FunctionType(returnType, parameterTypes);
         }
 
-        private FunctionType CreateConstructorType(ConstructorSymbol constructor, XType owner)
+        private LLVMTypeRef CreateConstructorType(ConstructorSymbol constructor, LLVMTypeRef owner)
         {
+
+
             var returnType = GetXType(constructor.Type);
             var parameterTypes = new[] { owner }.Concat(constructor.Parameters.Select(p => GetXType(p.Type))).ToArray();
-            return new FunctionType(returnType, parameterTypes);
+            return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
+            //return new FunctionType(returnType, parameterTypes);
         }
 
         private void GenerateLabelStatement(BoundLabelStatement node)
         {
-            var currentBlock = _builder.GetInsertBlock();
+            
+            var currentBlock = _builder.InsertBlock;
             var target = GetOrAppend(node.Label, true);
             target.MoveAfter(currentBlock);
 
-            var targetPhi = target.GetFirstInstruction().AsPhi();
+            var targetPhi = target.FirstInstruction;//.AsPhi();
 
             // if the current block is not completed
             // we need to branch to the target block
             // otherwise we can expect to never reach this label
             // and we can just switch to the target block for emitting
             // this happens for the else statement: a goto followed by a label
-            if (!currentBlock.IsTerminated())
+            //if (!currentBlock.IsTerminated())
+            if (currentBlock.Terminator != null)
             {
-                targetPhi.AddIncoming(_lastValue, currentBlock);
-                _builder.Br(target);
+                targetPhi.AddIncoming(new []{ _lastValue}, new []{ currentBlock }, 1);
+                _builder.BuildBr(target);
             }
 
             _lastValue = targetPhi;
@@ -361,23 +369,23 @@ namespace Eagle.CodeAnalysis.CodeGen
             _builder.PositionAtEnd(target);
         }
 
-        private BasicBlock Append(bool addPhi = false, string name = "")
+        private LLVMBasicBlockRef Append(bool addPhi = false, string name = "")
         {
-            var insertBlock = _builder.GetInsertBlock();
-            var function = insertBlock.GetParent().AsFunction();
+            var insertBlock = _builder.InsertBlock;
+            var function = insertBlock.Parent;
             var target = function.AppendBasicBlock(name);
 
             if (addPhi)
             {
                 _builder.PositionAtEnd(target);
-                _builder.Phi(XType.Int32);
+                _builder.BuildPhi(LLVMTypeRef.Int32);
             }
 
             _builder.PositionAtEnd(insertBlock);
             return target;
         }
 
-        private BasicBlock GetOrAppend(BoundLabel labelSymbol, bool addPhi = false)
+        private LLVMBasicBlockRef GetOrAppend(BoundLabel labelSymbol, bool addPhi = false)
         {
             //if (_context.Symbols.TryGetValue(labelSymbol, out var label))
             //{
@@ -392,12 +400,12 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private void GenerateGotoStatement(BoundGotoStatement node)
         {
-            var currentBlock = _builder.GetInsertBlock();
+            var currentBlock = _builder.InsertBlock;
 
             var target = GetOrAppend(node.Label, true);
-            var targetPhi = target.GetFirstInstruction().AsPhi();
-            targetPhi.AddIncoming(_lastValue, currentBlock);
-            _builder.Br(target);
+            var targetPhi = target.FirstInstruction;
+            targetPhi.AddIncoming(new []{ _lastValue}, new []{ currentBlock},1);
+            _builder.BuildBr(target);
             _lastValue = targetPhi;
             // TODO fall through creates issues a block should only have one terminator and it should be the last instruction
             // Do we need to reposition the builder?
@@ -415,11 +423,11 @@ namespace Eagle.CodeAnalysis.CodeGen
 
             if (node.JumpIfTrue)
             {
-                _builder.CondBr(value, target, fallThrough);
+                _builder.BuildCondBr(value, target, fallThrough);
             }
             else
             {
-                _builder.CondBr(value, fallThrough, target);
+                _builder.BuildCondBr(value, fallThrough, target);
             }
 
             _builder.PositionAtEnd(fallThrough);
@@ -432,10 +440,10 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (!_context.Symbols.TryGetValue(variable, out var ptr))
             {
                 var xType = GetXType(variable.Type);
-                ptr = _builder.Alloca(xType, variable.Name);
+                ptr = _builder.BuildAlloca(xType, variable.Name);
                 _context.Symbols[variable] = ptr;
             }
-            _builder.Store(value, ptr);
+            _builder.BuildStore(value, ptr);
             _lastValue = value;
         }
 
@@ -444,7 +452,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             _lastValue = GenerateExpression(node.Expression);
         }
 
-        private Value GenerateExpression(BoundExpression expression)
+        private LLVMValueRef GenerateExpression(BoundExpression expression)
         {
             switch (expression)
             {
@@ -481,82 +489,82 @@ namespace Eagle.CodeAnalysis.CodeGen
             }
         }
 
-        private Value GenerateConstructorCallExpression(BoundConstructorCallExpression node)
+        private LLVMValueRef GenerateConstructorCallExpression(BoundConstructorCallExpression node)
         {
             throw new NotImplementedException();
         }
 
-        private Value GenerateFieldExpression(BoundFieldExpression node)
+        private LLVMValueRef GenerateFieldExpression(BoundFieldExpression node)
         {
             var index = _context.FieldIndicies[node.Field];
-            Value target;
+            LLVMValueRef target;
             if (node.Target != null)
             {
                 target = GenerateExpression(node.Target);
             }
             else
             {
-                target = _builder.GetInsertBlock().GetParent().AsFunction().GetParam(0);
+                target = _builder.InsertBlock.Parent.Params[0];
             }
 
-            return _builder.GEP(target, new[] { Value.Int32(index) });
+            return _builder.BuildGEP(target, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong) index) });
         }
 
-        private Value GenerateMethodCallExpression(BoundMethodCallExpression node)
+        private LLVMValueRef GenerateMethodCallExpression(BoundMethodCallExpression node)
         {
             var target = GenerateExpression(node.Target);
             var arguments = new[] { target }
                 .Concat(node.Arguments.Select(GenerateExpression))
                 .ToArray();
             var function = _context.Symbols[node.Method];
-            return _builder.Call(function, arguments);
+            return _builder.BuildCall(function, arguments);
         }
 
-        private Value GenerateThisExpression(BoundThisExpression node)
+        private LLVMValueRef GenerateThisExpression(BoundThisExpression node)
         {
-            return _builder.GetInsertBlock().GetParent().AsFunction().GetParam(0);
+            return _builder.InsertBlock.Parent.Params[0];
         }
 
-        private Value GeneratePropertyExpression(BoundPropertyExpression node)
+        private LLVMValueRef GeneratePropertyExpression(BoundPropertyExpression node)
         {
             var value = GenerateExpression(node.Target);
             return null;
         }
 
-        private Value GenerateConstExpression(BoundConstExpression node)
+        private LLVMValueRef GenerateConstExpression(BoundConstExpression node)
         {
             var value = _context.Symbols[node.Const];
             return value;
         }
 
-        private Value GenerateCastExpression(BoundConversionExpression node)
+        private LLVMValueRef GenerateCastExpression(BoundConversionExpression node)
         {
             var type = GetXType(node.Type);
             var value = GenerateExpression(node.Expression);
-            return _builder.IntCast(value, type);
+            return _builder.BuildIntCast(value, type);
         }
 
-        private Value GenerateParameterExpression(BoundParameterExpression node)
+        private LLVMValueRef GenerateParameterExpression(BoundParameterExpression node)
         {
-            return _builder.GetInsertBlock().GetParent().AsFunction().GetParam(node.Parameter.Index);
+            return _builder.InsertBlock.Parent.Params[node.Parameter.Index];
         }
 
-        private Value GenerateFunctionCallExpression(BoundFunctionCallExpression node)
+        private LLVMValueRef GenerateFunctionCallExpression(BoundFunctionCallExpression node)
         {
             var function = _context.Symbols[node.Function];
             var args = node.Arguments.Select(GenerateExpression).ToArray();
-            return _builder.Call(function, args);
+            return _builder.BuildCall(function, args);
         }
 
-        private Value GenerateVariableExpression(BoundVariableExpression node)
+        private LLVMValueRef GenerateVariableExpression(BoundVariableExpression node)
         {
             var variable = node.Variable;
             if (_context.Symbols.TryGetValue(variable, out var ptr))
-                return _builder.Load(ptr, variable.Name);
+                return _builder.BuildLoad(ptr, variable.Name);
             return null;
         }
 
-        private Value GenerateAssignmentExpression(BoundAssignmentExpression node)
+        private LLVMValueRef GenerateAssignmentExpression(BoundAssignmentExpression node)
         {
             throw new NotImplementedException();
             //var variable = node.Variable;
@@ -569,25 +577,25 @@ namespace Eagle.CodeAnalysis.CodeGen
             //return value;
         }
 
-        private XType GetXType(TypeSymbol type)
+        private LLVMTypeRef GetXType(TypeSymbol type)
         {
             if (_context.Types.TryGetValue(type, out var x))
                 return x;
-            if (type == _boolType) return XType.Int1;
-            if (type == _i8Type) return XType.Int8;
-            if (type == _i16Type) return XType.Int16;
-            if (type == _i32Type) return XType.Int32;
-            if (type == _i64Type) return XType.Int64;
-            if (type == _u8Type) return XType.Int8;
-            if (type == _u16Type) return XType.Int16;
-            if (type == _u32Type) return XType.Int32;
-            if (type == _u64Type) return XType.Int64;
-            if (type == _stringType) return XType.Int64;
-            if (type == _voidType) return XType.Void;
+            if (type == _boolType) return LLVMTypeRef.Int1;
+            if (type == _i8Type) return LLVMTypeRef.Int8;
+            if (type == _i16Type) return LLVMTypeRef.Int16;
+            if (type == _i32Type) return LLVMTypeRef.Int32;
+            if (type == _i64Type) return LLVMTypeRef.Int64;
+            if (type == _u8Type) return LLVMTypeRef.Int8;
+            if (type == _u16Type) return LLVMTypeRef.Int16;
+            if (type == _u32Type) return LLVMTypeRef.Int32;
+            if (type == _u64Type) return LLVMTypeRef.Int64;
+            if (type == _stringType) return LLVMTypeRef.Int64;
+            if (type == _voidType) return LLVMTypeRef.Void;
             throw new Exception("Unsupported type");
         }
 
-        private Value GenerateBinaryExpression(BoundBinaryExpression node)
+        private LLVMValueRef GenerateBinaryExpression(BoundBinaryExpression node)
         {
             var left = GenerateExpression(node.Left);
             var right = GenerateExpression(node.Right);
@@ -595,41 +603,41 @@ namespace Eagle.CodeAnalysis.CodeGen
             switch (node.Operator.Kind)
             {
                 case BoundBinaryOperatorKind.Addition:
-                    return _builder.Add(left, right);
+                    return _builder.BuildAdd(left, right);
                 case BoundBinaryOperatorKind.Subtraction:
-                    return _builder.Sub(left, right);
+                    return _builder.BuildSub(left, right);
                 case BoundBinaryOperatorKind.Multiplication:
-                    return _builder.Mul(left, right);
+                    return _builder.BuildMul(left, right);
                 case BoundBinaryOperatorKind.Division:
-                    return _builder.SDiv(left, right);
+                    return _builder.BuildSDiv(left, right);
                 case BoundBinaryOperatorKind.Modulo:
-                    return _builder.SRem(left, right);
+                    return _builder.BuildSRem(left, right);
                 case BoundBinaryOperatorKind.Equal:
-                    return _builder.ICmpEq(left, right);
+                    return _builder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, left, right);
                 case BoundBinaryOperatorKind.NotEqual:
-                    return _builder.ICmpNe(left, right);
+                    return _builder.BuildICmp(LLVMIntPredicate.LLVMIntNE, left, right);
                 case BoundBinaryOperatorKind.LogicalAnd:
                 case BoundBinaryOperatorKind.BitwiseAnd:
-                    return _builder.And(left, right);
+                    return _builder.BuildAnd(left, right);
                 case BoundBinaryOperatorKind.LogicalOr:
                 case BoundBinaryOperatorKind.BitwiseOr:
-                    return _builder.Or(left, right);
+                    return _builder.BuildOr(left, right);
                 case BoundBinaryOperatorKind.LessThan:
-                    return _builder.ICmpSlt(left, right);
+                    return _builder.BuildICmp(LLVMIntPredicate.LLVMIntSLT, left, right);
                 case BoundBinaryOperatorKind.LessOrEqual:
-                    return _builder.ICmpSle(left, right);
+                    return _builder.BuildICmp(LLVMIntPredicate.LLVMIntSLE, left, right);
                 case BoundBinaryOperatorKind.GreaterThan:
-                    return _builder.ICmpSgt(left, right);
+                    return _builder.BuildICmp(LLVMIntPredicate.LLVMIntSGT, left, right);
                 case BoundBinaryOperatorKind.GreaterOrEqual:
-                    return _builder.ICmpSge(left, right);
+                    return _builder.BuildICmp(LLVMIntPredicate.LLVMIntSGE, left, right);
                 case BoundBinaryOperatorKind.BitwiseXor:
-                    return _builder.Xor(left, right);
+                    return _builder.BuildXor(left, right);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        private Value GenerateUnaryExpression(BoundUnaryExpression node)
+        private LLVMValueRef GenerateUnaryExpression(BoundUnaryExpression node)
         {
             var operand = GenerateExpression(node.Operand);
             switch (node.Operator.Kind)
@@ -637,22 +645,22 @@ namespace Eagle.CodeAnalysis.CodeGen
                 case BoundUnaryOperatorKind.Identity:
                     return operand;
                 case BoundUnaryOperatorKind.Negation:
-                    return _builder.Neg(operand);
+                    return _builder.BuildNeg(operand);
                 case BoundUnaryOperatorKind.LogicalNot:
-                    return _builder.Not(operand);
+                    return _builder.BuildNot(operand);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        private Value GenerateLiteralExpression(BoundLiteralExpression node)
+        private LLVMValueRef GenerateLiteralExpression(BoundLiteralExpression node)
         {
             var type = node.Type;
             var value = node.Value;
 
             if (type == _stringType)
                 //return Value.String((string)value);
-                return _builder.GlobalStringPtr((string)value);
+                return _builder.BuildGlobalStringPtr((string)value);
             return GetAsValue(type, value);
         }
     }

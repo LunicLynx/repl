@@ -38,7 +38,10 @@ namespace Eagle
                 return 1;
 
             var compilation = Compilation.Create(syntaxTrees.ToArray());
+
             var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+
+            compilation.EmitBinary();
 
             if (!result.Diagnostics.Any())
             {

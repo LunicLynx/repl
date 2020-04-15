@@ -5,11 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="LLVMSharp" Version="9.0.0-beta" />
     <PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\XLang.Codegen\XLang.Codegen.csproj" />
   </ItemGroup>
 
 </Project>
