@@ -4,13 +4,13 @@
     {
         public Token IdentifierToken { get; }
         public TypeClauseSyntax TypeClause { get; }
-        public ExpressionBodySyntax ExpressionBody { get; }
+        public SyntaxNode Body { get; }
 
-        public PropertyDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, TypeClauseSyntax typeClause, ExpressionBodySyntax expressionBody) : base(syntaxTree)
+        public PropertyDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, TypeClauseSyntax typeClause, SyntaxNode body) : base(syntaxTree)
         {
             IdentifierToken = identifierToken;
             TypeClause = typeClause;
-            ExpressionBody = expressionBody;
+            Body = body;
         }
     }
 }

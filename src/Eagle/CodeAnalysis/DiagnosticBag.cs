@@ -235,5 +235,17 @@ namespace Eagle.CodeAnalysis
             var message = $"Array must have at least one dimension.";
             Report(location, message);
         }
+
+        public void ReportInvalidEscapeSequence(TextLocation location)
+        {
+            var message = "Escape sequence is invalid.";
+            Report(location, message);
+        }
+
+        public void ReportUnterminatedChar(TextLocation location)
+        {
+            var message = "Unterminated character literal.";
+            Report(location, message);
+        }
     }
 }

@@ -32,6 +32,7 @@ namespace Eagle.CodeAnalysis.Syntax
             {"set", TokenKind.SetKeyword},
 
             {"void", TokenKind.VoidKeyword},
+            {"any", TokenKind.AnyKeyword},
             {"bool", TokenKind.BoolKeyword},
             {"i8", TokenKind.I8Keyword},
             {"i16", TokenKind.I16Keyword},
@@ -127,6 +128,48 @@ namespace Eagle.CodeAnalysis.Syntax
 
                 value = sb.ToString();
                 kind = TokenKind.StringLiteral;
+            }
+            else if (c == '\'')
+            {
+                if (Current == '\\')
+                {
+                    Next();
+                    if (Current == '0')
+                        value = '\0';
+                    else if (Current == 'n')
+                        value = '\n';
+                    else if (Current == 't')
+                        value = '\t';
+                    else if (Current == 'r')
+                        value = '\r';
+                    else if (Current == '\'')
+                        value = '\'';
+                    else
+                    {
+                        var span = new TextSpan(start, 1);
+                        var location = new TextLocation(Text, span);
+                        Diagnostics.ReportInvalidEscapeSequence(location);
+                    }
+                }
+                else
+                {
+                    value = Current;
+                }
+
+                Next();
+
+                if (Current == '\'')
+                {
+                    Next();
+                }
+                else
+                {
+                    var span = new TextSpan(start, 1);
+                    var location = new TextLocation(Text, span);
+                    Diagnostics.ReportUnterminatedChar(location);
+                }
+
+                kind = TokenKind.CharacterLiteral;
             }
             else if (IsIdentifierStart(c))
             {

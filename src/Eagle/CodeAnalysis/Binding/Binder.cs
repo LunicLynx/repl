@@ -302,10 +302,34 @@ namespace Eagle.CodeAnalysis.Binding
                 type = BindTypeClause(syntax.TypeClause);
             MethodSymbol getter = null;
             MethodSymbol setter = null;
-            if (syntax.ExpressionBody != null)
+
+            if (syntax.Body is ExpressionBodySyntax e)
             {
                 getter = new MethodSymbol(type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
             }
+            else
+            {
+                var body = (PropertyBodySyntax)syntax.Body;
+
+                if (body.GetterClause != null)
+                {
+                    if (body.GetterClause is ExpressionBodySyntax e1)
+                    {
+
+                    }
+                    else
+                    {
+
+                    }
+                }
+
+                if (body.SetterClause != null)
+                {
+
+                }
+
+            }
+
             var property = new PropertySymbol(syntax.IdentifierToken.Text, type, getter, setter);
             DeclareSymbol(property, syntax.IdentifierToken);
         }
@@ -468,6 +492,7 @@ namespace Eagle.CodeAnalysis.Binding
             result.TryDeclare(TypeSymbol.U32);
             result.TryDeclare(TypeSymbol.U64);
             result.TryDeclare(TypeSymbol.UInt);
+            result.TryDeclare(TypeSymbol.Any);
 
             //foreach (var f in BuiltinFunctions.GetAll())
             //    result.TryDeclareFunction(f);
@@ -1082,9 +1107,17 @@ namespace Eagle.CodeAnalysis.Binding
                     return BindThisExpression(t);
                 case IndexExpressionSyntax i:
                     return BindIndexExpression(i);
+                case SuffixCastExpressionSyntax s:
+                    return BindSuffixCastExpression(s);
                 default:
                     throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
+        }
+
+        private BoundExpression BindSuffixCastExpression(SuffixCastExpressionSyntax syntax)
+        {
+            var type = LookupType(syntax.Type);
+            return BindConversion(syntax.Target, type, true);
         }
 
         private BoundExpression BindIndexExpression(IndexExpressionSyntax syntax)
@@ -1105,7 +1138,7 @@ namespace Eagle.CodeAnalysis.Binding
             else
             {
                 var indexer = target.Type.Members.OfType<IndexerSymbol>().FirstOrDefault();
-                if(indexer == null) return new BoundErrorExpression();
+                if (indexer == null) return new BoundErrorExpression();
 
                 return new BoundIndexerExpression(target, indexer, arguments.ToImmutable());
             }
@@ -1437,6 +1470,8 @@ namespace Eagle.CodeAnalysis.Binding
             {
                 case TokenKind.Identifier:
                     return token.Text;
+                case TokenKind.AnyKeyword:
+                    return "Any";
                 case TokenKind.StringKeyword:
                     return "String";
                 case TokenKind.CharKeyword:
@@ -1546,6 +1581,10 @@ namespace Eagle.CodeAnalysis.Binding
                         Diagnostics.ReportInvalidNumber(token.Location, token.Text);
                     value = number;
                     type = TypeSymbol.Int;
+                    break;
+                case TokenKind.CharacterLiteral:
+                    type = TypeSymbol.Char;
+                    value = syntax.Value;
                     break;
                 case TokenKind.StringLiteral:
                     value = token.Text.Substring(1, token.Text.Length - 2)

@@ -66,6 +66,7 @@
 
         // Types
         VoidKeyword,
+        AnyKeyword,
         BoolKeyword,
         I8Keyword,
         I16Keyword,
@@ -87,7 +88,8 @@
         FalseKeyword,
         NumberLiteral,
         StringLiteral,
+        CharacterLiteral,
 
-        Identifier,
+        Identifier
     }
 }

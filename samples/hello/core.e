@@ -13,7 +13,7 @@ object String {
             var l = 0;
             let self = this.(char*);
             while self[l] != '\0'
-                l++;
+                l = l + 1;
             return l;
         }
     }
@@ -24,6 +24,8 @@ Concat(a: string, b: string) : string {
     var length = a.Length + b.Length
 
     var result  = new char[length + 1];
+
+    Print("TEST");
 
     // move a's content into the result
     for i = 0 to a.Length {
@@ -37,5 +39,5 @@ Concat(a: string, b: string) : string {
 
     result[length] = '\0';
 
-    return result;
+    return result.(any).(string);
 }

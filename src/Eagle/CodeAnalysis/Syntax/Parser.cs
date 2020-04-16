@@ -750,12 +750,20 @@ namespace Eagle.CodeAnalysis.Syntax
                     return ParseNumberLiteralExpression();
                 case TokenKind.StringLiteral:
                     return ParseStringLiteralExpression();
+                case TokenKind.CharacterLiteral:
+                    return ParseCharacterLiteralExpression();
                 case TokenKind.NewKeyword:
                     return ParseNewExpression();
                 case TokenKind.Identifier:
                 default:
                     return ParseNameExpression();
             }
+        }
+
+        private ExpressionSyntax ParseCharacterLiteralExpression()
+        {
+            var token = MatchToken(TokenKind.CharacterLiteral);
+            return new LiteralExpressionSyntax(SyntaxTree, token);
         }
 
         private ExpressionSyntax ParseThisExpression()

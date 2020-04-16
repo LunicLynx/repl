@@ -10,6 +10,7 @@ namespace Eagle.CodeAnalysis.Syntax
             switch (kind)
             {
                 case TokenKind.VoidKeyword:
+                case TokenKind.AnyKeyword:
                 case TokenKind.BoolKeyword:
                 case TokenKind.I8Keyword:
                 case TokenKind.I16Keyword:
@@ -239,6 +240,8 @@ namespace Eagle.CodeAnalysis.Syntax
                     return "this";
                 case TokenKind.VoidKeyword:
                     return "void";
+                case TokenKind.AnyKeyword:
+                    return "any";
                 case TokenKind.BoolKeyword:
                     return "bool";
                 case TokenKind.I8Keyword:
