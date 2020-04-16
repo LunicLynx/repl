@@ -12,10 +12,5 @@ namespace Eagle.CodeAnalysis.Binding
             Method = method;
             Body = body;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Body;
-        }
     }
 }

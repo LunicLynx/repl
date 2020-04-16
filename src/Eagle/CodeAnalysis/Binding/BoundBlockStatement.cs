@@ -11,13 +11,5 @@ namespace Eagle.CodeAnalysis.Binding
         {
             Statements = statements;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            foreach (var statement in Statements)
-            {
-                yield return statement;
-            }
-        }
     }
 }

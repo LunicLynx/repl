@@ -14,12 +14,5 @@ namespace Eagle.CodeAnalysis.Binding
             ThenStatement = thenStatement;
             ElseStatement = elseStatement;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Condition;
-            yield return ThenStatement;
-            yield return ElseStatement;
-        }
     }
 }

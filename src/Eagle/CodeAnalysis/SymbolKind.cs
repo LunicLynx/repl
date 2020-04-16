@@ -13,6 +13,7 @@
         Parameter,
         Property,
         Type,
-        Variable
+        Variable,
+        Indexer
     }
 }

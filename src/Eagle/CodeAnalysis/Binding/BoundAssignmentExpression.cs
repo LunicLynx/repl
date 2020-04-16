@@ -13,11 +13,5 @@ namespace Eagle.CodeAnalysis.Binding
             Target = target;
             Expression = expression;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Target;
-            yield return Expression;
-        }
     }
 }

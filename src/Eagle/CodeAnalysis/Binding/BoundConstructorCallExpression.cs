@@ -14,13 +14,18 @@ namespace Eagle.CodeAnalysis.Binding
             Constructor = constructor;
             Arguments = arguments;
         }
+    }
 
-        public override IEnumerable<BoundNode> GetChildren()
+    public class BoundIndexerExpression : BoundExpression
+    {
+        public override TypeSymbol Type => Indexer.Type;
+        public IndexerSymbol Indexer { get; }
+        public ImmutableArray<BoundExpression> Arguments { get; }
+
+        public BoundIndexerExpression(BoundExpression target, IndexerSymbol indexer, ImmutableArray<BoundExpression> arguments)
         {
-            foreach (var argument in Arguments)
-            {
-                yield return argument;
-            }
+            Indexer = indexer;
+            Arguments = arguments;
         }
     }
 }

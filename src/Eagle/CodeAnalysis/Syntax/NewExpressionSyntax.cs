@@ -1,15 +1,22 @@
 ﻿namespace Eagle.CodeAnalysis.Syntax
 {
-    public class NewExpressionSyntax : ExpressionSyntax
+    public class NewInstanceExpressionSyntax : ExpressionSyntax, IInvocationExpressionSyntax
     {
         public Token NewKeyword { get; }
-        public NameExpressionSyntax TypeName { get; }
+        public SyntaxNode Type { get; }
+        public Token OpenParenthesisToken { get; }
+        public SeparatedSyntaxList<ExpressionSyntax> Arguments { get; }
+        public Token CloseParenthesisToken { get; }
 
-        public NewExpressionSyntax(SyntaxTree syntaxTree, Token newKeyword, NameExpressionSyntax typeName)
-            : base(syntaxTree)
+        Token IInvocationExpressionSyntax.CloseToken => CloseParenthesisToken;
+
+        public NewInstanceExpressionSyntax(SyntaxTree syntaxTree, Token newKeyword, SyntaxNode type, Token openParenthesisToken, SeparatedSyntaxList<ExpressionSyntax> arguments, Token closeParenthesisToken) : base(syntaxTree)
         {
             NewKeyword = newKeyword;
-            TypeName = typeName;
+            Type = type;
+            OpenParenthesisToken = openParenthesisToken;
+            Arguments = arguments;
+            CloseParenthesisToken = closeParenthesisToken;
         }
     }
 }

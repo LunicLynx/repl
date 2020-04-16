@@ -5,10 +5,10 @@
     //    public Token IdentifierToken { get; }
     //    public ParameterListSyntax ParameterList { get; }
 
-    //    public TypeAnnotationSyntax? ReturnType { get; }
+    //    public TypeClauseSyntax? ReturnType { get; }
 
     //    public PrototypeSyntax(SyntaxTree syntaxTree, Token identifierToken,
-    //        ParameterListSyntax parameterList, TypeAnnotationSyntax? returnType)
+    //        ParameterListSyntax parameterList, TypeClauseSyntax? returnType)
     //        : base(syntaxTree)
     //    {
     //        IdentifierToken = identifierToken;

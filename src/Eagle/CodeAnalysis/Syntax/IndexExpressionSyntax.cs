@@ -1,6 +1,13 @@
 ﻿namespace Eagle.CodeAnalysis.Syntax
 {
-    internal class InvokeExpressionSyntax : ExpressionSyntax, IInvocationExpressionSyntax
+    interface IInvocationExpressionSyntax
+    {
+        SyntaxTree SyntaxTree { get; }
+        SeparatedSyntaxList<ExpressionSyntax> Arguments { get; }
+        Token CloseToken { get; }
+    }
+
+    internal class IndexExpressionSyntax : ExpressionSyntax, IInvocationExpressionSyntax
     {
         public ExpressionSyntax Target { get; }
         public Token OpenParenthesisToken { get; }
@@ -9,7 +16,7 @@
 
         Token IInvocationExpressionSyntax.CloseToken => CloseParenthesisToken;
 
-        public InvokeExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax target, Token openParenthesisToken, SeparatedSyntaxList<ExpressionSyntax> arguments, Token closeParenthesisToken)
+        public IndexExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax target, Token openParenthesisToken, SeparatedSyntaxList<ExpressionSyntax> arguments, Token closeParenthesisToken)
             : base(syntaxTree)
         {
             Target = target;

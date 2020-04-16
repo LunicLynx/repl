@@ -54,6 +54,8 @@ namespace Eagle.CodeAnalysis.Syntax
                     node = ParseConstDeclaration();
                     return true;
 
+
+
                 /*
                  *This i quiet complex
                  * we only know this is a declaration when we hit a type clause
@@ -72,9 +74,71 @@ namespace Eagle.CodeAnalysis.Syntax
                     var result = TryParseFunctionDeclaration(out var functionDeclarationSyntax);
                     node = functionDeclarationSyntax;
                     return result;
+
                 default:
                     return false;
             }
+        }
+
+        private IndexerDeclarationSyntax ParseIndexerDeclaration()
+        {
+            var openBracketToken = MatchToken(TokenKind.OpenBracket);
+            var parameters = ParseParameterList();
+            var closeBracketToken = MatchToken(TokenKind.CloseBracket);
+            var typeClause = ParseTypeAnnotation();
+            var x = ParsePropertyBody();
+
+            return new IndexerDeclarationSyntax(SyntaxTree, openBracketToken, parameters, closeBracketToken, typeClause, x);
+        }
+
+        private SyntaxNode ParsePropertyBody()
+        {
+            if (Current.Kind == TokenKind.EqualsGreater)
+                return ParseExpressionBody();
+
+            var openBraceToken = MatchToken(TokenKind.OpenBrace);
+
+            SyntaxNode? getterClause = null;
+            SyntaxNode? setterClause = null;
+            if (Current.Kind == TokenKind.GetKeyword)
+            {
+                getterClause = ParseGetterClause();
+
+                if (Current.Kind == TokenKind.SetKeyword)
+                {
+                    setterClause = ParseSetterClause();
+                }
+            }
+            else
+            {
+                setterClause = ParseSetterClause();
+            }
+
+            var closeBraceToken = MatchToken(TokenKind.CloseBrace);
+
+            return new PropertyBodySyntax(SyntaxTree, openBraceToken, getterClause, setterClause, closeBraceToken);
+        }
+
+        private SyntaxNode ParseSetterClause()
+        {
+            var setKeyword = MatchToken(TokenKind.SetKeyword);
+
+            var body = Current.Kind == TokenKind.EqualsGreater
+                ? (SyntaxNode)ParseExpressionBody()
+                    : ParseBlockStatement();
+
+            return new SetterClauseSyntax(SyntaxTree, setKeyword, body);
+        }
+
+        private SyntaxNode ParseGetterClause()
+        {
+            var getKeyword = MatchToken(TokenKind.GetKeyword);
+
+            var body = Current.Kind == TokenKind.EqualsGreater
+                ? (SyntaxNode)ParseExpressionBody()
+                : ParseBlockStatement();
+
+            return new GetterClauseSyntax(SyntaxTree, getKeyword, body);
         }
 
         private MemberSyntax ParseObjectDeclaration()
@@ -114,14 +178,14 @@ namespace Eagle.CodeAnalysis.Syntax
         {
             var constKeyword = MatchToken(TokenKind.ConstKeyword);
             var identifierToken = MatchToken(TokenKind.Identifier);
-            TypeAnnotationSyntax typeAnnotation = null;
+            TypeClauseSyntax typeClause = null;
             if (Current.Kind == TokenKind.Colon)
             {
-                typeAnnotation = ParseTypeAnnotation();
+                typeClause = ParseTypeAnnotation();
             }
             var equalsToken = MatchToken(TokenKind.Equals);
             var expression = ParseExpression();
-            return new ConstDeclarationSyntax(SyntaxTree, constKeyword, identifierToken, typeAnnotation, equalsToken, expression);
+            return new ConstDeclarationSyntax(SyntaxTree, constKeyword, identifierToken, typeClause, equalsToken, expression);
         }
 
         private MemberSyntax ParseAliasDeclaration()
@@ -207,26 +271,27 @@ namespace Eagle.CodeAnalysis.Syntax
                     return ParseConstructorDeclaration();
                 else
 
-                // Method
-                return ParseMethodDeclaration();
+                    // Method
+                    return ParseMethodDeclaration();
+            }
+
+            if (Current.Kind == TokenKind.OpenBracket)
+            {
+                return ParseIndexerDeclaration();
             }
 
             var identifierToken = MatchToken(TokenKind.Identifier);
-            TypeAnnotationSyntax typeAnnotation = null;
-            if (Current.Kind == TokenKind.Colon)
-            {
-                typeAnnotation = ParseTypeAnnotation();
-            }
+            var typeClause = ParseTypeAnnotation();
 
             if (Current.Kind == TokenKind.OpenBrace ||
                 Current.Kind == TokenKind.EqualsGreater)
             {
                 // Property
-                return ParsePropertyDeclaration(identifierToken, typeAnnotation);
+                return ParsePropertyDeclaration(identifierToken, typeClause);
             }
 
             // field
-            return ParseFieldDeclaration(identifierToken, typeAnnotation);
+            return ParseFieldDeclaration(identifierToken, typeClause);
         }
 
         private MemberDeclarationSyntax ParseConstructorDeclaration()
@@ -239,7 +304,7 @@ namespace Eagle.CodeAnalysis.Syntax
             return new ConstructorDeclarationSyntax(SyntaxTree, ctorKeyword, openParenthesisToken, parameterList, closeParenthesisToken, body);
         }
 
-        private MemberDeclarationSyntax ParseFieldDeclaration(Token identifierToken, TypeAnnotationSyntax typeAnnotation)
+        private MemberDeclarationSyntax ParseFieldDeclaration(Token identifierToken, TypeClauseSyntax typeClause)
         {
             InitializerSyntax initializer = null;
             if (Current.Kind == TokenKind.Equals)
@@ -248,7 +313,7 @@ namespace Eagle.CodeAnalysis.Syntax
 
             }
 
-            return new FieldDeclarationSyntax(SyntaxTree, identifierToken, typeAnnotation, initializer);
+            return new FieldDeclarationSyntax(SyntaxTree, identifierToken, typeClause, initializer);
         }
 
         private InitializerSyntax ParseInitializer()
@@ -258,16 +323,18 @@ namespace Eagle.CodeAnalysis.Syntax
             return new InitializerSyntax(SyntaxTree, equalsToken, expression);
         }
 
-        private MemberDeclarationSyntax ParsePropertyDeclaration(Token identifierToken, TypeAnnotationSyntax typeAnnotation)
+        private MemberDeclarationSyntax ParsePropertyDeclaration(Token identifierToken, TypeClauseSyntax typeClause)
         {
             // get expression ?
             if (Current.Kind == TokenKind.EqualsGreater)
             {
                 var expressionBody = ParseExpressionBody();
-                return new PropertyDeclarationSyntax(SyntaxTree, identifierToken, typeAnnotation, expressionBody);
+                return new PropertyDeclarationSyntax(SyntaxTree, identifierToken, typeClause, expressionBody);
             }
 
-            return new PropertyDeclarationSyntax(SyntaxTree, identifierToken, typeAnnotation, null);
+            var body = ParsePropertyBody();
+
+            return new PropertyDeclarationSyntax(SyntaxTree, identifierToken, typeClause, body);
         }
 
         private ExpressionBodySyntax ParseExpressionBody()
@@ -325,7 +392,7 @@ namespace Eagle.CodeAnalysis.Syntax
             return true;
         }
 
-        private (Token identifierToken, Token openParenthesisToken, SeparatedSyntaxList<ParameterSyntax> parameters, Token closeParenthesisToken, TypeAnnotationSyntax? type) ParsePrototype()
+        private (Token identifierToken, Token openParenthesisToken, SeparatedSyntaxList<ParameterSyntax> parameters, Token closeParenthesisToken, TypeClauseSyntax? type) ParsePrototype()
         {
             var identifierToken = MatchToken(TokenKind.Identifier);
 
@@ -333,7 +400,7 @@ namespace Eagle.CodeAnalysis.Syntax
             var parameterList = ParseParameterList();
             var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
 
-            TypeAnnotationSyntax? returnTypeAnnotation = null;
+            TypeClauseSyntax? returnTypeAnnotation = null;
             if (Current.Kind == TokenKind.Colon)
             {
                 returnTypeAnnotation = ParseTypeAnnotation();
@@ -368,11 +435,11 @@ namespace Eagle.CodeAnalysis.Syntax
             return new SeparatedSyntaxList<ParameterSyntax>(nodesAndSeparators.ToImmutable());
         }
 
-        private TypeAnnotationSyntax ParseTypeAnnotation()
+        private TypeClauseSyntax ParseTypeAnnotation()
         {
             var colonToken = MatchToken(TokenKind.Colon);
             var type = ParseType();
-            return new TypeAnnotationSyntax(SyntaxTree, colonToken, type);
+            return new TypeClauseSyntax(SyntaxTree, colonToken, type);
         }
 
         private SyntaxNode ParseType()
@@ -657,6 +724,13 @@ namespace Eagle.CodeAnalysis.Syntax
         private ExpressionSyntax ParseMemberAccessExpression(ExpressionSyntax target)
         {
             var dotToken = MatchToken(TokenKind.Dot);
+            if (Current.Kind == TokenKind.OpenParenthesis)
+            {
+                var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
+                var type = ParseType();
+                var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
+                return new SuffixCastExpressionSyntax(SyntaxTree, target, dotToken, openParenthesisToken, type, closeParenthesisToken);
+            }
             var identifierToken = MatchToken(TokenKind.Identifier);
             return new MemberAccessExpressionSyntax(SyntaxTree, target, dotToken, identifierToken);
         }
@@ -693,8 +767,26 @@ namespace Eagle.CodeAnalysis.Syntax
         private ExpressionSyntax ParseNewExpression()
         {
             var newKeyword = MatchToken(TokenKind.NewKeyword);
-            var nameExpression = (NameExpressionSyntax)ParseNameExpression();
-            return new NewExpressionSyntax(SyntaxTree, newKeyword, nameExpression);
+            var type = ParseType();
+
+            if (Current.Kind == TokenKind.OpenBracket)
+            {
+                var openBracketToken = MatchToken(TokenKind.OpenBracket);
+                var arguments = ParseArguments();
+                var closeBracketToken = MatchToken(TokenKind.CloseBracket);
+                // new Array
+
+                return new NewArrayExpressionSyntax(SyntaxTree, newKeyword, type, openBracketToken, arguments, closeBracketToken);
+            }
+            else
+            {
+                var openParenthesisToken = MatchToken(TokenKind.OpenParenthesis);
+                var arguments = ParseArguments();
+                var closeParenthesisToken = MatchToken(TokenKind.CloseParenthesis);
+
+                return new NewInstanceExpressionSyntax(SyntaxTree, newKeyword, type, openParenthesisToken, arguments,
+                    closeParenthesisToken);
+            }
         }
 
         private ExpressionSyntax ParseStringLiteralExpression()

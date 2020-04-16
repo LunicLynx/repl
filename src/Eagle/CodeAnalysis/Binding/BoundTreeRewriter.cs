@@ -27,9 +27,9 @@ namespace Eagle.CodeAnalysis.Binding
         private BoundStatement RewriteReturnStatement(BoundReturnStatement node)
         {
             BoundExpression? value = null;
-            if (node.Value != null)
-                value = RewriteExpression(node.Value);
-            if (value == node.Value)
+            if (node.Expression != null)
+                value = RewriteExpression(node.Expression);
+            if (value == node.Expression)
                 return node;
             return new BoundReturnStatement(value);
         }
@@ -193,15 +193,22 @@ namespace Eagle.CodeAnalysis.Binding
                 case BoundParameterExpression p: return RewriteParameterExpression(p);
                 case BoundConversionExpression c: return RewriteCastExpression(c);
                 case BoundTypeExpression t: return RewriteTypeExpression(t);
-                case BoundNewExpression n: return RewriteNewExpression(n);
+                case BoundNewInstanceExpression n: return RewriteNewInstanceExpression(n);
+                case BoundNewArrayExpression n: return RewriteNewArrayExpression(n);
                 case BoundPropertyExpression m: return RewritePropertyExpression(m);
                 case BoundConstExpression c: return RewriteConstExpression(c);
                 case BoundFieldExpression f: return RewriteFieldExpression(f);
                 case BoundMethodCallExpression m: return RewriteMethodCallExpression(m);
                 case BoundConstructorCallExpression c: return RewriteConstructorCallExpression(c);
+                case BoundArrayIndexExpression a: return RewriteArrayIndexExpression(a);
                 case BoundErrorExpression e: return RewriteErrorExpression(e);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        private BoundExpression RewriteArrayIndexExpression(BoundArrayIndexExpression node)
+        {
+            return node;
         }
 
         protected virtual BoundExpression RewriteErrorExpression(BoundErrorExpression node)
@@ -256,7 +263,12 @@ namespace Eagle.CodeAnalysis.Binding
             return node;
         }
 
-        protected virtual BoundExpression RewriteNewExpression(BoundNewExpression node)
+        protected virtual BoundExpression RewriteNewInstanceExpression(BoundNewInstanceExpression node)
+        {
+            return node;
+        }
+
+        protected virtual BoundExpression RewriteNewArrayExpression(BoundNewArrayExpression node)
         {
             return node;
         }

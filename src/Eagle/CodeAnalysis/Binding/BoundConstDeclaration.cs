@@ -13,10 +13,5 @@ namespace Eagle.CodeAnalysis.Binding
             Const = @const;
             Value = value;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield break;
-        }
     }
 }

@@ -11,11 +11,6 @@ namespace Eagle.CodeAnalysis.Binding
             Const = @const;
         }
 
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield break;
-        }
-
         public override TypeSymbol Type => Const.Type;
     }
 }

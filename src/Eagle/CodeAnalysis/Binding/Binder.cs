@@ -288,6 +288,8 @@ namespace Eagle.CodeAnalysis.Binding
                 case PropertyDeclarationSyntax p:
                     DeclareProperty(p);
                     break;
+                case IndexerDeclarationSyntax i:
+                    break;
                 default:
                     throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
@@ -296,8 +298,8 @@ namespace Eagle.CodeAnalysis.Binding
         private void DeclareProperty(PropertyDeclarationSyntax syntax)
         {
             TypeSymbol type = null;
-            if (syntax.TypeAnnotation != null)
-                type = BindTypeClause(syntax.TypeAnnotation);
+            if (syntax.TypeClause != null)
+                type = BindTypeClause(syntax.TypeClause);
             MethodSymbol getter = null;
             MethodSymbol setter = null;
             if (syntax.ExpressionBody != null)
@@ -320,7 +322,7 @@ namespace Eagle.CodeAnalysis.Binding
         {
             var parameters = LookupParameterList(syntax.Parameters);
 
-            var type = BindTypeClause(syntax.TypeAnnotation) ?? TypeSymbol.Void;
+            var type = BindTypeClause(syntax.TypeClause) ?? TypeSymbol.Void;
 
             var name = syntax.IdentifierToken.Text;
 
@@ -342,7 +344,7 @@ namespace Eagle.CodeAnalysis.Binding
 
         private void DeclareField(FieldDeclarationSyntax syntax)
         {
-            var type = BindTypeClause(syntax.TypeAnnotation);
+            var type = BindTypeClause(syntax.TypeClause);
             var field = new FieldSymbol(syntax.IdentifierToken.Text, type);
             DeclareSymbol(field, syntax.IdentifierToken);
         }
@@ -384,7 +386,13 @@ namespace Eagle.CodeAnalysis.Binding
             {
                 case ObjectDeclarationSyntax c:
                     identifierToken = c.IdentifierToken;
-                    symbol = new TypeSymbol(identifierToken.Text);
+                    var typeName = identifierToken.Text;
+
+                    // if is built in type we don't declare a new type symbol
+                    if (typeName == "String")
+                        return;
+
+                    symbol = new TypeSymbol(typeName);
                     break;
                 default:
                     throw new Exception($"Unexpected syntax {type.GetType()}");
@@ -500,9 +508,9 @@ namespace Eagle.CodeAnalysis.Binding
                 value = 0;
             }
 
-            if (syntax.TypeAnnotation != null)
+            if (syntax.TypeClause != null)
             {
-                type = BindTypeClause(syntax.TypeAnnotation);
+                type = BindTypeClause(syntax.TypeClause);
             }
 
             var identifierToken = syntax.IdentifierToken;
@@ -584,7 +592,7 @@ namespace Eagle.CodeAnalysis.Binding
                                               es.Expression is BoundFunctionCallExpression ||
                                               es.Expression is BoundMethodCallExpression ||
                                               es.Expression is BoundConstructorCallExpression ||
-                                              es.Expression is BoundNewExpression;
+                                              es.Expression is BoundNewInstanceExpression;
                     if (!isAllowedExpression)
                         Diagnostics.ReportInvalidExpressionStatement(syntax.Location);
                 }
@@ -764,9 +772,9 @@ namespace Eagle.CodeAnalysis.Binding
         //    }
 
         //    TypeSymbol type = null;
-        //    if (syntax.TypeAnnotation != null)
+        //    if (syntax.TypeClause != null)
         //    {
-        //        type = BindTypeClause(syntax.TypeAnnotation);
+        //        type = BindTypeClause(syntax.TypeClause);
         //    }
         //    else if (initializer == null)
         //    {
@@ -833,7 +841,7 @@ namespace Eagle.CodeAnalysis.Binding
             return parameters.ToImmutable();
         }
 
-        private TypeSymbol? BindTypeClause(TypeAnnotationSyntax? syntax)
+        private TypeSymbol? BindTypeClause(TypeClauseSyntax? syntax)
         {
             if (syntax == null)
                 return null;
@@ -1062,17 +1070,48 @@ namespace Eagle.CodeAnalysis.Binding
                     return BindParenthesizedExpression(p, allowTypes);
                 case InvokeExpressionSyntax i:
                     return BindInvokeExpression(i);
-                case NewExpressionSyntax n:
-                    return BindNewExpression(n);
+                case NewInstanceExpressionSyntax n:
+                    return BindNewInstanceExpression(n);
+                case NewArrayExpressionSyntax n:
+                    return BindNewArrayExpression(n);
                 case MemberAccessExpressionSyntax m:
                     return BindMemberAccessExpression(m);
                 case CastExpressionSyntax c:
                     return BindCastExpression(c);
                 case ThisExpressionSyntax t:
                     return BindThisExpression(t);
+                case IndexExpressionSyntax i:
+                    return BindIndexExpression(i);
                 default:
                     throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
+        }
+
+        private BoundExpression BindIndexExpression(IndexExpressionSyntax syntax)
+        {
+            var target = BindExpression(syntax.Target);
+
+            var arguments = ImmutableArray.CreateBuilder<BoundExpression>();
+            foreach (var argument in syntax.Arguments)
+            {
+                arguments.Add(BindExpression(argument));
+            }
+
+            if (target.Type.IsArray)
+            {
+                // real indexer expression
+                return new BoundArrayIndexExpression(target, arguments.ToImmutable());
+            }
+            else
+            {
+                var indexer = target.Type.Members.OfType<IndexerSymbol>().FirstOrDefault();
+                if(indexer == null) return new BoundErrorExpression();
+
+                return new BoundIndexerExpression(target, indexer, arguments.ToImmutable());
+            }
+
+            //TryBindArguments(syntax, "Item", syntax. )
+            return new BoundErrorExpression();
         }
 
         private BoundExpression BindThisExpression(ThisExpressionSyntax syntax)
@@ -1147,11 +1186,39 @@ namespace Eagle.CodeAnalysis.Binding
             throw new Exception();
         }
 
-        private BoundExpression BindNewExpression(NewExpressionSyntax syntax)
+        private BoundExpression BindNewInstanceExpression(NewInstanceExpressionSyntax syntax)
         {
-            var identifierToken = syntax.TypeName.IdentifierToken;
-            var typeSymbol = GetSymbol<TypeSymbol>(identifierToken);
-            return new BoundNewExpression(typeSymbol);
+            var type = LookupType(syntax.Type);
+            var constructor = type.Members.OfType<ConstructorSymbol>().First();
+
+            var arguments = syntax.Arguments.ToArray();
+            var parameters = constructor.Parameters;
+
+            if (!TryBindArguments(syntax, constructor.Name, parameters, arguments, out var boundArguments))
+                return new BoundErrorExpression();
+
+            return new BoundNewInstanceExpression(type.MakePointer(), constructor, boundArguments);
+        }
+
+        private BoundExpression BindNewArrayExpression(NewArrayExpressionSyntax syntax)
+        {
+            if (syntax.Arguments.Count == 0)
+            {
+                Diagnostics.ArrayMustHaveAtLeastOneDimension(syntax.CloseBracketToken.Location);
+                return new BoundErrorExpression();
+            }
+
+            var type = LookupType(syntax.Type);
+            type = type.MakeArray(syntax.Arguments.Count);
+
+            var arguments = ImmutableArray.CreateBuilder<BoundExpression>();
+
+            foreach (var argument in syntax.Arguments)
+            {
+                arguments.Add(BindExpression(argument));
+            }
+
+            return new BoundNewArrayExpression(type, arguments.ToImmutable());
         }
 
         private BoundExpression BindInvokeExpression(InvokeExpressionSyntax syntax)
@@ -1180,10 +1247,10 @@ namespace Eagle.CodeAnalysis.Binding
             // space on the heap
             // which also means that whatever follows the new
             // must be determinable in size
-            if (target is NewExpressionSyntax ne)
-            {
-                target = ne.TypeName;
-            }
+            //if (target is NewExpressionSyntax ne)
+            //{
+            //    target = ne.TypeName;
+            //}
 
             if (!(target is NameExpressionSyntax n))
             {
@@ -1195,7 +1262,7 @@ namespace Eagle.CodeAnalysis.Binding
 
             if (symbol is FunctionSymbol function)
             {
-                var arguments = syntax.Arguments.OfType<ExpressionSyntax>().ToArray();
+                var arguments = syntax.Arguments.ToArray();
                 var parameters = function.Parameters;
 
                 if (!TryBindArguments(syntax, function.Name, parameters, arguments, out var boundArguments))
@@ -1208,7 +1275,7 @@ namespace Eagle.CodeAnalysis.Binding
             {
                 var constructor = type.Members.OfType<ConstructorSymbol>().First();
 
-                var arguments = syntax.Arguments.OfType<ExpressionSyntax>().ToArray();
+                var arguments = syntax.Arguments.ToArray();
                 var parameters = constructor.Parameters;
 
                 if (!TryBindArguments(syntax, constructor.Name, parameters, arguments, out var boundArguments))
@@ -1220,7 +1287,7 @@ namespace Eagle.CodeAnalysis.Binding
             if (symbol is MethodSymbol method1)
             {
                 //syntax.Target
-                var arguments = syntax.Arguments.OfType<ExpressionSyntax>().ToArray();
+                var arguments = syntax.Arguments.ToArray();
                 var parameters = method1.Parameters;
 
                 if (!TryBindArguments(syntax, method1.Name, parameters, arguments, out var boundArguments))
@@ -1235,7 +1302,7 @@ namespace Eagle.CodeAnalysis.Binding
             return new BoundErrorExpression();
         }
 
-        private bool TryBindArguments(InvokeExpressionSyntax syntax, string name, ImmutableArray<ParameterSymbol> parameters, ExpressionSyntax[] arguments,
+        private bool TryBindArguments(IInvocationExpressionSyntax syntax, string name, ImmutableArray<ParameterSymbol> parameters, ExpressionSyntax[] arguments,
             out ImmutableArray<BoundExpression> boundExpressions)
         {
             if (arguments.Length != parameters.Length)
@@ -1253,7 +1320,7 @@ namespace Eagle.CodeAnalysis.Binding
                 }
                 else
                 {
-                    span = syntax.CloseParenthesisToken.Span;
+                    span = syntax.CloseToken.Span;
                 }
 
                 var location = new TextLocation(syntax.SyntaxTree.Text, span);
@@ -1396,6 +1463,8 @@ namespace Eagle.CodeAnalysis.Binding
                     return "UInt64";
                 case TokenKind.BoolKeyword:
                     return "Boolean";
+                default:
+                    return "?";
             }
 
             throw new InvalidOperationException($"Unsupported Token kind {token.Kind}");
@@ -1439,6 +1508,9 @@ namespace Eagle.CodeAnalysis.Binding
                     if (v.Variable.IsReadOnly)
                         Diagnostics.ReportCannotAssign(syntax.EqualsToken.Location, v.Variable.Name);
                     type = v.Type;
+                    break;
+                case BoundArrayIndexExpression i:
+                    type = i.Type;
                     break;
                 case BoundErrorExpression _: break;
                 case BoundLiteralExpression _: break;

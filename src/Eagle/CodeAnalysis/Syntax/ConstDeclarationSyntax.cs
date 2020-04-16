@@ -4,17 +4,17 @@
     {
         public Token ConstKeyword { get; }
         public Token IdentifierToken { get; }
-        public TypeAnnotationSyntax TypeAnnotation { get; }
+        public TypeClauseSyntax TypeClause { get; }
         public Token EqualsToken { get; }
         public ExpressionSyntax Initializer { get; }
 
         public ConstDeclarationSyntax(SyntaxTree syntaxTree, Token constKeyword, Token identifierToken,
-            TypeAnnotationSyntax typeAnnotation, Token equalsToken, ExpressionSyntax initializer)
+            TypeClauseSyntax typeClause, Token equalsToken, ExpressionSyntax initializer)
             : base(syntaxTree)
         {
             ConstKeyword = constKeyword;
             IdentifierToken = identifierToken;
-            TypeAnnotation = typeAnnotation;
+            TypeClause = typeClause;
             EqualsToken = equalsToken;
             Initializer = initializer;
         }

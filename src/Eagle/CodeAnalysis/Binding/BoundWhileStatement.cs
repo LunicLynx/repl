@@ -16,11 +16,5 @@ namespace Eagle.CodeAnalysis.Binding
             BreakLabel = breakLabel;
             ContinueLabel = continueLabel;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Condition;
-            yield return Body;
-        }
     }
 }

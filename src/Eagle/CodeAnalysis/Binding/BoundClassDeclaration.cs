@@ -13,13 +13,5 @@ namespace Eagle.CodeAnalysis.Binding
             Type = type;
             Members = members;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            foreach (var member in Members)
-            {
-                yield return member;
-            }
-        }
     }
 }

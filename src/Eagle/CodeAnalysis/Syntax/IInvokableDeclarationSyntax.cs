@@ -4,7 +4,7 @@
     {
         Token IdentifierToken { get; }
         SeparatedSyntaxList<ParameterSyntax> Parameters { get; }
-        TypeAnnotationSyntax? Type { get; }
+        TypeClauseSyntax? Type { get; }
         BlockStatementSyntax Body { get; }
     }
 }

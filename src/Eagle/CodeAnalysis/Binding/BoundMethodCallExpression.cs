@@ -16,14 +16,20 @@ namespace Eagle.CodeAnalysis.Binding
             Arguments = arguments;
         }
 
-        public override IEnumerable<BoundNode> GetChildren()
+        public override TypeSymbol Type => Method.Type;
+    }
+
+    public class BoundArrayIndexExpression : BoundExpression
+    {
+        public BoundExpression Target { get; }
+        public ImmutableArray<BoundExpression> Arguments { get; }
+
+        public BoundArrayIndexExpression(BoundExpression target, ImmutableArray<BoundExpression> arguments)
         {
-            foreach (var argument in Arguments)
-            {
-                yield return argument;
-            }
+            Target = target;
+            Arguments = arguments;
         }
 
-        public override TypeSymbol Type => Method.Type;
+        public override TypeSymbol Type => Target.Type;
     }
 }

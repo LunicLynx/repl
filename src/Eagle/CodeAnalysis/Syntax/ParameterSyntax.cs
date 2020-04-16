@@ -3,9 +3,9 @@
     public class ParameterSyntax : SyntaxNode
     {
         public Token IdentifierToken { get; }
-        public TypeAnnotationSyntax Type { get; }
+        public TypeClauseSyntax Type { get; }
 
-        public ParameterSyntax(SyntaxTree syntaxTree, Token identifierToken, TypeAnnotationSyntax type)
+        public ParameterSyntax(SyntaxTree syntaxTree, Token identifierToken, TypeClauseSyntax type)
             : base(syntaxTree)
         {
             IdentifierToken = identifierToken;

@@ -4,16 +4,11 @@ namespace Eagle.CodeAnalysis.Binding
 {
     public class BoundReturnStatement : BoundStatement
     {
-        public BoundExpression? Value { get; }
+        public BoundExpression? Expression { get; }
 
-        public BoundReturnStatement(BoundExpression? value)
+        public BoundReturnStatement(BoundExpression? expression)
         {
-            Value = value;
-        }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Value;
+            Expression = expression;
         }
     }
 }

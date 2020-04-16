@@ -2,16 +2,9 @@
 {
     public abstract class MemberDeclarationSyntax : SyntaxNode
     {
-        public TypeAnnotationSyntax? TypeAnnotation { get; }
-
-        public Token IdentifierToken { get; }
-
-        protected MemberDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken,
-            TypeAnnotationSyntax? typeAnnotation)
+        protected MemberDeclarationSyntax(SyntaxTree syntaxTree)
             : base(syntaxTree)
         {
-            IdentifierToken = identifierToken;
-            TypeAnnotation = typeAnnotation;
         }
     }
 }

@@ -10,8 +10,5 @@ namespace Eagle.CodeAnalysis.Binding
         {
             Member = member;
         }
-
-        public abstract override IEnumerable<BoundNode> GetChildren();
-
     }
 }

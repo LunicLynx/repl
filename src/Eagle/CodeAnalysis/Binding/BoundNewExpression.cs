@@ -1,19 +1,31 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Eagle.CodeAnalysis.Binding
 {
-    public class BoundNewExpression : BoundExpression
+    public class BoundNewInstanceExpression : BoundExpression
     {
-        public BoundNewExpression(TypeSymbol type)
+        public override TypeSymbol Type { get; }
+        public ConstructorSymbol ConstructorSymbol { get; }
+        public ImmutableArray<BoundExpression> Arguments { get; }
+
+        public BoundNewInstanceExpression(TypeSymbol type, ConstructorSymbol constructorSymbol, ImmutableArray<BoundExpression> arguments)
         {
             Type = type;
+            ConstructorSymbol = constructorSymbol;
+            Arguments = arguments;
         }
+    }
 
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield break;
-        }
-
+    public class BoundNewArrayExpression : BoundExpression
+    {
         public override TypeSymbol Type { get; }
+        public ImmutableArray<BoundExpression> Arguments { get; }
+
+        public BoundNewArrayExpression(TypeSymbol type, ImmutableArray<BoundExpression> arguments)
+        {
+            Type = type;
+            Arguments = arguments;
+        }
     }
 }

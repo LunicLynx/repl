@@ -85,8 +85,8 @@ namespace Eagle.CodeAnalysis
                         index++;
                         break;
                     case BoundReturnStatement r:
-                        if (r.Value != null)
-                            return EvaluateExpression(r.Value);
+                        if (r.Expression != null)
+                            return EvaluateExpression(r.Expression);
                         return _lastValue;
                     default:
                         throw new Exception($"Unexpected node {s.GetType()}");
@@ -116,8 +116,8 @@ namespace Eagle.CodeAnalysis
                     return EvaluateCastExpression(c);
                 case BoundTypeExpression t:
                     return EvaluateTypeExpression(t);
-                case BoundNewExpression n:
-                    return EvaluateNewExpression(n);
+                case BoundNewInstanceExpression n:
+                    return EvaluateNewInstanceExpression(n);
                 case BoundPropertyExpression m:
                     return EvaluatePropertyExpression(m);
                 default:
@@ -134,7 +134,7 @@ namespace Eagle.CodeAnalysis
             return ((IInvokable)_functions[method]).Invoke(this, target, new object[0]);
         }
 
-        private object EvaluateNewExpression(BoundNewExpression node)
+        private object EvaluateNewInstanceExpression(BoundNewInstanceExpression node)
         {
             return new Dictionary<Symbol, object>();
             // TODO call all initializer

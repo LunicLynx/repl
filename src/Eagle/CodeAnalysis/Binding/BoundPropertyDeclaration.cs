@@ -19,11 +19,5 @@ namespace Eagle.CodeAnalysis.Binding
             Property = property;
             GetBody = getBody;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            if (Initializer != null)
-                yield return Initializer;
-        }
     }
 }

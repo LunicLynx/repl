@@ -11,11 +11,6 @@ namespace Eagle.CodeAnalysis.Binding
             FunctionSymbol = functionSymbol;
         }
 
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield break;
-        }
-
         public override TypeSymbol Type => FunctionSymbol.Type;
     }
 }

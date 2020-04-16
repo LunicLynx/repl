@@ -1,9 +1,9 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace Eagle.CodeAnalysis
 {
-    [DebuggerDisplay("{Name}")]
     public class TypeSymbol : Symbol
     {
         public static readonly TypeSymbol Error = new TypeSymbol("?", SpecialType.Error);
@@ -24,7 +24,9 @@ namespace Eagle.CodeAnalysis
         public static readonly TypeSymbol Any = new TypeSymbol("Any", SpecialType.Any);
 
         public TypeSymbol ElementType { get; }
+        public int Dimensions { get; }
         public bool IsPointer { get; }
+        public bool IsArray { get; }
 
         public override SymbolKind Kind => SymbolKind.Type;
 
@@ -69,8 +71,22 @@ namespace Eagle.CodeAnalysis
             IsPointer = pointer;
         }
 
+        private TypeSymbol(TypeSymbol elementType, int dimensions)
+            : base(null)
+        {
+            ElementType = elementType;
+            Dimensions = dimensions;
+            IsArray = true;
+        }
+
         public override string ToString()
         {
+            if (IsPointer)
+                return ElementType + "*";
+
+            if (IsArray)
+                return ElementType + "[" + new string(',', Dimensions - 1) + "]";
+
             if (SpecialType != SpecialType.None && SpecialType != SpecialType.Error)
                 return SpecialType.ToString().ToLower();
             return Name;
@@ -79,6 +95,11 @@ namespace Eagle.CodeAnalysis
         public TypeSymbol MakePointer()
         {
             return new TypeSymbol(this, true);
+        }
+
+        public TypeSymbol MakeArray(int dimensions)
+        {
+            return new TypeSymbol(this, dimensions);
         }
 
         public static bool operator ==(TypeSymbol? a, TypeSymbol? b)

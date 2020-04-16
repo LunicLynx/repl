@@ -28,6 +28,8 @@ namespace Eagle.CodeAnalysis.Syntax
             {"this", TokenKind.ThisKeyword},
             {"return", TokenKind.ReturnKeyword},
             {"ctor", TokenKind.CtorKeyword},
+            {"get", TokenKind.GetKeyword},
+            {"set", TokenKind.SetKeyword},
 
             {"void", TokenKind.VoidKeyword},
             {"bool", TokenKind.BoolKeyword},

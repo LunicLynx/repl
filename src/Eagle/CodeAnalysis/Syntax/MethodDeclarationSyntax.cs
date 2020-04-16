@@ -2,20 +2,24 @@
 {
     public class MethodDeclarationSyntax : MemberDeclarationSyntax, IInvokableDeclarationSyntax
     {
+        public Token IdentifierToken { get; }
         public Token OpenParenthesisToken { get; }
         public SeparatedSyntaxList<ParameterSyntax> Parameters { get; }
         public Token CloseParenthesisToken { get; }
+        public TypeClauseSyntax TypeClause { get; }
         public BlockStatementSyntax Body { get; }
 
         Token IInvokableDeclarationSyntax.IdentifierToken => IdentifierToken;
-        TypeAnnotationSyntax? IInvokableDeclarationSyntax.Type => TypeAnnotation;
+        TypeClauseSyntax? IInvokableDeclarationSyntax.Type => TypeClause;
 
-        public MethodDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, Token openParenthesisToken, SeparatedSyntaxList<ParameterSyntax> parameters, Token closeParenthesisToken, TypeAnnotationSyntax? type, BlockStatementSyntax body)
-        : base(syntaxTree, identifierToken, type)
+        public MethodDeclarationSyntax(SyntaxTree syntaxTree, Token identifierToken, Token openParenthesisToken, SeparatedSyntaxList<ParameterSyntax> parameters, Token closeParenthesisToken, TypeClauseSyntax typeClause, BlockStatementSyntax body)
+        : base(syntaxTree)
         {
+            IdentifierToken = identifierToken;
             OpenParenthesisToken = openParenthesisToken;
             Parameters = parameters;
             CloseParenthesisToken = closeParenthesisToken;
+            TypeClause = typeClause;
             Body = body;
         }
     }

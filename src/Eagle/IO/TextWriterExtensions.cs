@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Eagle.CodeAnalysis;
+using Eagle.CodeAnalysis.Syntax;
 using Eagle.CodeAnalysis.Text;
 
 namespace Eagle.IO
@@ -37,10 +38,10 @@ namespace Eagle.IO
                 Console.ResetColor();
         }
 
-        //public static void WriteKeyword(this TextWriter writer, SyntaxKind kind)
-        //{
-        //    writer.WriteKeyword(SyntaxFacts.GetText(kind));
-        //}
+        public static void WriteKeyword(this TextWriter writer, TokenKind kind)
+        {
+            writer.WriteKeyword(SyntaxFacts.GetText(kind));
+        }
 
         public static void WriteKeyword(this TextWriter writer, string text)
         {
@@ -75,10 +76,10 @@ namespace Eagle.IO
             writer.WritePunctuation(" ");
         }
 
-        //public static void WritePunctuation(this TextWriter writer, SyntaxKind kind)
-        //{
-        //    writer.WritePunctuation(SyntaxFacts.GetText(kind));
-        //}
+        public static void WritePunctuation(this TextWriter writer, TokenKind kind)
+        {
+            writer.WritePunctuation(SyntaxFacts.GetText(kind));
+        }
 
         public static void WritePunctuation(this TextWriter writer, string text)
         {

@@ -14,14 +14,6 @@ namespace Eagle.CodeAnalysis.Binding
             Arguments = arguments;
         }
 
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            foreach (var argument in Arguments)
-            {
-                yield return argument;
-            }
-        }
-
         public override TypeSymbol Type => Function.Type;
     }
 }

@@ -13,10 +13,5 @@ namespace Eagle.CodeAnalysis.Binding
             Operator = @operator;
             Operand = operand;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Operand;
-        }
     }
 }

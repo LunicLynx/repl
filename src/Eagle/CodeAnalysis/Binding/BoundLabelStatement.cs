@@ -10,10 +10,5 @@ namespace Eagle.CodeAnalysis.Binding
         {
             Label = label;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield break;
-        }
     }
 }

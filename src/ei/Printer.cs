@@ -88,10 +88,13 @@ namespace Eagle
 
             indent += isLast ? "   " : "│  ";
 
-            var lastChild = node.GetChildren().LastOrDefault();
+            
 
-            foreach (var child in node.GetChildren())
-                Print(child, indent, child == lastChild);
+
+            //var lastChild = node.GetChildren().LastOrDefault();
+
+            //foreach (var child in node.GetChildren())
+            //    Print(child, indent, child == lastChild);
         }
 
         private IEnumerable<(string name, object value)> GetProperties(BoundNode node)

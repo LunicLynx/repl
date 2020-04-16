@@ -14,10 +14,5 @@ namespace Eagle.CodeAnalysis.Binding
             Condition = condition;
             JumpIfTrue = jumpIfTrue;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Condition;
-        }
     }
 }

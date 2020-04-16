@@ -229,5 +229,11 @@ namespace Eagle.CodeAnalysis
             var message = $"An expression of type '{returnType}' is expected.";
             Report(location, message);
         }
+
+        public void ArrayMustHaveAtLeastOneDimension(TextLocation location)
+        {
+            var message = $"Array must have at least one dimension.";
+            Report(location, message);
+        }
     }
 }

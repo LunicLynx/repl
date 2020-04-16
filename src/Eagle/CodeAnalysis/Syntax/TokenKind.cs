@@ -61,6 +61,8 @@
         ThisKeyword,
         ReturnKeyword,
         CtorKeyword,
+        GetKeyword,
+        SetKeyword,
 
         // Types
         VoidKeyword,
@@ -86,6 +88,6 @@
         NumberLiteral,
         StringLiteral,
 
-        Identifier
+        Identifier,
     }
 }

@@ -15,11 +15,5 @@ namespace Eagle.CodeAnalysis.Binding
             Operator = @operator;
             Right = right;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Left;
-            yield return Right;
-        }
     }
 }

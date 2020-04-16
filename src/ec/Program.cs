@@ -39,20 +39,20 @@ namespace Eagle
 
             var compilation = Compilation.Create(syntaxTrees.ToArray());
 
-            //var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+            var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
 
-            compilation.EmitBinary();
+            //compilation.EmitBinary();
 
-            //if (!result.Diagnostics.Any())
-            //{
-            //    if (result.Value != null)
-            //        Console.WriteLine(result.Value);
-            //}
-            //else
-            //{
-            //    Console.Error.WriteDiagnostics(result.Diagnostics);
-            //    return 1;
-            //}
+            if (!result.Diagnostics.Any())
+            {
+                if (result.Value != null)
+                    Console.WriteLine(result.Value);
+            }
+            else
+            {
+                Console.Error.WriteDiagnostics(result.Diagnostics);
+                return 1;
+            }
 
             return 0;
         }

@@ -12,11 +12,5 @@ namespace Eagle.CodeAnalysis.Binding
             Field = field;
             Initializer = initializer;
         }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            if (Initializer != null)
-                yield return Initializer;
-        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Eagle.CodeAnalysis.Binding;
 using LLVMSharp.Interop;
@@ -7,6 +8,19 @@ using LLVMSharp.Interop;
 
 namespace Eagle.CodeAnalysis.CodeGen
 {
+    public class PreCodeGenerationTreeRewriter : BoundTreeRewriter
+    {
+        protected override BoundExpression RewriteBinaryExpression(BoundBinaryExpression node)
+        {
+            if (node.Operator.Kind == BoundBinaryOperatorKind.Concatenation)
+            {
+                // turn this into a call to concat of the string
+            }
+
+            return base.RewriteBinaryExpression(node);
+        }
+    }
+
     public class CodeGenerator
     {
         private readonly BoundProgram _program;
@@ -29,6 +43,9 @@ namespace Eagle.CodeAnalysis.CodeGen
             _mod = LLVMModuleRef.CreateWithName("MyMod");
             _builder = _mod.Context.CreateBuilder();
 
+            //var ts = _globalScope.Symbols.OfType<TypeSymbol>()
+            //    .ToList();
+
             var fs = _globalScope.Symbols.OfType<FunctionSymbol>()
                 .Concat(new[] { _program.ScriptFunction ?? _program.MainFunction })
                 .ToList();
@@ -50,7 +67,9 @@ namespace Eagle.CodeAnalysis.CodeGen
                     _builder.PositionAtEnd(bb);
 
                     var body = _program.Functions[functionSymbol];
-                    GenerateStatement(body);
+                    var rewriter = new PreCodeGenerationTreeRewriter();
+                    var newBody = (BoundBlockStatement)rewriter.RewriteStatement(body);
+                    GenerateStatement(newBody);
                 }
             }
         }
@@ -79,9 +98,9 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         //private void GenerateConstructorDeclaration(BoundConstructorDeclaration node, LLVMTypeRef owner)
         //{
-        //    //node.Constructor
+        //    //node.Indexer
 
-        //    var constructor = node.Constructor;
+        //    var constructor = node.Indexer;
         //    var ft = CreateConstructorType(constructor, owner);
         //    var f = _context.Module.AddFunction(constructor.Name, ft);
         //    _context.Symbols[constructor] = f;
@@ -169,6 +188,9 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.U64) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, ((ulong)Convert.ChangeType(nodeValue, typeof(ulong))));
             if (type == TypeSymbol.U8) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, ((byte)Convert.ChangeType(nodeValue, typeof(byte))));
 
+            if (type == TypeSymbol.String)
+                value = _builder.BuildGlobalString((string)nodeValue);
+
             if (value == null) throw new Exception("");
             return value;
         }
@@ -194,11 +216,23 @@ namespace Eagle.CodeAnalysis.CodeGen
                     case BoundLabelStatement l:
                         GenerateLabelStatement(l);
                         break;
-
+                    case BoundReturnStatement r:
+                        GenerateReturnStatement(r);
+                        break;
                     default:
                         throw new Exception($"Unexpected node {statement.GetType()}");
                 }
             }
+        }
+
+        private void GenerateReturnStatement(BoundReturnStatement node)
+        {
+            var value = node.Expression != null ? GenerateExpression(node.Expression) : null;
+
+            if (value != null)
+                _builder.BuildRet(value);
+            else
+                _builder.BuildRetVoid();
         }
 
         private LLVMValueRef _lastValue;
@@ -525,7 +559,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.U16) return LLVMTypeRef.Int16;
             if (type == TypeSymbol.U32) return LLVMTypeRef.Int32;
             if (type == TypeSymbol.U64) return LLVMTypeRef.Int64;
-            //if (type == _stringType) return LLVMTypeRef.Int64;
+            if (type == TypeSymbol.String) return LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
             if (type == TypeSymbol.Void) return LLVMTypeRef.Void;
             throw new Exception("Unsupported type");
         }

@@ -9,11 +9,6 @@ namespace Eagle.CodeAnalysis.Binding
             Type = type;
         }
 
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield break;
-        }
-
         public override TypeSymbol Type { get; }
     }
 }
