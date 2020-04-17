@@ -313,7 +313,7 @@ namespace Eagle.CodeAnalysis.Binding
 
                 if (body.GetterClause != null)
                 {
-                    if (body.GetterClause is ExpressionBodySyntax e1)
+                    if (body.GetterClause.Body is ExpressionBodySyntax e1)
                     {
 
                     }

@@ -98,8 +98,8 @@ namespace Eagle.CodeAnalysis.Syntax
 
             var openBraceToken = MatchToken(TokenKind.OpenBrace);
 
-            SyntaxNode? getterClause = null;
-            SyntaxNode? setterClause = null;
+            GetterClauseSyntax? getterClause = null;
+            SetterClauseSyntax? setterClause = null;
             if (Current.Kind == TokenKind.GetKeyword)
             {
                 getterClause = ParseGetterClause();
@@ -119,7 +119,7 @@ namespace Eagle.CodeAnalysis.Syntax
             return new PropertyBodySyntax(SyntaxTree, openBraceToken, getterClause, setterClause, closeBraceToken);
         }
 
-        private SyntaxNode ParseSetterClause()
+        private SetterClauseSyntax ParseSetterClause()
         {
             var setKeyword = MatchToken(TokenKind.SetKeyword);
 
@@ -130,7 +130,7 @@ namespace Eagle.CodeAnalysis.Syntax
             return new SetterClauseSyntax(SyntaxTree, setKeyword, body);
         }
 
-        private SyntaxNode ParseGetterClause()
+        private GetterClauseSyntax ParseGetterClause()
         {
             var getKeyword = MatchToken(TokenKind.GetKeyword);
 
