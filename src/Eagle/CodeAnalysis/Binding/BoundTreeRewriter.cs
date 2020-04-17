@@ -34,65 +34,65 @@ namespace Eagle.CodeAnalysis.Binding
             return new BoundReturnStatement(value);
         }
 
-        protected virtual BoundClassDeclaration RewriteStructDeclaration(BoundClassDeclaration node)
-        {
-            var changed = false;
-            var result = ImmutableArray.CreateBuilder<BoundMemberDeclaration>();
-            foreach (var boundMember in node.Members)
-            {
-                var member = RewriteMember(boundMember);
-                if (member != boundMember)
-                    changed = true;
-                result.Add(member);
-            }
+        //protected virtual BoundClassDeclaration RewriteStructDeclaration(BoundClassDeclaration node)
+        //{
+        //    var changed = false;
+        //    var result = ImmutableArray.CreateBuilder<BoundMemberDeclaration>();
+        //    foreach (var boundMember in node.Members)
+        //    {
+        //        var member = RewriteMember(boundMember);
+        //        if (member != boundMember)
+        //            changed = true;
+        //        result.Add(member);
+        //    }
 
-            return changed ? new BoundClassDeclaration(node.Type, result.ToImmutable()) : node;
-        }
+        //    return changed ? new BoundClassDeclaration(node.Type, result.ToImmutable()) : node;
+        //}
 
-        protected virtual BoundMemberDeclaration RewriteMember(BoundMemberDeclaration node)
-        {
-            switch (node)
-            {
-                case BoundFieldDeclaration f: return RewriteFieldDeclaration(f);
-                case BoundPropertyDeclaration p: return RewritePropertyDeclaration(p);
-                case BoundMethodDeclaration m: return RewriteMethodDeclaration(m);
-                case BoundConstructorDeclaration c: return RewriteConstructorDeclaration(c);
-                default:
-                    throw new Exception($"Unexpected node {node.GetType()}");
-            }
-        }
+        //protected virtual BoundMemberDeclaration RewriteMember(BoundMemberDeclaration node)
+        //{
+        //    switch (node)
+        //    {
+        //        case BoundFieldDeclaration f: return RewriteFieldDeclaration(f);
+        //        case BoundPropertyDeclaration p: return RewritePropertyDeclaration(p);
+        //        case BoundMethodDeclaration m: return RewriteMethodDeclaration(m);
+        //        case BoundConstructorDeclaration c: return RewriteConstructorDeclaration(c);
+        //        default:
+        //            throw new Exception($"Unexpected node {node.GetType()}");
+        //    }
+        //}
 
-        protected virtual BoundMemberDeclaration RewriteConstructorDeclaration(BoundConstructorDeclaration node)
-        {
-            var body = RewriteBlockStatement(node.Body);
-            if (body == node.Body)
-                return node;
-            return new BoundConstructorDeclaration(node.Constructor, body);
-        }
+        //protected virtual BoundMemberDeclaration RewriteConstructorDeclaration(BoundConstructorDeclaration node)
+        //{
+        //    var body = RewriteBlockStatement(node.Body);
+        //    if (body == node.Body)
+        //        return node;
+        //    return new BoundConstructorDeclaration(node.Constructor, body);
+        //}
 
-        protected virtual BoundMemberDeclaration RewriteMethodDeclaration(BoundMethodDeclaration node)
-        {
-            var body = RewriteBlockStatement(node.Body);
-            if (body == node.Body)
-                return node;
-            return new BoundMethodDeclaration(node.Method, body);
-        }
+        //protected virtual BoundMemberDeclaration RewriteMethodDeclaration(BoundMethodDeclaration node)
+        //{
+        //    var body = RewriteBlockStatement(node.Body);
+        //    if (body == node.Body)
+        //        return node;
+        //    return new BoundMethodDeclaration(node.Method, body);
+        //}
 
-        protected virtual BoundMemberDeclaration RewritePropertyDeclaration(BoundPropertyDeclaration node)
-        {
-            var initializer = node.Initializer == null ? null : RewriteExpression(node.Initializer);
-            if (initializer == node.Initializer)
-                return node;
-            return new BoundPropertyDeclaration(node.Property, initializer);
-        }
+        //protected virtual BoundMemberDeclaration RewritePropertyDeclaration(BoundPropertyDeclaration node)
+        //{
+        //    var initializer = node.Initializer == null ? null : RewriteExpression(node.Initializer);
+        //    if (initializer == node.Initializer)
+        //        return node;
+        //    return new BoundPropertyDeclaration(node.Property, initializer);
+        //}
 
-        protected virtual BoundMemberDeclaration RewriteFieldDeclaration(BoundFieldDeclaration node)
-        {
-            var initializer = node.Initializer == null ? null : RewriteExpression(node.Initializer);
-            if (initializer == node.Initializer)
-                return node;
-            return new BoundFieldDeclaration(node.Field, initializer);
-        }
+        //protected virtual BoundMemberDeclaration RewriteFieldDeclaration(BoundFieldDeclaration node)
+        //{
+        //    var initializer = node.Initializer == null ? null : RewriteExpression(node.Initializer);
+        //    if (initializer == node.Initializer)
+        //        return node;
+        //    return new BoundFieldDeclaration(node.Field, initializer);
+        //}
 
         protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
         {

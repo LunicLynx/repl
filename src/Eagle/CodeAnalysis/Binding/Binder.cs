@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Eagle.CodeAnalysis.Lowering;
 using Eagle.CodeAnalysis.Syntax;
@@ -119,9 +120,6 @@ namespace Eagle.CodeAnalysis.Binding
             }
 
             var diagnostics = binder.Diagnostics.ToImmutableArray();
-            var variables = binder._scope
-                .GetDeclaredSymbols().OfType<VariableSymbol>();
-            //.GetDeclaredVariables();
 
             if (previous != null)
                 diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
@@ -140,6 +138,19 @@ namespace Eagle.CodeAnalysis.Binding
 
             var functionBodies = ImmutableDictionary.CreateBuilder<IInvokableSymbol, BoundBlockStatement>();
             var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+
+            foreach (var type in globalScope.Symbols.OfType<TypeSymbol>())
+            {
+                foreach (var memberSymbol in type.Members)
+                {
+                    switch (memberSymbol)
+                    {
+                        case PropertySymbol p:
+                            p.Getter.Declaration
+                            break;
+                    }
+                }
+            }
 
             foreach (var function in globalScope.Symbols.OfType<IInvokableSymbol>())
             {
@@ -187,36 +198,7 @@ namespace Eagle.CodeAnalysis.Binding
                                     globalScope.ScriptFunction,
                                     functionBodies.ToImmutable());
         }
-
-        //public static BoundUnit BindProgram(BoundGlobalScope globalScope)
-        //{
-        //    var parentScope = CreateParentScope(globalScope);
-
-        //    var scope = globalScope;
-
-        //    // the logic here is to rebind the function bodies again
-        //    // if there are new implementation in a new submission
-        //    // we want to use this new implementation also in old
-        //    // function bodies
-        //    while (scope != null)
-        //    {
-        //        // TODO iterate throug every symbol that has a statement body
-
-        //        scope = scope.Previous;
-        //    }
-
-        //    var statements = unit.GetChildren().OfType<BoundStatement>().ToImmutableArray();
-        //    var declarations = unit.GetChildren().Except(statements);//.Select(lowerer.RewriteNode);
-
-        //    var boundBlockStatement = new BoundBlockStatement(statements);
-        //    var x = Lowerer.Lower(boundBlockStatement);
-
-        //    return new BoundScriptUnit(declarations.Concat(new[] { x }).ToImmutableArray());
-
-
-        //    //return Lowerer.Lower(globalScope);
-        //}
-
+        
         private void DeclareMembers(ImmutableArray<MemberSyntax> nodes)
         {
             var functions = nodes.OfType<FunctionDeclarationSyntax>();
@@ -313,24 +295,16 @@ namespace Eagle.CodeAnalysis.Binding
 
                 if (body.GetterClause != null)
                 {
-                    if (body.GetterClause.Body is ExpressionBodySyntax e1)
-                    {
-
-                    }
-                    else
-                    {
-
-                    }
+                    getter = new MethodSymbol(type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
                 }
 
                 if (body.SetterClause != null)
                 {
-
+                    setter = new MethodSymbol(TypeSymbol.Void, "<>Set_" + syntax.IdentifierToken.Text, ImmutableArray.Create<ParameterSymbol>(new ParameterSymbol("value", type, 0)));
                 }
-
             }
 
-            var property = new PropertySymbol(syntax.IdentifierToken.Text, type, getter, setter);
+            var property = new PropertySymbol(syntax.IdentifierToken.Text, type, getter, setter, syntax);
             DeclareSymbol(property, syntax.IdentifierToken);
         }
 
@@ -414,7 +388,10 @@ namespace Eagle.CodeAnalysis.Binding
 
                     // if is built in type we don't declare a new type symbol
                     if (typeName == "String")
-                        return;
+                    {
+                        symbol = TypeSymbol.String;
+                        break;
+                    }
 
                     symbol = new TypeSymbol(typeName);
                     break;

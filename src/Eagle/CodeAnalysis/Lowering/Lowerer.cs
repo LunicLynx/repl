@@ -167,92 +167,92 @@ namespace Eagle.CodeAnalysis.Lowering
             return RewriteStatement(result);
         }
 
-        protected override BoundClassDeclaration RewriteStructDeclaration(BoundClassDeclaration node)
-        {
-            // TODO this should probably be at the end
-            node = base.RewriteStructDeclaration(node);
+        //protected override BoundClassDeclaration RewriteStructDeclaration(BoundClassDeclaration node)
+        //{
+        //    // TODO this should probably be at the end
+        //    node = base.RewriteStructDeclaration(node);
 
-            var changed = false;
-            var type = node.Type;
-            var members = node.Members;
+        //    var changed = false;
+        //    var type = node.Type;
+        //    var members = node.Members;
 
-            // 0. Rewrite properties to field and method
-            var props = members.OfType<BoundPropertyDeclaration>().ToList();
-            foreach (var prop in props)
-            {
-                changed = true;
-                var symbol = prop.Property;
-                members = members.Remove(prop);
-                var getter = new BoundMethodDeclaration(symbol.Getter, prop.GetBody);
-                members = members.Add(getter);
-            }
+        //    // 0. Rewrite properties to field and method
+        //    var props = members.OfType<BoundPropertyDeclaration>().ToList();
+        //    foreach (var prop in props)
+        //    {
+        //        changed = true;
+        //        var symbol = prop.Property;
+        //        members = members.Remove(prop);
+        //        var getter = new BoundMethodDeclaration(symbol.Getter, prop.GetBody);
+        //        members = members.Add(getter);
+        //    }
 
-            // 1. define default constructor
-            var boundMembers = members.Select(m => m.Member).ToList();
-            var defaultCtor = type.Members.OfType<ConstructorSymbol>().FirstOrDefault(c => boundMembers.All(m => m != c));
+        //    // 1. define default constructor
+        //    var boundMembers = members.Select(m => m.Member).ToList();
+        //    var defaultCtor = type.Members.OfType<ConstructorSymbol>().FirstOrDefault(c => boundMembers.All(m => m != c));
 
-            if (defaultCtor != null)
-            {
-                changed = true;
-                var body = new BoundBlockStatement(ImmutableArray<BoundStatement>.Empty);
-                var constructorDeclaration = new BoundConstructorDeclaration(defaultCtor, body);
-                members = members.Add(constructorDeclaration);
-            }
+        //    if (defaultCtor != null)
+        //    {
+        //        changed = true;
+        //        var body = new BoundBlockStatement(ImmutableArray<BoundStatement>.Empty);
+        //        var constructorDeclaration = new BoundConstructorDeclaration(defaultCtor, body);
+        //        members = members.Add(constructorDeclaration);
+        //    }
 
-            // 2. prepend initializers to every constructor that does not call another constructor
-            var ctors = members.OfType<BoundConstructorDeclaration>().ToList();
-            foreach (var ctor in ctors)
-            {
-                var initializerStatements = new List<BoundStatement>();
+        //    // 2. prepend initializers to every constructor that does not call another constructor
+        //    var ctors = members.OfType<BoundConstructorDeclaration>().ToList();
+        //    foreach (var ctor in ctors)
+        //    {
+        //        var initializerStatements = new List<BoundStatement>();
 
-                // TODO add properties
-                var fields = members.OfType<BoundFieldDeclaration>();
-                foreach (var field in fields)
-                {
-                    if (field.Initializer != null)
-                    {
-                        var fieldExpression = new BoundFieldExpression(null, field.Field);
-                        var assign = new BoundAssignmentExpression(fieldExpression, field.Initializer);
-                        var assignStatement = new BoundExpressionStatement(assign);
-                        initializerStatements.Add(assignStatement);
-                        var newField = new BoundFieldDeclaration(field.Field, null);
-                        members = members.Replace(field, newField);
-                    }
-                }
+        //        // TODO add properties
+        //        var fields = members.OfType<BoundFieldDeclaration>();
+        //        foreach (var field in fields)
+        //        {
+        //            if (field.Initializer != null)
+        //            {
+        //                var fieldExpression = new BoundFieldExpression(null, field.Field);
+        //                var assign = new BoundAssignmentExpression(fieldExpression, field.Initializer);
+        //                var assignStatement = new BoundExpressionStatement(assign);
+        //                initializerStatements.Add(assignStatement);
+        //                var newField = new BoundFieldDeclaration(field.Field, null);
+        //                members = members.Replace(field, newField);
+        //            }
+        //        }
 
-                if (initializerStatements.Any())
-                {
-                    changed = true;
-                    var newStatements = ctor.Body.Statements.InsertRange(0, initializerStatements);
-                    var newBody = new BoundBlockStatement(newStatements);
-                    var newCtor = new BoundConstructorDeclaration(ctor.Constructor, newBody);
-                    members = members.Replace(ctor, newCtor);
-                }
-            }
+        //        if (initializerStatements.Any())
+        //        {
+        //            changed = true;
+        //            var newStatements = ctor.Body.Statements.InsertRange(0, initializerStatements);
+        //            var newBody = new BoundBlockStatement(newStatements);
+        //            var newCtor = new BoundConstructorDeclaration(ctor.Constructor, newBody);
+        //            members = members.Replace(ctor, newCtor);
+        //        }
+        //    }
 
 
 
-            return changed ? new BoundClassDeclaration(node.Type, members) : node;
-        }
+        //    return changed ? new BoundClassDeclaration(node.Type, members) : node;
+        //}
 
         // TODO lower property declaration 
         //  field and methods
 
 
-        protected override BoundMemberDeclaration RewriteMember(BoundMemberDeclaration node)
-        {
-            return base.RewriteMember(node);
-        }
+        //protected override BoundMemberDeclaration RewriteMember(BoundMemberDeclaration node)
+        //{
+        //    return base.RewriteMember(node);
+        //}
 
         // TODO lower property expression
         //  get for read and set for assignment
 
-        protected override BoundExpression RewritePropertyExpression(BoundPropertyExpression node)
-        {
-            var call = new BoundMethodCallExpression(node.Target, node.Property.Getter, ImmutableArray<BoundExpression>.Empty);
-            //return base.RewritePropertyExpression(node);
-            return call;
-        }
+        //protected override BoundExpression RewritePropertyExpression(BoundPropertyExpression node)
+        //{
+        //    var call = new BoundMethodCallExpression(node.Target, node.Property.Getter, ImmutableArray<BoundExpression>.Empty);
+        //    //return base.RewritePropertyExpression(node);
+        //    return call;
+        //}
 
         protected override BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node)
         {
