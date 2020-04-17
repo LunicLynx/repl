@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using LLVMSharp.Interop;
 
 namespace Eagle.CodeAnalysis.CodeGen
@@ -22,90 +18,6 @@ namespace Eagle.CodeAnalysis.CodeGen
             LLVM.InitializeX86TargetInfo();
             LLVM.InitializeX86AsmParser();
             LLVM.InitializeX86AsmPrinter();
-        }
-    }
-
-    public static class Cl
-    {
-        public static void InvokeCl(string filename)
-        {
-            Console.WriteLine("Compiling...");
-
-            var toolset = @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Tools\MSVC\14.21.27619";
-            var windowskitsInclude = @"C:\Program Files (x86)\Windows Kits\10\include\10.0.17763.0";
-            var windowskitsLibs = @"C:\Program Files (x86)\Windows Kits\10\lib\10.0.17763.0";
-            var clExe = Path.Combine(toolset, @"bin\Hostx64\x64\cl.exe");
-
-            var includes = new[]
-            {
-                Path.Combine(toolset, "include"),
-                Path.Combine(windowskitsInclude, "ucrt"),
-                //Path.Combine(windowskits, "shared"),
-                //Path.Combine(windowskits, "um"),
-                //Path.Combine(windowskits, "winrt"),
-                //Path.Combine(windowskits, "cppwinrt")
-            };
-            var include = string.Join(";", includes);
-
-            var libs = new[]
-            {
-                Path.Combine(toolset, @"lib\x64"),
-                Path.Combine(windowskitsLibs, @"ucrt\x64"),
-                Path.Combine(windowskitsLibs, @"um\x64"),
-            };
-
-            var lib = string.Join(";", libs);
-
-            var startInfo = new ProcessStartInfo();
-            startInfo.EnvironmentVariables.Add("INCLUDE", include);
-            startInfo.EnvironmentVariables.Add("LIB", lib);
-            startInfo.FileName = clExe;
-            startInfo.Arguments = "/nologo /EHsc main.cpp " + filename;
-            var process = Process.Start(startInfo);
-            process.WaitForExit();
-        }
-
-        public static void InvokeMain()
-        {
-            Console.WriteLine("Executing...");
-            var fileName = "main.exe";
-            if (File.Exists(fileName))
-            {
-                var process = Process.Start(fileName);
-                process.WaitForExit();
-                Console.WriteLine("Exit Code: " + process.ExitCode);
-            }
-        }
-    }
-
-    public static class ModuleExtensions
-    {
-        public static bool TryEmitObj(this LLVMModuleRef mod, string filename, out string error)
-        {
-            error = "";
-
-            var targetTriple = Statics.GetDefaultTargetTriple();
-            mod.Target = targetTriple;
-
-            var target = LLVMTargetRef.Targets.SingleOrDefault(t => t.Name == targetTriple);
-            if (target == null)
-            {
-                return false;
-            }
-
-            var targetMachine = target.CreateTargetMachine(targetTriple, "generic", "",
-                LLVMCodeGenOptLevel.LLVMCodeGenLevelNone,
-                LLVMRelocMode.LLVMRelocDefault,
-                LLVMCodeModel.LLVMCodeModelDefault);
-
-            var dataLayout = targetMachine.CreateTargetDataLayout();
-            mod.DataLayout = dataLayout;
-
-            if (!targetMachine.TryEmitToFile(mod, filename, LLVMCodeGenFileType.LLVMAssemblyFile, out error))
-            {
-                return false;
-            }
-            return true;
         }
     }
 

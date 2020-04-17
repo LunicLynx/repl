@@ -4,11 +4,6 @@ using System.Collections.Immutable;
 
 namespace Eagle.CodeAnalysis.Syntax
 {
-    public abstract class SeparatedSyntaxList
-    {
-        public abstract ImmutableArray<SyntaxNode> GetWithSeparators();
-    }
-
     public sealed class SeparatedSyntaxList<T> : SeparatedSyntaxList, IEnumerable<T>
         where T : SyntaxNode
     {

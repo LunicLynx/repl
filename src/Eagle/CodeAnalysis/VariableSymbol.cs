@@ -15,20 +15,4 @@
 
         public override string ToString() => Name;
     }
-
-    public class LocalVariableSymbol : VariableSymbol
-    {
-        public LocalVariableSymbol(string name, bool isReadOnly, TypeSymbol type)
-            : base(name, isReadOnly, type)
-        {
-        }
-    }
-
-    public class GlobalVariableSymbol : VariableSymbol
-    {
-        public GlobalVariableSymbol(string name, bool isReadOnly, TypeSymbol type)
-            : base(name, isReadOnly, type)
-        {
-        }
-    }
 }
