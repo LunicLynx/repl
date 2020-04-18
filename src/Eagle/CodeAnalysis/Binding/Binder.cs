@@ -16,10 +16,11 @@ namespace Eagle.CodeAnalysis.Binding
         private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
         private int _labelCounter;
         private IScope _scope;
+        private readonly Dictionary<IInvokableSymbol, (TextLocation, IScope, SyntaxNode)> _stuff = new Dictionary<IInvokableSymbol, (TextLocation, IScope, SyntaxNode)>();
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
-        public Binder(bool isScript, BoundScope parent, IInvokableSymbol? invokable)
+        public Binder(bool isScript, IScope parent, IInvokableSymbol? invokable)
         {
             _isScript = isScript;
             _invokable = invokable;
@@ -49,138 +50,55 @@ namespace Eagle.CodeAnalysis.Binding
             // create members
             binder.BindMemberDeclarations(nodes);
 
+            // 2.5 create script or main function from global statements
+            binder.GetEntryPoint(isScript, syntaxTrees, out FunctionSymbol? mainFunction,
+                out FunctionSymbol? scriptFunction, out var gbs);
+
+            var functionBodies = ImmutableDictionary.CreateBuilder<IInvokableSymbol, BoundBlockStatement>();
+            var diagnostics2 = ImmutableArray.CreateBuilder<Diagnostic>();
+
             // 3. bind statements
-
-            // TODO
-
-            var globalStatements = syntaxTrees.SelectMany(st => st.Root.Members)
-                .OfType<GlobalStatementSyntax>();
-
-            var statements = ImmutableArray.CreateBuilder<BoundStatement>();
-
-            foreach (var globalStatement in globalStatements)
+            foreach (var kv in binder._stuff)
             {
-                var statement = binder.BindGlobalStatement(globalStatement);
-                statements.Add(statement);
-            }
+                var (location, scope, body) = kv.Value;
+                var function = kv.Key;
 
-            // Check global statements
+                var binder2 = new Binder(isScript, scope, function);
 
-            var firstGlobalStatementPerSyntaxTree = syntaxTrees.Select(st => st.Root.Members.OfType<GlobalStatementSyntax>().FirstOrDefault())
-                                                                .Where(g => g != null)
-                                                                .ToArray();
-
-            if (firstGlobalStatementPerSyntaxTree.Length > 1)
-            {
-                foreach (var globalStatement in firstGlobalStatementPerSyntaxTree)
-                    binder.Diagnostics.ReportOnlyOneFileCanHaveGlobalStatements(globalStatement.Location);
-            }
-
-            // Check for main/script with global statements
-
-            var functions = binder._scope
-                .GetDeclaredSymbols()
-                .OfType<FunctionSymbol>();
-
-            FunctionSymbol mainFunction;
-            FunctionSymbol scriptFunction;
-
-            if (isScript)
-            {
-                mainFunction = null;
-                if (globalStatements.Any())
+                BoundBlockStatement s = null;
+                if (body is ExpressionBodySyntax e)
                 {
-                    scriptFunction = new FunctionSymbol("$eval", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Any, null);
+                    var expr = binder.BindExpression(e.Expression, function.Type);
+                    var r = new BoundReturnStatement(expr);
+                    s = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(r));
+                }
+                else if (body is BlockStatementSyntax b)
+                {
+                    s = (BoundBlockStatement)binder2.BindStatement(b);
                 }
                 else
                 {
-                    scriptFunction = null;
-                }
-            }
-            else
-            {
-                mainFunction = functions.FirstOrDefault(f => f.Name == "main");
-                scriptFunction = null;
-
-                if (mainFunction != null)
-                {
-                    if (mainFunction.Type != TypeSymbol.Void || mainFunction.Parameters.Any())
-                        binder.Diagnostics.ReportMainMustHaveCorrectSignature(mainFunction.Declaration.IdentifierToken.Location);
+                    throw new InvalidOperationException();
                 }
 
-                if (globalStatements.Any())
-                {
-                    if (mainFunction != null)
-                    {
-                        binder.Diagnostics.ReportCannotMixMainAndGlobalStatements(mainFunction.Declaration.IdentifierToken.Location);
-
-                        foreach (var globalStatement in firstGlobalStatementPerSyntaxTree)
-                            binder.Diagnostics.ReportCannotMixMainAndGlobalStatements(globalStatement.Location);
-                    }
-                    else
-                    {
-                        mainFunction = new FunctionSymbol("main", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void, null);
-                    }
-                }
-            }
-
-            var diagnostics = binder.Diagnostics.ToImmutableArray();
-
-            if (previous != null)
-                diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
-
-            return new BoundGlobalScope(previous, diagnostics, mainFunction, scriptFunction, binder._scope.GetDeclaredSymbols(), statements.ToImmutable());
-        }
-
-        private BoundStatement BindGlobalStatement(GlobalStatementSyntax syntax)
-        {
-            return BindStatement(syntax.Statement, isGlobal: true);
-        }
-
-        public static BoundProgram BindProgram(bool isScript, BoundProgram previous, BoundGlobalScope globalScope)
-        {
-            var parentScope = CreateParentScope(globalScope);
-
-            var functionBodies = ImmutableDictionary.CreateBuilder<IInvokableSymbol, BoundBlockStatement>();
-            var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
-
-            foreach (var type in globalScope.Symbols.OfType<TypeSymbol>())
-            {
-                foreach (var memberSymbol in type.Members)
-                {
-                    switch (memberSymbol)
-                    {
-                        case PropertySymbol p:
-                            p.Getter.Declaration
-                            break;
-                    }
-                }
-            }
-
-            foreach (var function in globalScope.Symbols.OfType<IInvokableSymbol>())
-            {
-                if (function.Extern) continue;
-
-                var binder = new Binder(isScript, parentScope, function);
-                var body = binder.BindStatement(function.Declaration.Body);
-                var loweredBody = Lowerer.Lower(body);
+                var loweredBody = Lowerer.Lower(s);
 
                 if (function.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
-                    binder.Diagnostics.ReportAllPathsMustReturn(function.Declaration.IdentifierToken.Location);
+                    binder.Diagnostics.ReportAllPathsMustReturn(location);
 
                 functionBodies.Add(function, loweredBody);
 
-                diagnostics.AddRange(binder.Diagnostics);
+                diagnostics2.AddRange(binder.Diagnostics);
             }
 
-            if (globalScope.MainFunction != null && globalScope.Statements.Any())
+            if (mainFunction != null && gbs.Any())
             {
-                var body = Lowerer.Lower(new BoundBlockStatement(globalScope.Statements));
-                functionBodies.Add(globalScope.MainFunction, body);
+                var body = Lowerer.Lower(new BoundBlockStatement(gbs));
+                functionBodies.Add(mainFunction, body);
             }
-            else if (globalScope.ScriptFunction != null)
+            else if (scriptFunction != null)
             {
-                var statements = globalScope.Statements;
+                var statements = gbs;
                 if (statements.Length == 1 &&
                     statements[0] is BoundExpressionStatement es &&
                     es.Expression.Type != TypeSymbol.Void)
@@ -194,14 +112,155 @@ namespace Eagle.CodeAnalysis.Binding
                 }
 
                 var body = Lowerer.Lower(new BoundBlockStatement(statements));
-                functionBodies.Add(globalScope.ScriptFunction, body);
+                functionBodies.Add(scriptFunction, body);
             }
 
+            var diagnostics = binder.Diagnostics.ToImmutableArray();
+
+            if (previous != null)
+                diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
+
+            // TODO concat diagnostics2
+
+            return new BoundGlobalScope(previous, diagnostics, mainFunction, scriptFunction, binder._scope.GetDeclaredSymbols(), functionBodies.ToImmutable());
+        }
+
+        private void GetEntryPoint(
+            bool isScript,
+            ImmutableArray<SyntaxTree> syntaxTrees,
+            out FunctionSymbol? mainFunction,
+            out FunctionSymbol? scriptFunction,
+            out ImmutableArray<BoundStatement> statements)
+        {
+            var globalStatements = syntaxTrees
+                .SelectMany(st => st.Root.Members)
+                .OfType<GlobalStatementSyntax>()
+                .ToList();
+
+            var statementsb = ImmutableArray.CreateBuilder<BoundStatement>();
+
+            foreach (var globalStatement in globalStatements)
+            {
+                var statement = BindGlobalStatement(globalStatement);
+                statementsb.Add(statement);
+            }
+
+            statements = statementsb.ToImmutable();
+
+            // Check global statements
+
+            var firstGlobalStatementPerSyntaxTree = syntaxTrees
+                .Select(st => st.Root.Members.OfType<GlobalStatementSyntax>().FirstOrDefault())
+                .Where(g => g != null)
+                .ToArray();
+
+            if (firstGlobalStatementPerSyntaxTree.Length > 1)
+            {
+                foreach (var globalStatement in firstGlobalStatementPerSyntaxTree)
+                    Diagnostics.ReportOnlyOneFileCanHaveGlobalStatements(globalStatement.Location);
+            }
+
+            // Check for main/script with global statements
+
+            var functions = _scope
+                .GetDeclaredSymbols()
+                .OfType<FunctionSymbol>();
+
+            if (isScript)
+            {
+                mainFunction = null;
+                scriptFunction = globalStatements.Any() ? new FunctionSymbol("$eval", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Any) : null;
+            }
+            else
+            {
+                mainFunction = functions.FirstOrDefault(f => f.Name == "main");
+                scriptFunction = null;
+
+                if (mainFunction != null)
+                {
+                    if (mainFunction.Type != TypeSymbol.Void || mainFunction.Parameters.Any())
+                    {
+                        var (location, _, _) = _stuff[mainFunction];
+                        Diagnostics.ReportMainMustHaveCorrectSignature(location);
+                    }
+                }
+
+                if (globalStatements.Any())
+                {
+                    if (mainFunction != null)
+                    {
+                        var (location, _, _) = _stuff[mainFunction];
+                        Diagnostics.ReportCannotMixMainAndGlobalStatements(location);
+
+                        foreach (var globalStatement in firstGlobalStatementPerSyntaxTree)
+                            Diagnostics.ReportCannotMixMainAndGlobalStatements(globalStatement.Location);
+                    }
+                    else
+                    {
+                        mainFunction = new FunctionSymbol("main", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
+                    }
+                }
+            }
+        }
+
+        private BoundStatement BindGlobalStatement(GlobalStatementSyntax syntax)
+        {
+            return BindStatement(syntax.Statement, isGlobal: true);
+        }
+
+        public static BoundProgram BindProgram(bool isScript, BoundProgram previous, BoundGlobalScope globalScope)
+        {
+            //    var parentScope = CreateParentScope(globalScope);
+
+            //    var functionBodies = ImmutableDictionary.CreateBuilder<IInvokableSymbol, BoundBlockStatement>();
+               var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+
+            //    foreach (var function in globalScope.Symbols.OfType<IInvokableSymbol>())
+            //    {
+            //        if (function.Extern) continue;
+
+            //        var binder = new Binder(isScript, parentScope, function);
+            //        var body = binder.BindStatement(function.Declaration.Body);
+            //        var loweredBody = Lowerer.Lower(body);
+
+            //        if (function.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
+            //            binder.Diagnostics.ReportAllPathsMustReturn(function.Declaration.IdentifierToken.Location);
+
+            //        functionBodies.Add(function, loweredBody);
+
+            //        diagnostics.AddRange(binder.Diagnostics);
+            //    }
+
+            //    if (globalScope.MainFunction != null && globalScope.Statements.Any())
+            //    {
+            //        var body = Lowerer.Lower(new BoundBlockStatement(globalScope.Statements));
+            //        functionBodies.Add(globalScope.MainFunction, body);
+            //    }
+            //    else if (globalScope.ScriptFunction != null)
+            //    {
+            //        var statements = globalScope.Statements;
+            //        if (statements.Length == 1 &&
+            //            statements[0] is BoundExpressionStatement es &&
+            //            es.Expression.Type != TypeSymbol.Void)
+            //        {
+            //            statements = statements.SetItem(0, new BoundReturnStatement(es.Expression));
+            //        }
+            //        else if (statements.Any() && !(statements.Last() is BoundReturnStatement))
+            //        {
+            //            var nullValue = new BoundLiteralExpression(TypeSymbol.String, "");
+            //            statements = statements.Add(new BoundReturnStatement(nullValue));
+            //        }
+
+            //        var body = Lowerer.Lower(new BoundBlockStatement(statements));
+            //        functionBodies.Add(globalScope.ScriptFunction, body);
+            //    }
+
             return new BoundProgram(previous,
-                                    diagnostics.ToImmutable(),
-                                    globalScope.MainFunction,
-                                    globalScope.ScriptFunction,
-                                    functionBodies.ToImmutable());
+                diagnostics.ToImmutable(),
+                globalScope.MainFunction,
+                globalScope.ScriptFunction,
+                globalScope.FunctionBodies);
+                                    //functionBodies.ToImmutable());
         }
 
         //public static BoundUnit BindProgram(BoundGlobalScope globalScope)
@@ -292,6 +351,8 @@ namespace Eagle.CodeAnalysis.Binding
             _scope = _scope.Parent;
         }
 
+
+
         private void BindTypeMemberDeclaration(MemberDeclarationSyntax syntax)
         {
             switch (syntax)
@@ -362,7 +423,10 @@ namespace Eagle.CodeAnalysis.Binding
 
             var name = syntax.IdentifierToken.Text;
 
-            var method = new MethodSymbol(type, name, parameters, syntax);
+            var method = new MethodSymbol(type, name, parameters);
+
+            _stuff[method] = (syntax.IdentifierToken.Location, _scope, syntax.Body);
+
             DeclareSymbol(method, syntax.IdentifierToken);
         }
 
@@ -374,7 +438,12 @@ namespace Eagle.CodeAnalysis.Binding
 
             var name = syntax.IdentifierToken.Text;
 
-            var function = new FunctionSymbol(name, parameters, type, syntax);
+            var function = new FunctionSymbol(name, parameters, type);
+            var location = syntax.IdentifierToken.Location;
+            var body = syntax.Body;
+
+            _stuff[function] = (location, _scope, body);
+
             DeclareSymbol(function, syntax.IdentifierToken);
         }
 

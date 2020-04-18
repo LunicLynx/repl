@@ -8,9 +8,6 @@ namespace Eagle.CodeAnalysis
         string Name { get; }
         ImmutableArray<ParameterSymbol> Parameters { get; }
         TypeSymbol Type { get; }
-
         bool Extern { get; }
-
-        IInvokableDeclarationSyntax Declaration { get; }
     }
 }

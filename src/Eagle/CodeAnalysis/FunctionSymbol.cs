@@ -7,19 +7,15 @@ namespace Eagle.CodeAnalysis
     public class FunctionSymbol : Symbol, IInvokableSymbol
     {
         public TypeSymbol Type { get; }
-        public FunctionDeclarationSyntax Declaration { get; }
         public bool Extern { get; }
         public override SymbolKind Kind => SymbolKind.Function;
         public ImmutableArray<ParameterSymbol> Parameters { get; }
 
-        IInvokableDeclarationSyntax IInvokableSymbol.Declaration => Declaration;
-
-        public FunctionSymbol(string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol returnType, FunctionDeclarationSyntax declaration = null, bool @extern = false)
+        public FunctionSymbol(string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol returnType, bool @extern = false)
             : base(name)
         {
             Parameters = parameters;
             Type = returnType;
-            Declaration = declaration;
             Extern = @extern;
         }
 

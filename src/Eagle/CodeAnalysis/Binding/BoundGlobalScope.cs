@@ -6,24 +6,28 @@ namespace Eagle.CodeAnalysis.Binding
     {
         public BoundGlobalScope Previous { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public FunctionSymbol MainFunction { get; }
-        public FunctionSymbol ScriptFunction { get; }
+        public FunctionSymbol? MainFunction { get; }
+        public FunctionSymbol? ScriptFunction { get; }
         public ImmutableArray<Symbol> Symbols { get; }
-        public ImmutableArray<BoundStatement> Statements { get; }
+        public ImmutableDictionary<IInvokableSymbol, BoundBlockStatement> FunctionBodies { get; }
+        //public ImmutableArray<BoundStatement> Statements { get; }
 
         public BoundGlobalScope(BoundGlobalScope previous, 
             ImmutableArray<Diagnostic> diagnostics, 
-            FunctionSymbol mainFunction,
-            FunctionSymbol scriptFunction,
+            FunctionSymbol? mainFunction,
+            FunctionSymbol? scriptFunction,
             ImmutableArray<Symbol> symbols, 
-            ImmutableArray<BoundStatement> statements)
+            //ImmutableArray<BoundStatement> statements
+            ImmutableDictionary<IInvokableSymbol, BoundBlockStatement> functionBodies
+            )
         {
             Previous = previous;
             Diagnostics = diagnostics;
             MainFunction = mainFunction;
             ScriptFunction = scriptFunction;
             Symbols = symbols;
-            Statements = statements;
+            FunctionBodies = functionBodies;
+            //Statements = statements;
         }
     }
 }

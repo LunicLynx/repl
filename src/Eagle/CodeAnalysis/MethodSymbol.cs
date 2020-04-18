@@ -8,24 +8,18 @@ namespace Eagle.CodeAnalysis
     {
         public ImmutableArray<ParameterSymbol> Parameters { get; }
         public bool Extern { get; }
-        public MethodDeclarationSyntax? Declaration { get; }
+        public override SymbolKind Kind => SymbolKind.Method;
+        TypeSymbol IInvokableSymbol.Type => Type;
 
-        public MethodSymbol(TypeSymbol returnType, string name, ImmutableArray<ParameterSymbol> parameters, MethodDeclarationSyntax? declaration = null)
+        public MethodSymbol(TypeSymbol returnType, string name, ImmutableArray<ParameterSymbol> parameters)
             : base(name, returnType)
         {
             Parameters = parameters;
-            Declaration = declaration;
         }
 
         public override string ToString()
         {
             return $"{Name}({string.Join(", ", Parameters.Select(p => p.ToString()))}): {Type} ";
         }
-
-        public override SymbolKind Kind => SymbolKind.Method;
-
-        IInvokableDeclarationSyntax IInvokableSymbol.Declaration => Declaration;
-
-        TypeSymbol IInvokableSymbol.Type => Type;
     }
 }
