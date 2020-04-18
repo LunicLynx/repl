@@ -41,12 +41,17 @@ namespace Eagle.CodeAnalysis.Binding
 
             var nodes = syntaxTrees.SelectMany(st => st.Root.Members).ToImmutableArray();
 
+            // 1. bind types
             // create types
-            binder.DeclareTypes(nodes);
+            binder.BindTypeDeclarations(nodes);
 
+            // 2. bind members
             // create members
-            binder.DeclareMembers(nodes);
+            binder.BindMemberDeclarations(nodes);
 
+            // 3. bind statements
+
+            // TODO
 
             var globalStatements = syntaxTrees.SelectMany(st => st.Root.Members)
                 .OfType<GlobalStatementSyntax>();
@@ -198,13 +203,42 @@ namespace Eagle.CodeAnalysis.Binding
                                     globalScope.ScriptFunction,
                                     functionBodies.ToImmutable());
         }
-        
-        private void DeclareMembers(ImmutableArray<MemberSyntax> nodes)
+
+        //public static BoundUnit BindProgram(BoundGlobalScope globalScope)
+        //{
+        //    var parentScope = CreateParentScope(globalScope);
+
+        //    var scope = globalScope;
+
+        //    // the logic here is to rebind the function bodies again
+        //    // if there are new implementation in a new submission
+        //    // we want to use this new implementation also in old
+        //    // function bodies
+        //    while (scope != null)
+        //    {
+        //        // TODO iterate throug every symbol that has a statement body
+
+        //        scope = scope.Previous;
+        //    }
+
+        //    var statements = unit.GetChildren().OfType<BoundStatement>().ToImmutableArray();
+        //    var declarations = unit.GetChildren().Except(statements);//.Select(lowerer.RewriteNode);
+
+        //    var boundBlockStatement = new BoundBlockStatement(statements);
+        //    var x = Lowerer.Lower(boundBlockStatement);
+
+        //    return new BoundScriptUnit(declarations.Concat(new[] { x }).ToImmutableArray());
+
+
+        //    //return Lowerer.Lower(globalScope);
+        //}
+
+        private void BindMemberDeclarations(ImmutableArray<MemberSyntax> nodes)
         {
             var functions = nodes.OfType<FunctionDeclarationSyntax>();
             foreach (var function in functions)
             {
-                DeclareFunction(function);
+                BindFunctionDeclaration(function);
             }
 
             var externals = nodes.OfType<ExternDeclarationSyntax>();
@@ -216,12 +250,14 @@ namespace Eagle.CodeAnalysis.Binding
             var objects = nodes.OfType<ObjectDeclarationSyntax>();
             foreach (var @object in objects)
             {
-                DeclareTypeMembers(@object);
+                BindTypeMemberDeclarations(@object);
             }
         }
 
-        private void DeclareTypeMembers(ObjectDeclarationSyntax syntax)
+        private void BindTypeMemberDeclarations(ObjectDeclarationSyntax syntax)
         {
+            // TODO move this to the type binding phase
+            // 
             var symbol = GetSymbol<TypeSymbol>(syntax.IdentifierToken);
 
             if (syntax.BaseType != null)
@@ -237,11 +273,13 @@ namespace Eagle.CodeAnalysis.Binding
                 symbol.BaseType = baseType;
             }
 
+
+            // start binding members
             _scope = new TypeScope(_scope, symbol);
 
             foreach (var member in syntax.Members)
             {
-                DeclareTypeMember(member);
+                BindTypeMemberDeclaration(member);
             }
 
             var hasConstructor = symbol.Members.OfType<ConstructorSymbol>().Any();
@@ -254,21 +292,21 @@ namespace Eagle.CodeAnalysis.Binding
             _scope = _scope.Parent;
         }
 
-        private void DeclareTypeMember(MemberDeclarationSyntax syntax)
+        private void BindTypeMemberDeclaration(MemberDeclarationSyntax syntax)
         {
             switch (syntax)
             {
                 case FieldDeclarationSyntax f:
-                    DeclareField(f);
+                    BindFieldDeclaration(f);
                     break;
                 case MethodDeclarationSyntax m:
-                    DeclareMethod(m);
+                    BindMethodDeclaration(m);
                     break;
                 case ConstructorDeclarationSyntax c:
-                    DeclareConstructor(c);
+                    BindConstructorDeclaration(c);
                     break;
                 case PropertyDeclarationSyntax p:
-                    DeclareProperty(p);
+                    BindPropertyDeclaration(p);
                     break;
                 case IndexerDeclarationSyntax i:
                     break;
@@ -277,7 +315,7 @@ namespace Eagle.CodeAnalysis.Binding
             }
         }
 
-        private void DeclareProperty(PropertyDeclarationSyntax syntax)
+        private void BindPropertyDeclaration(PropertyDeclarationSyntax syntax)
         {
             TypeSymbol type = null;
             if (syntax.TypeClause != null)
@@ -308,7 +346,7 @@ namespace Eagle.CodeAnalysis.Binding
             DeclareSymbol(property, syntax.IdentifierToken);
         }
 
-        private void DeclareConstructor(ConstructorDeclarationSyntax syntax)
+        private void BindConstructorDeclaration(ConstructorDeclarationSyntax syntax)
         {
             var type = ((TypeScope)_scope).Type;
             var parameters = LookupParameterList(syntax.Parameters);
@@ -316,7 +354,7 @@ namespace Eagle.CodeAnalysis.Binding
             DeclareSymbol(constructor, syntax.IdentifierToken);
         }
 
-        private void DeclareMethod(MethodDeclarationSyntax syntax)
+        private void BindMethodDeclaration(MethodDeclarationSyntax syntax)
         {
             var parameters = LookupParameterList(syntax.Parameters);
 
@@ -328,7 +366,7 @@ namespace Eagle.CodeAnalysis.Binding
             DeclareSymbol(method, syntax.IdentifierToken);
         }
 
-        private void DeclareFunction(FunctionDeclarationSyntax syntax)
+        private void BindFunctionDeclaration(FunctionDeclarationSyntax syntax)
         {
             var parameters = LookupParameterList(syntax.Parameters);
 
@@ -340,31 +378,37 @@ namespace Eagle.CodeAnalysis.Binding
             DeclareSymbol(function, syntax.IdentifierToken);
         }
 
-        private void DeclareField(FieldDeclarationSyntax syntax)
+        private void BindFieldDeclaration(FieldDeclarationSyntax syntax)
         {
             var type = BindTypeClause(syntax.TypeClause);
             var field = new FieldSymbol(syntax.IdentifierToken.Text, type);
             DeclareSymbol(field, syntax.IdentifierToken);
         }
 
-        private void DeclareTypes(ImmutableArray<MemberSyntax> nodes)
+        private void BindTypeDeclarations(ImmutableArray<MemberSyntax> nodes)
         {
+            // TODO find all types that are to be declared
+            // ... depth search
+
+            // then loop until all are defined
+            // or the list does not get shorter -> cyclic dependency
+
             var classes = nodes.OfType<ObjectDeclarationSyntax>();
             var types = classes;
 
             foreach (var type in types)
             {
-                DeclareType(type);
+                BindType(type);
             }
 
             var aliases = nodes.OfType<AliasDeclarationSyntax>();
             foreach (var alias in aliases)
             {
-                DeclareAlias(alias);
+                BindAlias(alias);
             }
         }
 
-        private void DeclareAlias(AliasDeclarationSyntax alias)
+        private void BindAlias(AliasDeclarationSyntax alias)
         {
             var identifierToken = alias.IdentifierToken;
             var symbol = new AliasSymbol(alias.IdentifierToken.Text, null);
@@ -376,7 +420,7 @@ namespace Eagle.CodeAnalysis.Binding
         // repeat until all types are declared
         // or set of retries does not reduce in size between two iterations
         // -> must be cyclic dependency or undefined type
-        private void DeclareType(SyntaxNode type)
+        private void BindType(SyntaxNode type)
         {
             TypeSymbol symbol;
             Token identifierToken;
