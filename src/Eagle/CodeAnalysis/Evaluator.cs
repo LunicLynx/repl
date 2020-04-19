@@ -131,7 +131,15 @@ namespace Eagle.CodeAnalysis
 
             var target = EvaluateExpression(node.Target);
 
-            return ((IInvokable)_functions[method]).Invoke(this, target, new object[0]);
+            var locals = new Dictionary<VariableSymbol, object>();
+            _locals.Push(locals);
+
+            var statement = _functions[method];
+            var result = EvaluateBlock(statement);
+
+            _locals.Pop();
+            return result;
+            //return ((IInvokable)_functions[method]).Invoke(this, target, new object[0]);
         }
 
         private object EvaluateNewInstanceExpression(BoundNewInstanceExpression node)

@@ -396,12 +396,13 @@ namespace Eagle.CodeAnalysis.Binding
                 if (body.GetterClause != null)
                 {
                     getter = new MethodSymbol(type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
-                    _stuff[getter] = (body.GetterClause.)
+                    _stuff[getter] = (body.GetterClause.GetKeyword.Location, _scope, body.GetterClause.Body);
                 }
 
                 if (body.SetterClause != null)
                 {
                     setter = new MethodSymbol(TypeSymbol.Void, "<>Set_" + syntax.IdentifierToken.Text, ImmutableArray.Create<ParameterSymbol>(new ParameterSymbol("value", type, 0)));
+                    _stuff[setter] = (body.SetterClause.SetKeyword.Location, _scope, body.SetterClause.Body);
                 }
             }
 
@@ -1723,6 +1724,12 @@ namespace Eagle.CodeAnalysis.Binding
             {
                 Diagnostics.ReportUndefinedBinaryOperator(operatorToken.Location, operatorToken.Text, left.Type, right.Type);
                 return left;
+            }
+
+            if (boundOperator.Kind == BoundBinaryOperatorKind.Concatenation)
+            {
+                _scope.TryLookup("Concat", out var con);
+                return new BoundFunctionCallExpression((FunctionSymbol)con, ImmutableArray.Create(left,right));
             }
 
             return new BoundBinaryExpression(left, boundOperator, right);

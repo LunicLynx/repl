@@ -82,7 +82,7 @@ namespace Eagle.CodeAnalysis.Binding
             StringConcatOperators,
             StringOperators);
 
-        public static BoundBinaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol leftType, TypeSymbol rightType)
+        public static BoundBinaryOperator? Bind(TokenKind operatorTokenKind, TypeSymbol leftType, TypeSymbol rightType)
         {
             foreach (var @operator in Operators)
             {

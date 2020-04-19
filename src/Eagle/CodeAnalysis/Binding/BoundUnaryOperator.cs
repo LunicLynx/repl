@@ -50,7 +50,7 @@ namespace Eagle.CodeAnalysis.Binding
         //        BooleanOperators);
         //}
 
-        public static BoundUnaryOperator Bind(TokenKind operatorTokenKind, TypeSymbol operandType)
+        public static BoundUnaryOperator? Bind(TokenKind operatorTokenKind, TypeSymbol operandType)
         {
             if (operatorTokenKind == TokenKind.Ampersand)
             {
