@@ -9,6 +9,19 @@ using Eagle.CodeAnalysis.Text;
 
 namespace Eagle.CodeAnalysis.Binding
 {
+    public class ProgramLowerer
+    {
+        public static void Lower(BoundProgram program)
+        {
+            // mission statement
+            // remove everything oop based 
+            // question? does this help for emitting code?
+            // yes
+            // because then we can treat constructors,
+            // methods and functions the same way
+        }
+    }
+
     public class Binder
     {
         private readonly bool _isScript;
@@ -213,7 +226,7 @@ namespace Eagle.CodeAnalysis.Binding
             //    var parentScope = CreateParentScope(globalScope);
 
             //    var functionBodies = ImmutableDictionary.CreateBuilder<IInvokableSymbol, BoundBlockStatement>();
-               var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+            var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
 
             //    foreach (var function in globalScope.Symbols.OfType<IInvokableSymbol>())
             //    {
@@ -260,37 +273,8 @@ namespace Eagle.CodeAnalysis.Binding
                 globalScope.MainFunction,
                 globalScope.ScriptFunction,
                 globalScope.FunctionBodies);
-                                    //functionBodies.ToImmutable());
+            //functionBodies.ToImmutable());
         }
-
-        //public static BoundUnit BindProgram(BoundGlobalScope globalScope)
-        //{
-        //    var parentScope = CreateParentScope(globalScope);
-
-        //    var scope = globalScope;
-
-        //    // the logic here is to rebind the function bodies again
-        //    // if there are new implementation in a new submission
-        //    // we want to use this new implementation also in old
-        //    // function bodies
-        //    while (scope != null)
-        //    {
-        //        // TODO iterate throug every symbol that has a statement body
-
-        //        scope = scope.Previous;
-        //    }
-
-        //    var statements = unit.GetChildren().OfType<BoundStatement>().ToImmutableArray();
-        //    var declarations = unit.GetChildren().Except(statements);//.Select(lowerer.RewriteNode);
-
-        //    var boundBlockStatement = new BoundBlockStatement(statements);
-        //    var x = Lowerer.Lower(boundBlockStatement);
-
-        //    return new BoundScriptUnit(declarations.Concat(new[] { x }).ToImmutableArray());
-
-
-        //    //return Lowerer.Lower(globalScope);
-        //}
 
         private void BindMemberDeclarations(ImmutableArray<MemberSyntax> nodes)
         {
@@ -392,7 +376,7 @@ namespace Eagle.CodeAnalysis.Binding
             else
             {
                 var body = (PropertyBodySyntax)syntax.Body;
-                
+
                 if (body.GetterClause != null)
                 {
                     getter = new MethodSymbol(type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
@@ -1161,6 +1145,18 @@ namespace Eagle.CodeAnalysis.Binding
         private BoundExpression BindExpression(ExpressionSyntax syntax, bool canBeVoid = false)
         {
             var result = BindExpressionInternal(syntax);
+
+            if (result is BoundPropertyExpression p)
+            {
+                if (p.Property.Getter == null)
+                {
+                    Diagnostics.CannotReadSetOnlyProperty(syntax.Location);
+                    return new BoundErrorExpression();
+                }
+
+                return new BoundMethodCallExpression(p.Target, p.Property.Getter, ImmutableArray<BoundExpression>.Empty);
+            }
+
             if (!canBeVoid && result.Type == TypeSymbol.Void)
             {
                 Diagnostics.ReportExpressionMustHaveValue(syntax.Location);
@@ -1729,7 +1725,7 @@ namespace Eagle.CodeAnalysis.Binding
             if (boundOperator.Kind == BoundBinaryOperatorKind.Concatenation)
             {
                 _scope.TryLookup("Concat", out var con);
-                return new BoundFunctionCallExpression((FunctionSymbol)con, ImmutableArray.Create(left,right));
+                return new BoundFunctionCallExpression((FunctionSymbol)con, ImmutableArray.Create(left, right));
             }
 
             return new BoundBinaryExpression(left, boundOperator, right);

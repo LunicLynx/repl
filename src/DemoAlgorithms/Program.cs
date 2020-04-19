@@ -3,10 +3,24 @@ using System.Linq.Expressions;
 
 namespace DemoAlgorithms
 {
+    class Demo
+    {
+        private int _strangeProperty = 0;
+        public int StrangeProperty
+        {
+            get { return _strangeProperty + 1; }
+            set { _strangeProperty = value; }
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
+            var d = new Demo();
+
+            var z = d.StrangeProperty = 4;
+
 
             var s1 = "asd";
             var s2 = "def";

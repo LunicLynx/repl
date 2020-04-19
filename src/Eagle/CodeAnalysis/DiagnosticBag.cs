@@ -157,7 +157,7 @@ namespace Eagle.CodeAnalysis
             var message = $"The cast from '{from}' to '{to}' is not supported.";
             Report(location, message);
         }
-        
+
         public void ReportCannotConvertImplicitly(TextLocation location, TypeSymbol fromType, TypeSymbol toType)
         {
             var message = $"Cannot convert type '{fromType}' to '{toType}'. An explicit conversion exists (are you missing a cast?)";
@@ -245,6 +245,12 @@ namespace Eagle.CodeAnalysis
         public void ReportUnterminatedChar(TextLocation location)
         {
             var message = "Unterminated character literal.";
+            Report(location, message);
+        }
+
+        public void CannotReadSetOnlyProperty(TextLocation location)
+        {
+            var message = "Cannot read set only property.";
             Report(location, message);
         }
     }
