@@ -387,14 +387,16 @@ namespace Eagle.CodeAnalysis.Binding
             if (syntax.Body is ExpressionBodySyntax e)
             {
                 getter = new MethodSymbol(type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
+                _stuff[getter] = (syntax.IdentifierToken.Location, _scope, e);
             }
             else
             {
                 var body = (PropertyBodySyntax)syntax.Body;
-
+                
                 if (body.GetterClause != null)
                 {
                     getter = new MethodSymbol(type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
+                    _stuff[getter] = (body.GetterClause.)
                 }
 
                 if (body.SetterClause != null)
