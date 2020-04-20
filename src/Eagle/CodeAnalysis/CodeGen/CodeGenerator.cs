@@ -30,35 +30,80 @@ namespace Eagle.CodeAnalysis.CodeGen
             _mod = LLVMModuleRef.CreateWithName("MyMod");
             _builder = _mod.Context.CreateBuilder();
 
-            //var ts = _globalScope.Symbols.OfType<TypeSymbol>()
-            //    .ToList();
 
-            var fs = _globalScope.Symbols.OfType<FunctionSymbol>()
-                .Concat(new[] { _program.ScriptFunction ?? _program.MainFunction })
-                .ToList();
 
-            foreach (var functionSymbol in fs)
+            var types = _globalScope.Symbols.OfType<TypeSymbol>();
+
+            foreach (var type in types)
             {
-                var type = CreateFunctionType(functionSymbol);
-                var f = _mod.AddFunction(functionSymbol.Name, type);
-                _symbols[functionSymbol] = f;
+                if (_types.ContainsKey(type)) continue;
+
+                var fields = _globalScope.Symbols.OfType<FieldSymbol>().Where(f => f.DeclaringType == type).ToList();
+                var elements = fields.Select(f => GetXType(f.Type)).ToArray();
+                var str = LLVMTypeRef.CreateStruct(elements, false);
+                _types[type] = str;
             }
 
-            foreach (var functionSymbol in fs)
+            var s = new List<IInvokableSymbol>();
+            foreach (var type in types)
             {
-                // render bodies
-                if (!functionSymbol.Extern)
+                foreach (var member in type.Members)
                 {
-                    var f = _symbols[functionSymbol];
-                    var bb = f.AppendBasicBlock("entry");
-                    _builder.PositionAtEnd(bb);
+                    if (member is IInvokableSymbol ins)
+                        s.Add(ins);
 
-                    var body = _program.Functions[functionSymbol];
-                    var rewriter = new PreCodeGenerationTreeRewriter();
-                    var newBody = (BoundBlockStatement)rewriter.RewriteStatement(body);
-                    GenerateStatement(newBody);
+                    if (member is PropertySymbol ps)
+                    {
+                        if (ps.Getter != null)
+                            s.Add(ps.Getter);
+
+                        if (ps.Setter != null)
+                            s.Add(ps.Setter);
+                    }
                 }
             }
+
+            var invokables = _globalScope.Symbols.OfType<IInvokableSymbol>()
+                .Concat(s)
+                .Concat(new[] { _program.MainFunction ?? _program.ScriptFunction })
+                .ToArray();
+
+            foreach (var invokable in invokables)
+            {
+                LLVMTypeRef type = null;
+                switch (invokable)
+                {
+                    case FunctionSymbol fs:
+                        type = CreateFunctionType(fs);
+                        break;
+                    case ConstructorSymbol cs:
+                        var lt = GetXType(cs.Type);
+                        type = CreateConstructorType(cs, lt);
+                        break;
+                    case MethodSymbol ms:
+                        var lt1 = GetXType(ms.DeclaringType);
+                        type = CreateMethodType(ms, lt1);
+                        break;
+                }
+
+                var f = _mod.AddFunction(invokable.Name, type);
+                _symbols[(Symbol)invokable] = f;
+            }
+
+            foreach (var (symbol, body) in _program.Functions)
+            {
+                if (symbol.Extern) continue;
+
+                var f = _symbols[(Symbol)symbol];
+                var bb = f.AppendBasicBlock("entry");
+                _builder.PositionAtEnd(bb);
+
+                var rewriter = new PreCodeGenerationTreeRewriter();
+                var newBody = (BoundBlockStatement)rewriter.RewriteStatement(body);
+                GenerateStatement(newBody);
+            }
+
+            _mod.Dump();
         }
 
         //private LLVMTypeRef GetFieldType(BoundFieldDeclaration node)
@@ -175,6 +220,9 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.U64) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, ((ulong)Convert.ChangeType(nodeValue, typeof(ulong))));
             if (type == TypeSymbol.U8) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, ((byte)Convert.ChangeType(nodeValue, typeof(byte))));
 
+            if (type == TypeSymbol.UInt) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)((long)Convert.ChangeType(nodeValue, typeof(long))));
+            if (type == TypeSymbol.Int) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)((long)Convert.ChangeType(nodeValue, typeof(long))));
+
             if (type == TypeSymbol.String)
                 value = _builder.BuildGlobalString((string)nodeValue);
 
@@ -278,26 +326,21 @@ namespace Eagle.CodeAnalysis.CodeGen
             var returnType = GetXType(function.Type);
             var parameterTypes = function.Parameters.Select(p => GetXType(p.Type)).ToArray();
             return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
-            //return new FunctionType(returnType, parameterTypes);
         }
 
-        //pri//vate LLVMTypeRef CreateMethodType(MethodSymbol method, LLVMTypeRef owner)
-        //{
-        //    var returnType = GetXType(method.Type);
-        //    var parameterTypes = new[] { owner }.Concat(method.Parameters.Select(p => GetXType(p.Type))).ToArray();
-        //    return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
-        //    //return new FunctionType(returnType, parameterTypes);
-        //}
+        private LLVMTypeRef CreateMethodType(MethodSymbol method, LLVMTypeRef owner)
+        {
+            var returnType = GetXType(method.Type);
+            var parameterTypes = new[] { owner }.Concat(method.Parameters.Select(p => GetXType(p.Type))).ToArray();
+            return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
+        }
 
-        //private LLVMTypeRef CreateConstructorType(ConstructorSymbol constructor, LLVMTypeRef owner)
-        //{
-
-
-        //    var returnType = GetXType(constructor.Type);
-        //    var parameterTypes = new[] { owner }.Concat(constructor.Parameters.Select(p => GetXType(p.Type))).ToArray();
-        //    return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
-        //    //return new FunctionType(returnType, parameterTypes);
-        //}
+        private LLVMTypeRef CreateConstructorType(ConstructorSymbol constructor, LLVMTypeRef owner)
+        {
+            var returnType = GetXType(constructor.Type);
+            var parameterTypes = new[] { owner }.Concat(constructor.Parameters.Select(p => GetXType(p.Type))).ToArray();
+            return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
+        }
 
         private void GenerateLabelStatement(BoundLabelStatement node)
         {
@@ -533,6 +576,26 @@ namespace Eagle.CodeAnalysis.CodeGen
             //return value;
         }
 
+
+        //var typeMap = new Dictionary<TypeSymbol, LLVMTypeRef>
+        //{
+        //    [TypeSymbol.Void] = LLVMTypeRef.Void,
+        //    [TypeSymbol.String] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
+        //    [TypeSymbol.Any] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Void, 0),
+        //    [TypeSymbol.Bool] = LLVMTypeRef.Int1,
+        //    [TypeSymbol.Char] = LLVMTypeRef.Int8,
+        //    [TypeSymbol.I8] = LLVMTypeRef.Int8,
+        //    [TypeSymbol.I16] = LLVMTypeRef.Int16,
+        //    [TypeSymbol.I32] = LLVMTypeRef.Int32,
+        //    [TypeSymbol.I64] = LLVMTypeRef.Int64,
+        //    [TypeSymbol.U8] = LLVMTypeRef.Int8,
+        //    [TypeSymbol.U16] = LLVMTypeRef.Int16,
+        //    [TypeSymbol.U32] = LLVMTypeRef.Int32,
+        //    [TypeSymbol.U64] = LLVMTypeRef.Int64,
+        //    [TypeSymbol.Int] = LLVMTypeRef.Int64,
+        //    [TypeSymbol.UInt] = LLVMTypeRef.Int64,
+        //};
+
         private LLVMTypeRef GetXType(TypeSymbol type)
         {
             if (_types.TryGetValue(type, out var x))
@@ -548,6 +611,9 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.U64) return LLVMTypeRef.Int64;
             if (type == TypeSymbol.String) return LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
             if (type == TypeSymbol.Void) return LLVMTypeRef.Void;
+            if (type == TypeSymbol.Int) return LLVMTypeRef.Int64;
+            if (type == TypeSymbol.UInt) return LLVMTypeRef.Int64;
+            if (type == TypeSymbol.Any) return LLVMTypeRef.CreatePointer(LLVMTypeRef.Void, 0);
             throw new Exception("Unsupported type");
         }
 

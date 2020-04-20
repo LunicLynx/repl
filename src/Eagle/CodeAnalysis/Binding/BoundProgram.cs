@@ -21,6 +21,7 @@ namespace Eagle.CodeAnalysis.Binding
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public FunctionSymbol? MainFunction { get; }
         public FunctionSymbol? ScriptFunction { get; }
+
         public ImmutableDictionary<IInvokableSymbol, BoundBlockStatement> Functions { get; }
     }
 }

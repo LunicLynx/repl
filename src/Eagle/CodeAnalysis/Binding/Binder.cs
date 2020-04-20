@@ -9,19 +9,6 @@ using Eagle.CodeAnalysis.Text;
 
 namespace Eagle.CodeAnalysis.Binding
 {
-    public class ProgramLowerer
-    {
-        public static void Lower(BoundProgram program)
-        {
-            // mission statement
-            // remove everything oop based 
-            // question? does this help for emitting code?
-            // yes
-            // because then we can treat constructors,
-            // methods and functions the same way
-        }
-    }
-
     public class Binder
     {
         private readonly bool _isScript;
@@ -182,11 +169,11 @@ namespace Eagle.CodeAnalysis.Binding
             if (isScript)
             {
                 mainFunction = null;
-                scriptFunction = globalStatements.Any() ? new FunctionSymbol("$eval", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Any) : null;
+                scriptFunction = globalStatements.Any() ? new FunctionSymbol("$Eval", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Any) : null;
             }
             else
             {
-                mainFunction = functions.FirstOrDefault(f => f.Name == "main");
+                mainFunction = functions.FirstOrDefault(f => f.Name == "Main");
                 scriptFunction = null;
 
                 if (mainFunction != null)
@@ -210,7 +197,7 @@ namespace Eagle.CodeAnalysis.Binding
                     }
                     else
                     {
-                        mainFunction = new FunctionSymbol("main", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
+                        mainFunction = new FunctionSymbol("Main", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
                     }
                 }
             }
@@ -354,14 +341,52 @@ namespace Eagle.CodeAnalysis.Binding
                     BindPropertyDeclaration(p);
                     break;
                 case IndexerDeclarationSyntax i:
+                    BindIndexerDeclaration(i);
                     break;
                 default:
                     throw new Exception($"Unexpected syntax {syntax.GetType()}");
             }
         }
 
+        private void BindIndexerDeclaration(IndexerDeclarationSyntax syntax)
+        {
+            var declaringType = ((TypeScope)_scope).Type;
+            TypeSymbol type = null;
+            if (syntax.TypeClause != null)
+                type = BindTypeClause(syntax.TypeClause);
+            MethodSymbol getter = null;
+            MethodSymbol setter = null;
+
+            var name = "Item";
+            if (syntax.Body is ExpressionBodySyntax e)
+            {
+                getter = new MethodSymbol(declaringType, type, "<>Get_" + name, ImmutableArray<ParameterSymbol>.Empty);
+                _stuff[getter] = (syntax.Location, _scope, e);
+            }
+            else
+            {
+                var body = (PropertyBodySyntax)syntax.Body;
+
+                if (body.GetterClause != null)
+                {
+                    getter = new MethodSymbol(declaringType, type, "<>Get_" + name, ImmutableArray<ParameterSymbol>.Empty);
+                    _stuff[getter] = (body.GetterClause.GetKeyword.Location, _scope, body.GetterClause.Body);
+                }
+
+                if (body.SetterClause != null)
+                {
+                    setter = new MethodSymbol(declaringType, TypeSymbol.Void, "<>Set_" + name, ImmutableArray.Create<ParameterSymbol>(new ParameterSymbol("value", type, 0)));
+                    _stuff[setter] = (body.SetterClause.SetKeyword.Location, _scope, body.SetterClause.Body);
+                }
+            }
+
+            var property = new IndexerSymbol(declaringType, type, getter, setter);
+            DeclareSymbol(property, syntax.Location, name);
+        }
+
         private void BindPropertyDeclaration(PropertyDeclarationSyntax syntax)
         {
+            var declaringType = ((TypeScope)_scope).Type;
             TypeSymbol type = null;
             if (syntax.TypeClause != null)
                 type = BindTypeClause(syntax.TypeClause);
@@ -370,7 +395,7 @@ namespace Eagle.CodeAnalysis.Binding
 
             if (syntax.Body is ExpressionBodySyntax e)
             {
-                getter = new MethodSymbol(type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
+                getter = new MethodSymbol(declaringType, type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
                 _stuff[getter] = (syntax.IdentifierToken.Location, _scope, e);
             }
             else
@@ -379,38 +404,40 @@ namespace Eagle.CodeAnalysis.Binding
 
                 if (body.GetterClause != null)
                 {
-                    getter = new MethodSymbol(type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
+                    getter = new MethodSymbol(declaringType, type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
                     _stuff[getter] = (body.GetterClause.GetKeyword.Location, _scope, body.GetterClause.Body);
                 }
 
                 if (body.SetterClause != null)
                 {
-                    setter = new MethodSymbol(TypeSymbol.Void, "<>Set_" + syntax.IdentifierToken.Text, ImmutableArray.Create<ParameterSymbol>(new ParameterSymbol("value", type, 0)));
+                    setter = new MethodSymbol(declaringType, TypeSymbol.Void, "<>Set_" + syntax.IdentifierToken.Text, ImmutableArray.Create<ParameterSymbol>(new ParameterSymbol("value", type, 0)));
                     _stuff[setter] = (body.SetterClause.SetKeyword.Location, _scope, body.SetterClause.Body);
                 }
             }
 
-            var property = new PropertySymbol(syntax.IdentifierToken.Text, type, getter, setter, syntax);
+            var property = new PropertySymbol(declaringType, syntax.IdentifierToken.Text, type, getter, setter);
             DeclareSymbol(property, syntax.IdentifierToken);
         }
 
         private void BindConstructorDeclaration(ConstructorDeclarationSyntax syntax)
         {
-            var type = ((TypeScope)_scope).Type;
+            var declaringType = ((TypeScope)_scope).Type;
             var parameters = LookupParameterList(syntax.Parameters);
-            var constructor = new ConstructorSymbol(type, parameters);
+            var constructor = new ConstructorSymbol(declaringType, parameters);
             DeclareSymbol(constructor, syntax.IdentifierToken);
         }
 
         private void BindMethodDeclaration(MethodDeclarationSyntax syntax)
         {
+            var declaringType = ((TypeScope)_scope).Type;
+
             var parameters = LookupParameterList(syntax.Parameters);
 
             var type = BindTypeClause(syntax.TypeClause) ?? TypeSymbol.Void;
 
             var name = syntax.IdentifierToken.Text;
 
-            var method = new MethodSymbol(type, name, parameters);
+            var method = new MethodSymbol(declaringType, type, name, parameters);
 
             _stuff[method] = (syntax.IdentifierToken.Location, _scope, syntax.Body);
 
@@ -436,8 +463,9 @@ namespace Eagle.CodeAnalysis.Binding
 
         private void BindFieldDeclaration(FieldDeclarationSyntax syntax)
         {
+            var declaringType = ((TypeScope)_scope).Type;
             var type = BindTypeClause(syntax.TypeClause);
-            var field = new FieldSymbol(syntax.IdentifierToken.Text, type);
+            var field = new FieldSymbol(declaringType, syntax.IdentifierToken.Text, type);
             DeclareSymbol(field, syntax.IdentifierToken);
         }
 
@@ -1098,9 +1126,14 @@ namespace Eagle.CodeAnalysis.Binding
 
         private void DeclareSymbol(Symbol symbol, Token identifierToken)
         {
+            DeclareSymbol(symbol, identifierToken.Location, identifierToken.Text);
+        }
+
+        private void DeclareSymbol(Symbol symbol, TextLocation location, string name)
+        {
             if (!_scope.TryDeclare(symbol))
             {
-                Diagnostics.ReportSymbolAlreadyDeclared(identifierToken.Location, identifierToken.Text);
+                Diagnostics.ReportSymbolAlreadyDeclared(location, name);
             }
         }
 

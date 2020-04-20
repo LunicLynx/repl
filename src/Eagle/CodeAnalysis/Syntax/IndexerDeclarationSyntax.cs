@@ -6,15 +6,15 @@
         public SeparatedSyntaxList<ParameterSyntax> Parameters { get; }
         public Token CloseBracketToken { get; }
         public TypeClauseSyntax TypeClause { get; }
-        public object O { get; }
+        public SyntaxNode Body { get; }
 
-        public IndexerDeclarationSyntax(SyntaxTree syntaxTree, Token openBracketToken, SeparatedSyntaxList<ParameterSyntax> parameters, Token closeBracketToken, TypeClauseSyntax typeClause, object o) : base(syntaxTree)
+        public IndexerDeclarationSyntax(SyntaxTree syntaxTree, Token openBracketToken, SeparatedSyntaxList<ParameterSyntax> parameters, Token closeBracketToken, TypeClauseSyntax typeClause, SyntaxNode body) : base(syntaxTree)
         {
             OpenBracketToken = openBracketToken;
             Parameters = parameters;
             CloseBracketToken = closeBracketToken;
             TypeClause = typeClause;
-            O = o;
+            Body = body;
         }
     }
 }

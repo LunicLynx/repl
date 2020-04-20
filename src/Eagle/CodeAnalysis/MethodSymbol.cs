@@ -6,14 +6,16 @@ namespace Eagle.CodeAnalysis
 {
     public class MethodSymbol : MemberSymbol, IInvokableSymbol
     {
+        public TypeSymbol DeclaringType { get; }
         public ImmutableArray<ParameterSymbol> Parameters { get; }
         public bool Extern { get; }
         public override SymbolKind Kind => SymbolKind.Method;
         TypeSymbol IInvokableSymbol.Type => Type;
 
-        public MethodSymbol(TypeSymbol returnType, string name, ImmutableArray<ParameterSymbol> parameters)
+        public MethodSymbol(TypeSymbol declaringType, TypeSymbol returnType, string name, ImmutableArray<ParameterSymbol> parameters)
             : base(name, returnType)
         {
+            DeclaringType = declaringType;
             Parameters = parameters;
         }
 

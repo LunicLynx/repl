@@ -111,8 +111,6 @@ namespace Eagle.CodeAnalysis
             if (program.Diagnostics.Any())
                 return new EvaluationResult(program.Diagnostics.ToImmutableArray(), null);
 
-            ProgramLowerer.Lower(program);
-
             var evaluator = new Evaluator(program, variables);
             var value = evaluator.Evaluate();
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
