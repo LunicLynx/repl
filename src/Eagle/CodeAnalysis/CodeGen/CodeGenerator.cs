@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using Eagle.CodeAnalysis.Binding;
 using LLVMSharp.Interop;
@@ -36,7 +37,7 @@ namespace Eagle.CodeAnalysis.CodeGen
 
             foreach (var type in types)
             {
-                if (_types.ContainsKey(type)) continue;
+                if (type == TypeSymbol.String) continue;
 
                 var fields = _globalScope.Symbols.OfType<FieldSymbol>().Where(f => f.DeclaringType == type).ToList();
                 var elements = fields.Select(f => GetXType(f.Type)).ToArray();
@@ -60,6 +61,20 @@ namespace Eagle.CodeAnalysis.CodeGen
                         if (ps.Setter != null)
                             s.Add(ps.Setter);
                     }
+
+                    if (member is IndexerSymbol inds)
+                    {
+                        if (inds.Getter != null)
+                            s.Add(inds.Getter);
+
+                        if (inds.Setter != null)
+                            s.Add(inds.Setter);
+                    }
+
+                    //if (member is ConstructorSymbol cs)
+                    //{
+                    //    s.Add(cs);
+                    //}
                 }
             }
 
@@ -90,6 +105,15 @@ namespace Eagle.CodeAnalysis.CodeGen
                 _symbols[(Symbol)invokable] = f;
             }
 
+            var a2 = _program.Functions.Select(x => x.Value.ToString()).ToArray();
+            var array = _program.Functions.Select(x => x.Value.GetType()).ToArray();
+            var strings = _program.Functions.Select(f =>
+            {
+                var writer = new StringWriter();
+                ControlFlowGraph.Create(f.Value).WriteTo(writer);
+                return writer.ToString();
+            }).ToArray();
+
             foreach (var (symbol, body) in _program.Functions)
             {
                 if (symbol.Extern) continue;
@@ -100,10 +124,22 @@ namespace Eagle.CodeAnalysis.CodeGen
 
                 var rewriter = new PreCodeGenerationTreeRewriter();
                 var newBody = (BoundBlockStatement)rewriter.RewriteStatement(body);
+
+                var offset = 0;
+                if (symbol is MethodSymbol || symbol is ConstructorSymbol)
+                    offset = 1;
+
+                foreach (var (index, parameter) in symbol.Parameters.Select((p, i) => (i, p)))
+                {
+                    _symbols[parameter] = f.Params[offset + index];
+                }
+
                 GenerateStatement(newBody);
             }
-
             _mod.Dump();
+
+            if (!_mod.TryVerify(LLVMVerifierFailureAction.LLVMPrintMessageAction, out var message))
+                Console.WriteLine("Issues:" + message);
         }
 
         //private LLVMTypeRef GetFieldType(BoundFieldDeclaration node)
@@ -226,6 +262,8 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.String)
                 value = _builder.BuildGlobalString((string)nodeValue);
 
+            if (type == TypeSymbol.Char) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, (char)nodeValue);
+
             if (value == null) throw new Exception("");
             return value;
         }
@@ -331,20 +369,19 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMTypeRef CreateMethodType(MethodSymbol method, LLVMTypeRef owner)
         {
             var returnType = GetXType(method.Type);
-            var parameterTypes = new[] { owner }.Concat(method.Parameters.Select(p => GetXType(p.Type))).ToArray();
+            var parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }.Concat(method.Parameters.Select(p => GetXType(p.Type))).ToArray();
             return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
         }
 
         private LLVMTypeRef CreateConstructorType(ConstructorSymbol constructor, LLVMTypeRef owner)
         {
             var returnType = GetXType(constructor.Type);
-            var parameterTypes = new[] { owner }.Concat(constructor.Parameters.Select(p => GetXType(p.Type))).ToArray();
+            var parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }.Concat(constructor.Parameters.Select(p => GetXType(p.Type))).ToArray();
             return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
         }
 
         private void GenerateLabelStatement(BoundLabelStatement node)
         {
-
             var currentBlock = _builder.InsertBlock;
             var target = GetOrAppend(node.Label, true);
             target.MoveAfter(currentBlock);
@@ -384,16 +421,18 @@ namespace Eagle.CodeAnalysis.CodeGen
             return target;
         }
 
+        private readonly Dictionary<BoundLabel, LLVMBasicBlockRef> _labels = new Dictionary<BoundLabel, LLVMBasicBlockRef>();
+
         private LLVMBasicBlockRef GetOrAppend(BoundLabel labelSymbol, bool addPhi = false)
         {
-            //if (_context.Symbols.TryGetValue(labelSymbol, out var label))
-            //{
-            //    return label.AsBasicBlock();
-            //}
+            if (_labels.TryGetValue(labelSymbol, out var label))
+            {
+                return label;
+            }
 
             var target = Append(addPhi, labelSymbol.Name);
 
-            //_context.Symbols[labelSymbol] = target.AsValue();
+            _labels[labelSymbol] = target;
             return target;
         }
 
@@ -436,13 +475,23 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var value = GenerateExpression(node.Initializer);
             var variable = node.Variable;
-            if (!_symbols.TryGetValue(variable, out var ptr))
+            if (variable.IsReadOnly)
             {
-                var xType = GetXType(variable.Type);
-                ptr = _builder.BuildAlloca(xType, variable.Name);
-                _symbols[variable] = ptr;
+                if (!_symbols.TryGetValue(variable, out var _))
+                {
+                    _symbols[variable] = value;
+                }
             }
-            _builder.BuildStore(value, ptr);
+            else
+            {
+                if (!_symbols.TryGetValue(variable, out var ptr))
+                {
+                    var xType = GetXType(variable.Type);
+                    ptr = _builder.BuildAlloca(xType, variable.Name);
+                    _symbols[variable] = ptr;
+                }
+                _builder.BuildStore(value, ptr);
+            }
             _lastValue = value;
         }
 
@@ -483,9 +532,27 @@ namespace Eagle.CodeAnalysis.CodeGen
                     return GenerateFieldExpression(f);
                 case BoundConstructorCallExpression c:
                     return GenerateConstructorCallExpression(c);
+                case BoundArrayIndexExpression a:
+                    return GenerateArrayIndexExpression(a);
+                case BoundNewArrayExpression n:
+                    return GenerateNewArrayExpression(n);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private LLVMValueRef GenerateNewArrayExpression(BoundNewArrayExpression node)
+        {
+            var type = GetXType(node.Type);
+            var args = node.Arguments.Select(GenerateExpression).ToArray();
+            return _builder.BuildArrayAlloca(type, args[0]);
+        }
+
+        private LLVMValueRef GenerateArrayIndexExpression(BoundArrayIndexExpression node)
+        {
+            var target = GenerateExpression(node.Target);
+            var indexes = node.Arguments.Select(GenerateExpression).ToArray();
+            return _builder.BuildGEP(target, indexes);
         }
 
         private LLVMValueRef GenerateConstructorCallExpression(BoundConstructorCallExpression node)
@@ -540,6 +607,8 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var type = GetXType(node.Type);
             var value = GenerateExpression(node.Expression);
+            if (node.Type.IsPointer || node.Type.IsArray)
+                return _builder.BuildPointerCast(value, type);
             return _builder.BuildIntCast(value, type);
         }
 
@@ -559,12 +628,18 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var variable = node.Variable;
             if (_symbols.TryGetValue(variable, out var ptr))
-                return _builder.BuildLoad(ptr, variable.Name);
+                return ptr;
+            //return _builder.BuildLoad(ptr, variable.Name);
             return null;
         }
 
         private LLVMValueRef GenerateAssignmentExpression(BoundAssignmentExpression node)
         {
+            var target = GenerateExpression(node.Target);
+            var value = GenerateExpression(node.Expression);
+
+            _builder.BuildStore(value, target);
+            return value;
             throw new NotImplementedException();
             //var variable = node.Variable;
             //if (!_symbols.TryGetValue(variable, out var ptr))
@@ -601,6 +676,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (_types.TryGetValue(type, out var x))
                 return x;
             if (type == TypeSymbol.Bool) return LLVMTypeRef.Int1;
+            if (type == TypeSymbol.Char) return LLVMTypeRef.Int8;
             if (type == TypeSymbol.I8) return LLVMTypeRef.Int8;
             if (type == TypeSymbol.I16) return LLVMTypeRef.Int16;
             if (type == TypeSymbol.I32) return LLVMTypeRef.Int32;
@@ -614,6 +690,8 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.Int) return LLVMTypeRef.Int64;
             if (type == TypeSymbol.UInt) return LLVMTypeRef.Int64;
             if (type == TypeSymbol.Any) return LLVMTypeRef.CreatePointer(LLVMTypeRef.Void, 0);
+            if (type.IsPointer) return LLVMTypeRef.CreatePointer(GetXType(type.ElementType), 0);
+            if (type.IsArray) return LLVMTypeRef.CreatePointer(GetXType(type.ElementType), 0);
             throw new Exception("Unsupported type");
         }
 

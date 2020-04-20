@@ -253,5 +253,11 @@ namespace Eagle.CodeAnalysis
             var message = "Cannot read set only property.";
             Report(location, message);
         }
+
+        public void CannotReadSetOnlyIndexer(TextLocation location)
+        {
+            var message = "Cannot read set only indexer.";
+            Report(location, message);
+        }
     }
 }

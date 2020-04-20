@@ -71,6 +71,13 @@ namespace Eagle.IO
             writer.ResetColor();
         }
 
+        public static void WriteChar(this TextWriter writer, string text)
+        {
+            writer.SetForeground(ConsoleColor.Magenta);
+            writer.Write(text);
+            writer.ResetColor();
+        }
+
         public static void WriteSpace(this TextWriter writer)
         {
             writer.WritePunctuation(" ");

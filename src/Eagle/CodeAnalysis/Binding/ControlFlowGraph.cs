@@ -53,8 +53,8 @@ namespace Eagle.CodeAnalysis.Binding
                 {
                     // TODO alternative?
                     //   best would be dedicated visitor
-                    //foreach (var statement in Statements)
-                    //    statement.WriteTo(indentedWriter);
+                    foreach (var statement in Statements)
+                        statement.WriteTo(indentedWriter);
 
                     return writer.ToString();
                 }

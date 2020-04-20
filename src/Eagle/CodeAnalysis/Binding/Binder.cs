@@ -351,6 +351,9 @@ namespace Eagle.CodeAnalysis.Binding
         private void BindIndexerDeclaration(IndexerDeclarationSyntax syntax)
         {
             var declaringType = ((TypeScope)_scope).Type;
+
+            var parameters = LookupParameterList(syntax.Parameters);
+            
             TypeSymbol type = null;
             if (syntax.TypeClause != null)
                 type = BindTypeClause(syntax.TypeClause);
@@ -360,7 +363,7 @@ namespace Eagle.CodeAnalysis.Binding
             var name = "Item";
             if (syntax.Body is ExpressionBodySyntax e)
             {
-                getter = new MethodSymbol(declaringType, type, "<>Get_" + name, ImmutableArray<ParameterSymbol>.Empty);
+                getter = new MethodSymbol(declaringType, type, "<>Get_" + name, parameters);
                 _stuff[getter] = (syntax.Location, _scope, e);
             }
             else
@@ -369,13 +372,13 @@ namespace Eagle.CodeAnalysis.Binding
 
                 if (body.GetterClause != null)
                 {
-                    getter = new MethodSymbol(declaringType, type, "<>Get_" + name, ImmutableArray<ParameterSymbol>.Empty);
+                    getter = new MethodSymbol(declaringType, type, "<>Get_" + name, parameters);
                     _stuff[getter] = (body.GetterClause.GetKeyword.Location, _scope, body.GetterClause.Body);
                 }
 
                 if (body.SetterClause != null)
                 {
-                    setter = new MethodSymbol(declaringType, TypeSymbol.Void, "<>Set_" + name, ImmutableArray.Create<ParameterSymbol>(new ParameterSymbol("value", type, 0)));
+                    setter = new MethodSymbol(declaringType, TypeSymbol.Void, "<>Set_" + name, parameters.Add(new ParameterSymbol("value", type, 0)));
                     _stuff[setter] = (body.SetterClause.SetKeyword.Location, _scope, body.SetterClause.Body);
                 }
             }
@@ -1033,7 +1036,7 @@ namespace Eagle.CodeAnalysis.Binding
 
             _scope = new BoundScope(_scope);
 
-            var variable = BindVariableDeclaration(syntax.IdentifierToken, /*code in body should not allow change*/true, lowerBound.Type);
+            var variable = BindVariableDeclaration(syntax.IdentifierToken, /*code in body should not allow change*/false, lowerBound.Type);
             //var variable = new VariableSymbol(syntax.IdentifierToken.Text, false, lowerBound.Type);
             var body = BindLoopBody(syntax.Body, out var breakLabel, out var continueLabel);
 
@@ -1190,6 +1193,17 @@ namespace Eagle.CodeAnalysis.Binding
                 return new BoundMethodCallExpression(p.Target, p.Property.Getter, ImmutableArray<BoundExpression>.Empty);
             }
 
+            if (result is BoundIndexerExpression i)
+            {
+                if (i.Indexer.Getter == null)
+                {
+                    Diagnostics.CannotReadSetOnlyIndexer(syntax.Location);
+                    return new BoundErrorExpression();
+                }
+
+                return new BoundMethodCallExpression(i.Target, i.Indexer.Getter, i.Arguments);
+            }
+
             if (!canBeVoid && result.Type == TypeSymbol.Void)
             {
                 Diagnostics.ReportExpressionMustHaveValue(syntax.Location);
@@ -1252,7 +1266,7 @@ namespace Eagle.CodeAnalysis.Binding
                 arguments.Add(BindExpression(argument));
             }
 
-            if (target.Type.IsArray)
+            if (target.Type.IsArray || target.Type.IsPointer)
             {
                 // real indexer expression
                 return new BoundArrayIndexExpression(target, arguments.ToImmutable());

@@ -84,9 +84,77 @@ namespace Eagle.CodeAnalysis.Binding
                 case BoundConversionExpression n:
                     WriteConversionExpression(n, writer);
                     break;
+                case BoundArrayIndexExpression a:
+                    WriteArrayIndexExpression(a, writer);
+                    break;
+                case BoundThisExpression t:
+                    WriteThisExpression(t, writer);
+                    break;
+                case BoundNewArrayExpression n:
+                    WriteNewArrayExpression(n, writer);
+                    break;
                 default:
                     throw new Exception($"Unexpected node {node.GetType()}");
             }
+        }
+
+        private static void WriteNewArrayExpression(BoundNewArrayExpression node, IndentedTextWriter writer)
+        {
+            writer.WriteKeyword(TokenKind.NewKeyword);
+            writer.WriteSpace();
+            writer.WriteIdentifier(node.Type.Name);
+
+            var arguments = node.Arguments;
+            writer.WritePunctuation(TokenKind.OpenBracket);
+
+            var isFirst = true;
+            foreach (var argument in arguments)
+            {
+                if (isFirst)
+                {
+                    isFirst = false;
+                }
+                else
+                {
+                    writer.WritePunctuation(TokenKind.Comma);
+                    writer.WriteSpace();
+                }
+
+                argument.WriteTo(writer);
+            }
+
+            writer.WritePunctuation(TokenKind.CloseBracket);
+        }
+
+        private static void WriteThisExpression(BoundThisExpression node, IndentedTextWriter writer)
+        {
+            writer.WriteKeyword(TokenKind.ThisKeyword);
+        }
+
+        private static void WriteArrayIndexExpression(BoundArrayIndexExpression node, IndentedTextWriter writer)
+        {
+            node.Target.WriteTo(writer);
+
+            var arguments = node.Arguments;
+            writer.WritePunctuation(TokenKind.OpenBracket);
+
+            var isFirst = true;
+            foreach (var argument in arguments)
+            {
+                if (isFirst)
+                {
+                    isFirst = false;
+                }
+                else
+                {
+                    writer.WritePunctuation(TokenKind.Comma);
+                    writer.WriteSpace();
+                }
+
+                argument.WriteTo(writer);
+            }
+
+            writer.WritePunctuation(TokenKind.CloseBracket);
         }
 
         private static void WriteNestedStatement(this IndentedTextWriter writer, BoundStatement node)
@@ -276,6 +344,16 @@ namespace Eagle.CodeAnalysis.Binding
             {
                 value = "\"" + value.Replace("\"", "\"\"") + "\"";
                 writer.WriteString(value);
+            }
+            else if (node.Type == TypeSymbol.Char)
+            {
+                value = "'" + value
+                    .Replace("\0", "\\0")
+                    .Replace("\n", "\\n")
+                    .Replace("\r", "\\r")
+                    .Replace("\t", "\\t")
+                            + "'";
+                writer.WriteChar(value);
             }
             else
             {
