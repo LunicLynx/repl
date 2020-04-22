@@ -36,7 +36,7 @@ namespace Eagle.CodeAnalysis.Syntax
             return new CompilationUnitSyntax(SyntaxTree, members, endOfFileToken);
         }
 
-        public bool TryParseDeclaration([NotNullWhen(true)]out MemberSyntax? node)
+        public bool TryParseDeclaration([NotNullWhen(true)] out MemberSyntax? node)
         {
             node = null;
             switch (Current.Kind)
@@ -85,7 +85,7 @@ namespace Eagle.CodeAnalysis.Syntax
             var openBracketToken = MatchToken(TokenKind.OpenBracket);
             var parameters = ParseParameterList();
             var closeBracketToken = MatchToken(TokenKind.CloseBracket);
-            var typeClause = ParseTypeAnnotation();
+            var typeClause = ParseTypeClause();
             var x = ParsePropertyBody();
 
             return new IndexerDeclarationSyntax(SyntaxTree, openBracketToken, parameters, closeBracketToken, typeClause, x);
@@ -181,7 +181,7 @@ namespace Eagle.CodeAnalysis.Syntax
             TypeClauseSyntax typeClause = null;
             if (Current.Kind == TokenKind.Colon)
             {
-                typeClause = ParseTypeAnnotation();
+                typeClause = ParseTypeClause();
             }
             var equalsToken = MatchToken(TokenKind.Equals);
             var expression = ParseExpression();
@@ -281,7 +281,7 @@ namespace Eagle.CodeAnalysis.Syntax
             }
 
             var identifierToken = MatchToken(TokenKind.Identifier);
-            var typeClause = ParseTypeAnnotation();
+            var typeClause = ParseTypeClause();
 
             if (Current.Kind == TokenKind.OpenBrace ||
                 Current.Kind == TokenKind.EqualsGreater)
@@ -403,7 +403,7 @@ namespace Eagle.CodeAnalysis.Syntax
             TypeClauseSyntax? returnTypeAnnotation = null;
             if (Current.Kind == TokenKind.Colon)
             {
-                returnTypeAnnotation = ParseTypeAnnotation();
+                returnTypeAnnotation = ParseTypeClause();
             }
 
             return (identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, returnTypeAnnotation);
@@ -435,7 +435,14 @@ namespace Eagle.CodeAnalysis.Syntax
             return new SeparatedSyntaxList<ParameterSyntax>(nodesAndSeparators.ToImmutable());
         }
 
-        private TypeClauseSyntax ParseTypeAnnotation()
+        private TypeClauseSyntax? ParseOptionalTypeClause()
+        {
+            return Current.Kind != TokenKind.Colon
+                ? null
+                : ParseTypeClause();
+        }
+
+        private TypeClauseSyntax ParseTypeClause()
         {
             var colonToken = MatchToken(TokenKind.Colon);
             var type = ParseType();
@@ -456,7 +463,7 @@ namespace Eagle.CodeAnalysis.Syntax
         private ParameterSyntax ParseParameter()
         {
             var identifierToken = MatchToken(TokenKind.Identifier);
-            var type = ParseTypeAnnotation();
+            var type = ParseTypeClause();
             return new ParameterSyntax(SyntaxTree, identifierToken, type);
         }
 
@@ -524,7 +531,7 @@ namespace Eagle.CodeAnalysis.Syntax
             return new IfStatementSyntax(SyntaxTree, ifKeyword, expression, thenBlock, elseClause);
         }
 
-        private ElseClauseSyntax ParseElseClause()
+        private ElseClauseSyntax? ParseElseClause()
         {
             if (Current.Kind != TokenKind.ElseKeyword)
                 return null;
@@ -543,9 +550,10 @@ namespace Eagle.CodeAnalysis.Syntax
 
             var keyword = MatchToken(expected);
             var identifier = MatchToken(TokenKind.Identifier);
+            var typeClause = ParseOptionalTypeClause();
             var equalsToken = MatchToken(TokenKind.Equals);
             var initializer = ParseExpression();
-            return new VariableDeclarationSyntax(SyntaxTree, keyword, identifier, equalsToken, initializer);
+            return new VariableDeclarationSyntax(SyntaxTree, keyword, identifier, typeClause, equalsToken, initializer);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement()
@@ -863,7 +871,7 @@ namespace Eagle.CodeAnalysis.Syntax
             return new ParenthesizedExpressionSyntax(SyntaxTree, openParenthesisToken, expression, closeParenthesisToken);
         }
 
-        private bool TryParseCast([NotNullWhen(true)]out CastExpressionSyntax? castExpression)
+        private bool TryParseCast([NotNullWhen(true)] out CastExpressionSyntax? castExpression)
         {
             castExpression = null;
             var resetPosition = GetPosition();

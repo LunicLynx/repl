@@ -353,7 +353,7 @@ namespace Eagle.CodeAnalysis.Binding
             var declaringType = ((TypeScope)_scope).Type;
 
             var parameters = LookupParameterList(syntax.Parameters);
-            
+
             TypeSymbol type = null;
             if (syntax.TypeClause != null)
                 type = BindTypeClause(syntax.TypeClause);
@@ -1102,15 +1102,12 @@ namespace Eagle.CodeAnalysis.Binding
         private BoundStatement BindVariableDeclaration(VariableDeclarationSyntax syntax)
         {
             var isReadOnly = syntax.Keyword.Kind == TokenKind.LetKeyword;
-            var identifierToken = syntax.IdentifierToken;
-            var name = identifierToken.Text;
-
+            var type = BindTypeClause(syntax.TypeClause);
             var initializer = BindExpression(syntax.Initializer);
-            var variable = new LocalVariableSymbol(name, isReadOnly, initializer.Type);
-
-            DeclareSymbol(variable, identifierToken);
-
-            return new BoundVariableDeclaration(variable, initializer);
+            var variableType = type ?? initializer.Type;
+            var variable = BindVariableDeclaration(syntax.IdentifierToken, isReadOnly, variableType);
+            var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType);
+            return new BoundVariableDeclaration(variable, convertedInitializer);
         }
 
         private VariableSymbol BindVariableDeclaration(Token identifier, bool isReadOnly, TypeSymbol type)
@@ -1297,7 +1294,7 @@ namespace Eagle.CodeAnalysis.Binding
 
             var scope = (TypeScope)s;
 
-            return new BoundThisExpression(scope.Type);
+            return new BoundThisExpression(scope.Type.MakePointer());
         }
 
         private BoundExpression BindCastExpression(CastExpressionSyntax syntax)
@@ -1741,7 +1738,10 @@ namespace Eagle.CodeAnalysis.Binding
 
             var operatorToken = syntax.OperatorToken;
 
-
+            if (operatorToken.Kind == TokenKind.Star)
+            {
+                return new BoundDereferenceExpression(operand);
+            }
 
             var boundOperator = BoundUnaryOperator.Bind(operatorToken.Kind, operand.Type);
             if (boundOperator == null)

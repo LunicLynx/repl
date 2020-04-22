@@ -125,13 +125,34 @@ namespace Eagle.CodeAnalysis.CodeGen
                 var rewriter = new PreCodeGenerationTreeRewriter();
                 var newBody = (BoundBlockStatement)rewriter.RewriteStatement(body);
 
+
+
                 var offset = 0;
-                if (symbol is MethodSymbol || symbol is ConstructorSymbol)
+                var k = symbol switch
+                {
+                    MethodSymbol ms => (true, ms.DeclaringType),
+                    ConstructorSymbol cs => (true, cs.Type),
+                    _ => (false, null)
+                };
+
+                if (k.Item1)
+                {
+                    _this = new LocalVariableSymbol("this", true, k.Item2);
+                    var self = f.Params[0];
+                    var selfp = _builder.BuildAlloca(self.TypeOf);
+                    _builder.BuildStore(self, selfp);
+                    _symbols[_this] = selfp;
+
                     offset = 1;
+                }
 
                 foreach (var (index, parameter) in symbol.Parameters.Select((p, i) => (i, p)))
                 {
-                    _symbols[parameter] = f.Params[offset + index];
+                    // generate allocations for all parameters
+                    var para = f.Params[offset + index];
+                    var p = _builder.BuildAlloca(para.TypeOf);
+                    _builder.BuildStore(para, p);
+                    _symbols[parameter] = p;
                 }
 
                 GenerateStatement(newBody);
@@ -383,10 +404,10 @@ namespace Eagle.CodeAnalysis.CodeGen
         private void GenerateLabelStatement(BoundLabelStatement node)
         {
             var currentBlock = _builder.InsertBlock;
-            var target = GetOrAppend(node.Label, true);
+            var target = GetOrAppend(node.Label, false);
             target.MoveAfter(currentBlock);
 
-            var targetPhi = target.FirstInstruction;//.AsPhi();
+            //var targetPhi = target.FirstInstruction;//.AsPhi();
 
             // if the current block is not completed
             // we need to branch to the target block
@@ -394,13 +415,13 @@ namespace Eagle.CodeAnalysis.CodeGen
             // and we can just switch to the target block for emitting
             // this happens for the else statement: a goto followed by a label
             //if (!currentBlock.IsTerminated())
-            if (currentBlock.Terminator != null)
+            if (currentBlock.Terminator == null)
             {
-                targetPhi.AddIncoming(new[] { _lastValue }, new[] { currentBlock }, 1);
+                //targetPhi.AddIncoming(new[] { _lastValue }, new[] { currentBlock }, 1);
                 _builder.BuildBr(target);
             }
 
-            _lastValue = targetPhi;
+            //_lastValue = targetPhi;
 
             _builder.PositionAtEnd(target);
         }
@@ -422,6 +443,7 @@ namespace Eagle.CodeAnalysis.CodeGen
         }
 
         private readonly Dictionary<BoundLabel, LLVMBasicBlockRef> _labels = new Dictionary<BoundLabel, LLVMBasicBlockRef>();
+        private LocalVariableSymbol _this;
 
         private LLVMBasicBlockRef GetOrAppend(BoundLabel labelSymbol, bool addPhi = false)
         {
@@ -440,11 +462,11 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var currentBlock = _builder.InsertBlock;
 
-            var target = GetOrAppend(node.Label, true);
-            var targetPhi = target.FirstInstruction;
-            targetPhi.AddIncoming(new[] { _lastValue }, new[] { currentBlock }, 1);
+            var target = GetOrAppend(node.Label, false);
+            //var targetPhi = target.FirstInstruction;
+            //targetPhi.AddIncoming(new[] { _lastValue }, new[] { currentBlock }, 1);
             _builder.BuildBr(target);
-            _lastValue = targetPhi;
+            //_lastValue = targetPhi;
             // TODO fall through creates issues a block should only have one terminator and it should be the last instruction
             // Do we need to reposition the builder?
             // does dead code crash llvm ?
@@ -475,23 +497,23 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var value = GenerateExpression(node.Initializer);
             var variable = node.Variable;
-            if (variable.IsReadOnly)
+            //if (variable.IsReadOnly)
+            //{
+            //    if (!_symbols.TryGetValue(variable, out var _))
+            //    {
+            //        _symbols[variable] = value;
+            //    }
+            //}
+            //else
+            //{
+            if (!_symbols.TryGetValue(variable, out var ptr))
             {
-                if (!_symbols.TryGetValue(variable, out var _))
-                {
-                    _symbols[variable] = value;
-                }
+                var xType = GetXType(variable.Type);
+                ptr = _builder.BuildAlloca(xType, variable.Name);
+                _symbols[variable] = ptr;
             }
-            else
-            {
-                if (!_symbols.TryGetValue(variable, out var ptr))
-                {
-                    var xType = GetXType(variable.Type);
-                    ptr = _builder.BuildAlloca(xType, variable.Name);
-                    _symbols[variable] = ptr;
-                }
-                _builder.BuildStore(value, ptr);
-            }
+            _builder.BuildStore(value, ptr);
+            //}
             _lastValue = value;
         }
 
@@ -536,9 +558,17 @@ namespace Eagle.CodeAnalysis.CodeGen
                     return GenerateArrayIndexExpression(a);
                 case BoundNewArrayExpression n:
                     return GenerateNewArrayExpression(n);
+                case BoundDereferenceExpression d:
+                    return GenerateDereferenceExpression(d);
                 default:
                     throw new Exception($"Unexpected node {expression.GetType()}");
             }
+        }
+
+        private LLVMValueRef GenerateDereferenceExpression(BoundDereferenceExpression node)
+        {
+            var value = GenerateExpression(node.Expression);
+            return _builder.BuildLoad(value);
         }
 
         private LLVMValueRef GenerateNewArrayExpression(BoundNewArrayExpression node)
@@ -550,9 +580,21 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateArrayIndexExpression(BoundArrayIndexExpression node)
         {
-            var target = GenerateExpression(node.Target);
-            var indexes = node.Arguments.Select(GenerateExpression).ToArray();
-            return _builder.BuildGEP(target, indexes);
+            var targetp = GenerateExpression(node.Target);
+            //var target = _builder.BuildLoad(targetp);
+
+            var indexes = node.Arguments.Select(expression =>
+            {
+                var p = GenerateExpression(expression);
+                return p;
+                //var v = _builder.BuildLoad(p);
+                //return v;
+            }).ToArray();
+
+            var p = _builder.BuildGEP(targetp, indexes);
+            return p;
+            //var v = _builder.BuildLoad(p);
+            //return v;
         }
 
         private LLVMValueRef GenerateConstructorCallExpression(BoundConstructorCallExpression node)
@@ -578,8 +620,17 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateMethodCallExpression(BoundMethodCallExpression node)
         {
-            var target = GenerateExpression(node.Target);
-            var arguments = new[] { target }
+            LLVMValueRef ptr = null;
+            if (node.Target is BoundVariableExpression v)
+            {
+                ptr = _symbols[v.Variable];
+            }
+            else
+            {
+                var target = GenerateExpression(node.Target);
+                ptr = target;
+            }
+            var arguments = new[] { ptr }
                 .Concat(node.Arguments.Select(GenerateExpression))
                 .ToArray();
             var function = _symbols[node.Method];
@@ -588,7 +639,9 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateThisExpression(BoundThisExpression node)
         {
-            return _builder.InsertBlock.Parent.Params[0];
+            var thisp = _symbols[_this];
+            return thisp;
+            //return _builder.BuildLoad(thisp);
         }
 
         private LLVMValueRef GeneratePropertyExpression(BoundPropertyExpression node)
@@ -627,10 +680,9 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMValueRef GenerateVariableExpression(BoundVariableExpression node)
         {
             var variable = node.Variable;
-            if (_symbols.TryGetValue(variable, out var ptr))
-                return ptr;
-            //return _builder.BuildLoad(ptr, variable.Name);
-            return null;
+            //return _symbols[variable];
+            _symbols.TryGetValue(variable, out var ptr);
+            return _builder.BuildLoad(ptr, variable.Name);
         }
 
         private LLVMValueRef GenerateAssignmentExpression(BoundAssignmentExpression node)

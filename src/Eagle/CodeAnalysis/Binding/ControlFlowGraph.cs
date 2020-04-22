@@ -63,7 +63,7 @@ namespace Eagle.CodeAnalysis.Binding
 
         public sealed class BasicBlockBranch
         {
-            public BasicBlockBranch(BasicBlock from, BasicBlock to, BoundExpression condition)
+            public BasicBlockBranch(BasicBlock from, BasicBlock to, BoundExpression? condition)
             {
                 From = from;
                 To = to;
@@ -72,7 +72,7 @@ namespace Eagle.CodeAnalysis.Binding
 
             public BasicBlock From { get; }
             public BasicBlock To { get; }
-            public BoundExpression Condition { get; }
+            public BoundExpression? Condition { get; }
 
             public override string ToString()
             {
@@ -137,18 +137,18 @@ namespace Eagle.CodeAnalysis.Binding
 
         public sealed class GraphBuilder
         {
-            private Dictionary<BoundStatement, BasicBlock> _blockFromStatement = new Dictionary<BoundStatement, BasicBlock>();
-            private Dictionary<BoundLabel, BasicBlock> _blockFromLabel = new Dictionary<BoundLabel, BasicBlock>();
-            private List<BasicBlockBranch> _branches = new List<BasicBlockBranch>();
-            private BasicBlock _start = new BasicBlock(isStart: true);
-            private BasicBlock _end = new BasicBlock(isStart: false);
+            private readonly Dictionary<BoundStatement, BasicBlock> _blockFromStatement = new Dictionary<BoundStatement, BasicBlock>();
+            private readonly Dictionary<BoundLabel, BasicBlock> _blockFromLabel = new Dictionary<BoundLabel, BasicBlock>();
+            private readonly List<BasicBlockBranch> _branches = new List<BasicBlockBranch>();
+            private readonly BasicBlock _start = new BasicBlock(isStart: true);
+            private readonly BasicBlock _end = new BasicBlock(isStart: false);
 
             public ControlFlowGraph Build(List<BasicBlock> blocks)
             {
-                if (!blocks.Any())
-                    Connect(_start, _end);
-                else
-                    Connect(_start, blocks.First());
+                var end = !blocks.Any()
+                    ? _end
+                    : blocks.First();
+                Connect(_start, end);
 
                 foreach (var block in blocks)
                 {
@@ -198,7 +198,7 @@ namespace Eagle.CodeAnalysis.Binding
                     }
                 }
 
-                ScanAgain:
+            ScanAgain:
                 foreach (var block in blocks)
                 {
                     if (!block.Incoming.Any())
@@ -214,7 +214,7 @@ namespace Eagle.CodeAnalysis.Binding
                 return new ControlFlowGraph(_start, _end, blocks, _branches);
             }
 
-            private void Connect(BasicBlock from, BasicBlock to, BoundExpression condition = null)
+            private void Connect(BasicBlock from, BasicBlock to, BoundExpression? condition = null)
             {
                 if (condition is BoundLiteralExpression l)
                 {

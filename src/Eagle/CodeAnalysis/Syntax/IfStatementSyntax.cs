@@ -5,9 +5,9 @@
         public Token IfKeyword { get; }
         public ExpressionSyntax Condition { get; }
         public StatementSyntax ThenStatement { get; }
-        public ElseClauseSyntax ElseClause { get; }
+        public ElseClauseSyntax? ElseClause { get; }
 
-        public IfStatementSyntax(SyntaxTree syntaxTree, Token ifKeyword, ExpressionSyntax condition, StatementSyntax thenStatement, ElseClauseSyntax elseClause)
+        public IfStatementSyntax(SyntaxTree syntaxTree, Token ifKeyword, ExpressionSyntax condition, StatementSyntax thenStatement, ElseClauseSyntax? elseClause)
             : base(syntaxTree)
         {
             IfKeyword = ifKeyword;

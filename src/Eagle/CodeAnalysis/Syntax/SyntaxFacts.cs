@@ -36,6 +36,7 @@ namespace Eagle.CodeAnalysis.Syntax
         {
             switch (kind)
             {
+                case TokenKind.Star:
                 case TokenKind.Plus:
                 case TokenKind.Minus:
                 case TokenKind.Bang:

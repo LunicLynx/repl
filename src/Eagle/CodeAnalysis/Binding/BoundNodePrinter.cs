@@ -93,9 +93,18 @@ namespace Eagle.CodeAnalysis.Binding
                 case BoundNewArrayExpression n:
                     WriteNewArrayExpression(n, writer);
                     break;
+                case BoundDereferenceExpression d:
+                    WriteDereferenceExpresion(d, writer);
+                    break;
                 default:
                     throw new Exception($"Unexpected node {node.GetType()}");
             }
+        }
+
+        private static void WriteDereferenceExpresion(BoundDereferenceExpression node, IndentedTextWriter writer)
+        {
+            writer.WritePunctuation(TokenKind.Star);
+            node.Expression.WriteTo(writer);
         }
 
         private static void WriteNewArrayExpression(BoundNewArrayExpression node, IndentedTextWriter writer)

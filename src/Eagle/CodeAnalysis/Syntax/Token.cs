@@ -6,16 +6,19 @@ namespace Eagle.CodeAnalysis.Syntax
     {
         public TokenKind Kind { get; }
         public int Position { get; }
-        public string? Text { get; }
+
+        private readonly string? _text;
+        public string Text => _text ?? "";
+
         public object? Value { get; }
-        public override TextSpan Span => new TextSpan(Position, Text?.Length ?? 0);
+        public override TextSpan Span => new TextSpan(Position, Text.Length);
 
         public Token(SyntaxTree syntaxTree, TokenKind kind, int position, string? text, object? value)
             : base(syntaxTree)
         {
             Kind = kind;
             Position = position;
-            Text = text;
+            _text = text;
             Value = value;
         }
 
@@ -27,6 +30,6 @@ namespace Eagle.CodeAnalysis.Syntax
         /// <summary>
         /// A token is missing if it was inserted by the parser and doesn't appear in source.
         /// </summary>
-        public bool IsMissing => Text == null;
+        public bool IsMissing => _text == null;
     }
 }

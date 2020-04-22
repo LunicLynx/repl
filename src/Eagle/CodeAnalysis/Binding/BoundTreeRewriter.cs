@@ -203,8 +203,14 @@ namespace Eagle.CodeAnalysis.Binding
                 case BoundArrayIndexExpression a: return RewriteArrayIndexExpression(a);
                 case BoundThisExpression t: return RewriteThisExpression(t);
                 case BoundErrorExpression e: return RewriteErrorExpression(e);
+                case BoundDereferenceExpression d: return RewriteDereferenceExpression(d);
                 default: throw new Exception($"Unexpected node '{statement.GetType().Name}'");
             }
+        }
+
+        protected virtual BoundExpression RewriteDereferenceExpression(BoundDereferenceExpression node)
+        {
+            return node;
         }
 
         protected virtual BoundExpression RewriteThisExpression(BoundThisExpression node)

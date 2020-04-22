@@ -10,31 +10,33 @@ namespace Eagle.CodeAnalysis.Binding
             Func<TypeSymbol, TypeSymbol, IEnumerable<T>> numericalOperatorsSigned,
             Func<TypeSymbol, TypeSymbol, IEnumerable<T>> numericalOperatorsUnsigned,
             Func<TypeSymbol, IEnumerable<T>> booleanOperators,
-            Func<TypeSymbol, TypeSymbol, IEnumerable<T>> stringConcatOperators = null,
-            Func<TypeSymbol, TypeSymbol, IEnumerable<T>> stringOperators = null
+            Func<TypeSymbol, TypeSymbol, IEnumerable<T>>? stringConcatOperators = null,
+            Func<TypeSymbol, TypeSymbol, IEnumerable<T>>? stringOperators = null
             )
         {
 
             var stringType = TypeSymbol.String;
             var boolType = TypeSymbol.Bool;
             var numericalTypesSigned = new[]
-            {
-                //TypeSymbol.I8,
-                TypeSymbol.I16,
-                TypeSymbol.I32,
-                TypeSymbol.I64,
-                TypeSymbol.Int,
-            }.Where(x => x != null);
+                {
+                    //TypeSymbol.I8,
+                    TypeSymbol.I16,
+                    TypeSymbol.I32,
+                    TypeSymbol.I64,
+                    TypeSymbol.Int,
+                }.Where(x => x != null)
+                .ToArray();
 
             var numericalTypesUnsigned = new[]
-            {
-                TypeSymbol.Char,
-                //TypeSymbol.U8,
-                TypeSymbol.U16,
-                TypeSymbol.U32,
-                TypeSymbol.U64,
-                TypeSymbol.UInt
-            }.Where(x => x != null);
+                {
+                    TypeSymbol.Char,
+                    //TypeSymbol.U8,
+                    TypeSymbol.U16,
+                    TypeSymbol.U32,
+                    TypeSymbol.U64,
+                    TypeSymbol.UInt
+                }.Where(x => x != null)
+                .ToArray();
 
 
             var allTypesExceptString =
@@ -53,7 +55,7 @@ namespace Eagle.CodeAnalysis.Binding
                 operators = operators.Concat(allTypesExceptString.SelectMany(t => stringConcatOperators(stringType, t)));
             }
 
-            if(stringOperators != null)
+            if (stringOperators != null)
             {
                 operators = operators.Concat(stringOperators(stringType, boolType));
             }
