@@ -1,2 +1,1 @@
-let name = GetName();
-Print("Hello " + name + "!");
+Print("Hello " + "Flo" + "!");

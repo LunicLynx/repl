@@ -34,13 +34,12 @@ string concat(string a, string b)
     return result;
 }
 
+extern "C" {
+    void Print(string s);
+    string Input();
+}
+
 int main()
 {
-    auto prefix = "Hello ";
-    auto name = "Flo";
-    auto suffix = " !";
-
-    auto greeting = concat(prefix, concat(name, suffix));
-
-    return 0;
+    Print(concat("Hello ", concat("Flo", " !")));
 }

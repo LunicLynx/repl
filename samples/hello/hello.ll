@@ -39,69 +39,67 @@ Label2:                                           ; preds = %Label1
 
 continue1:                                        ; preds = %Label2
   %i5 = load i64, i64* %i
-  %i6 = load i64, i64* %i
-  %12 = add i64 %i6, 1
-  store i64 %12, i64 %i5
+  %12 = add i64 %i5, 1
+  store i64 %12, i64* %i
   br label %Label1
 
 Label1:                                           ; preds = %continue1, %entry
-  %i7 = load i64, i64* %i
-  %upperBound8 = load i64, i64* %upperBound
-  %13 = icmp sle i64 %i7, %upperBound8
+  %i6 = load i64, i64* %i
+  %upperBound7 = load i64, i64* %upperBound
+  %13 = icmp sle i64 %i6, %upperBound7
   br i1 %13, label %Label2, label %14
 
 14:                                               ; preds = %Label1
   br label %break1
 
 break1:                                           ; preds = %14
-  %i9 = alloca i64
-  store i64 0, i64* %i9
+  %i8 = alloca i64
+  store i64 0, i64* %i8
   %15 = call i64 @"<>Get_Length"(i8** %3)
-  %upperBound10 = alloca i64
-  store i64 %15, i64* %upperBound10
+  %upperBound9 = alloca i64
+  store i64 %15, i64* %upperBound9
   br label %Label3
 
 Label4:                                           ; preds = %Label3
-  %result11 = load i8*, i8** %result
+  %result10 = load i8*, i8** %result
   %16 = call i64 @"<>Get_Length"(i8** %2)
-  %i12 = load i64, i64* %i9
-  %17 = add i64 %16, %i12
-  %18 = getelementptr i8, i8* %result11, i64 %17
-  %i13 = load i64, i64* %i9
-  %19 = call i8 @"<>Get_Item"(i8** %3, i64 %i13)
+  %i11 = load i64, i64* %i8
+  %17 = add i64 %16, %i11
+  %18 = getelementptr i8, i8* %result10, i64 %17
+  %i12 = load i64, i64* %i8
+  %19 = call i8 @"<>Get_Item"(i8** %3, i64 %i12)
   store i8 %19, i8* %18
   br label %continue2
 
 continue2:                                        ; preds = %Label4
-  %i14 = load i64, i64* %i9
-  %i15 = load i64, i64* %i9
-  %20 = add i64 %i15, 1
-  store i64 %20, i64 %i14
+  %i13 = load i64, i64* %i8
+  %20 = add i64 %i13, 1
+  store i64 %20, i64* %i8
   br label %Label3
 
 Label3:                                           ; preds = %continue2, %break1
-  %i16 = load i64, i64* %i9
-  %upperBound17 = load i64, i64* %upperBound10
-  %21 = icmp sle i64 %i16, %upperBound17
+  %i14 = load i64, i64* %i8
+  %upperBound15 = load i64, i64* %upperBound9
+  %21 = icmp sle i64 %i14, %upperBound15
   br i1 %21, label %Label4, label %22
 
 22:                                               ; preds = %Label3
   br label %break2
 
 break2:                                           ; preds = %22
-  %result18 = load i8*, i8** %result
-  %length19 = load i64, i64* %length
-  %23 = getelementptr i8, i8* %result18, i64 %length19
+  %result16 = load i8*, i8** %result
+  %length17 = load i64, i64* %length
+  %23 = getelementptr i8, i8* %result16, i64 %length17
   store i8 0, i8* %23
-  %result20 = load i8*, i8** %result
-  %24 = bitcast i8* %result20 to void*
+  %result18 = load i8*, i8** %result
+  %24 = bitcast i8* %result18 to void*
   %25 = bitcast void* %24 to i8*
   ret i8* %25
 }
 
 define i8* @GetName() {
 entry:
-  call void @Print([18 x i8]* @2)
+  call void @Print(i8* getelementptr inbounds ([18 x i8], [18 x i8]* @2, i32 0, i32 0))
   %0 = call i8* @Input()
   %name = alloca i8*
   store i8* %0, i8** %name
@@ -142,14 +140,13 @@ entry:
 
 Label5:                                           ; preds = %continue1
   %l1 = load i64, i64* %l
-  %l2 = load i64, i64* %l
-  %3 = add i64 %l2, 1
-  store i64 %3, i64 %l1
+  %3 = add i64 %l1, 1
+  store i64 %3, i64* %l
   br label %continue1
 
 continue1:                                        ; preds = %Label5, %entry
-  %l3 = load i64, i64* %l
-  %4 = call i8 @"<>Get_Item"(i8** %self, i64 %l3)
+  %l2 = load i64, i64* %l
+  %4 = call i8 @"<>Get_Item"(i8** %self, i64 %l2)
   %5 = icmp ne i8 %4, 0
   br i1 %5, label %Label5, label %6
 
@@ -157,8 +154,8 @@ continue1:                                        ; preds = %Label5, %entry
   br label %break1
 
 break1:                                           ; preds = %6
-  %l4 = load i64, i64* %l
-  ret i64 %l4
+  %l3 = load i64, i64* %l
+  ret i64 %l3
 }
 
 declare i8* @String(i8**)
@@ -169,34 +166,15 @@ entry:
   %name = alloca i8*
   store i8* %0, i8** %name
   %name1 = load i8*, i8** %name
-  %1 = call i8* @Concat([7 x i8]* @0, i8* %name1)
-  %2 = call i8* @Concat(i8* %1, [2 x i8]* @1)
+  %1 = call i8* @Concat(i8* getelementptr inbounds ([7 x i8], [7 x i8]* @0, i32 0, i32 0), i8* %name1)
+  %2 = call i8* @Concat(i8* %1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
   call void @Print(i8* %2)
+  ret void
 }
-Store operand must be a pointer.
-  store i64 %12, i64 %i5
-Store operand must be a pointer.
-  store i64 %20, i64 %i14
-Call parameter type does not match function signature!
-[18 x i8]* @2
- i8*  call void @Print([18 x i8]* @2)
 Stored value type does not match pointer operand type!
   store i8** %2, i8** %self
- i8*Store operand must be a pointer.
-  store i64 %3, i64 %l1
-Basic Block in function 'Main' does not have terminator!
-label %entry
-Issues:Store operand must be a pointer.
-  store i64 %12, i64 %i5
-Store operand must be a pointer.
-  store i64 %20, i64 %i14
-Call parameter type does not match function signature!
-[18 x i8]* @2
- i8*  call void @Print([18 x i8]* @2)
-Stored value type does not match pointer operand type!
-  store i8** %2, i8** %self
- i8*Store operand must be a pointer.
-  store i64 %3, i64 %l1
-Basic Block in function 'Main' does not have terminator!
-label %entry
-
+ i8*
+C:\Users\Florian\source\repos\repl\src\ec\bin\Debug\netcoreapp3.1\win-x64\ec.exe (process 2932) exited with code 0.
+To automatically close the console when debugging stops, enable Tools->Options->Debugging->Automatically close the console when debugging stops.
+Press any key to close this window . . .
+ 

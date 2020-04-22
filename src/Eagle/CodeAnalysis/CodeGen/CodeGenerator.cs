@@ -3,12 +3,17 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Eagle.CodeAnalysis.Binding;
 using LLVMSharp.Interop;
 
 
 namespace Eagle.CodeAnalysis.CodeGen
 {
+
+
+
+
     public class CodeGenerator
     {
         private readonly BoundProgram _program;
@@ -78,9 +83,10 @@ namespace Eagle.CodeAnalysis.CodeGen
                 }
             }
 
+            var entry = _program.MainFunction ?? _program.ScriptFunction;
             var invokables = _globalScope.Symbols.OfType<IInvokableSymbol>()
                 .Concat(s)
-                .Concat(new[] { _program.MainFunction ?? _program.ScriptFunction })
+                .Concat(new[] { entry })
                 .ToArray();
 
             foreach (var invokable in invokables)
@@ -125,8 +131,6 @@ namespace Eagle.CodeAnalysis.CodeGen
                 var rewriter = new PreCodeGenerationTreeRewriter();
                 var newBody = (BoundBlockStatement)rewriter.RewriteStatement(body);
 
-
-
                 var offset = 0;
                 var k = symbol switch
                 {
@@ -156,12 +160,45 @@ namespace Eagle.CodeAnalysis.CodeGen
                 }
 
                 GenerateStatement(newBody);
+
+                // HACK: Should be fixed in bound model
+                if (symbol.Type == TypeSymbol.Void)
+                    _builder.BuildRetVoid();
             }
+
             _mod.Dump();
 
             if (!_mod.TryVerify(LLVMVerifierFailureAction.LLVMPrintMessageAction, out var message))
-                Console.WriteLine("Issues:" + message);
+                ; //Console.WriteLine("Issues:" + message);
+
+            LLVM.LinkInMCJIT();
+
+            LLVM.InitializeX86TargetMC();
+            LLVM.InitializeX86Target();
+            LLVM.InitializeX86TargetInfo();
+            LLVM.InitializeX86AsmParser();
+            LLVM.InitializeX86AsmPrinter();
+
+            var options = LLVMMCJITCompilerOptions.Create();
+            options.NoFramePointerElim = 1;
+
+            if (!_mod.TryCreateMCJITCompiler(out var engine, ref options, out var error))
+            {
+                Console.WriteLine($"Error: {error}");
+            }
+
+            _mod.TryEmitObj("demo.obj", out error);
+
+            using (engine)
+            {
+                var main =
+                    (Main)Marshal.GetDelegateForFunctionPointer(engine.GetPointerToGlobal(_symbols[entry]), typeof(Main));
+                main();
+            }
         }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void Main();
 
         //private LLVMTypeRef GetFieldType(BoundFieldDeclaration node)
         //{
@@ -281,7 +318,11 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.Int) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)((long)Convert.ChangeType(nodeValue, typeof(long))));
 
             if (type == TypeSymbol.String)
-                value = _builder.BuildGlobalString((string)nodeValue);
+            {
+                var str = _builder.BuildGlobalString((string)nodeValue);
+                var strType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+                value = _builder.BuildBitCast(str, strType);
+            }
 
             if (type == TypeSymbol.Char) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, (char)nodeValue);
 
@@ -578,7 +619,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             return _builder.BuildArrayAlloca(type, args[0]);
         }
 
-        private LLVMValueRef GenerateArrayIndexExpression(BoundArrayIndexExpression node)
+        private LLVMValueRef GenerateArrayIndexExpression(BoundArrayIndexExpression node, bool getPointer = false)
         {
             var targetp = GenerateExpression(node.Target);
             //var target = _builder.BuildLoad(targetp);
@@ -592,9 +633,9 @@ namespace Eagle.CodeAnalysis.CodeGen
             }).ToArray();
 
             var p = _builder.BuildGEP(targetp, indexes);
-            return p;
-            //var v = _builder.BuildLoad(p);
-            //return v;
+            if (getPointer) return p;
+            var v = _builder.BuildLoad(p);
+            return v;
         }
 
         private LLVMValueRef GenerateConstructorCallExpression(BoundConstructorCallExpression node)
@@ -618,18 +659,19 @@ namespace Eagle.CodeAnalysis.CodeGen
             return _builder.BuildGEP(target, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)index) });
         }
 
+        private LLVMValueRef GenerateLValue(BoundExpression expression)
+        {
+            return expression switch
+            {
+                BoundVariableExpression v => _symbols[v.Variable],
+                BoundArrayIndexExpression a => GenerateArrayIndexExpression(a, true),
+                _ => throw new InvalidOperationException("invalid l value")
+            };
+        }
+
         private LLVMValueRef GenerateMethodCallExpression(BoundMethodCallExpression node)
         {
-            LLVMValueRef ptr = null;
-            if (node.Target is BoundVariableExpression v)
-            {
-                ptr = _symbols[v.Variable];
-            }
-            else
-            {
-                var target = GenerateExpression(node.Target);
-                ptr = target;
-            }
+            var ptr = GenerateLValue(node.Target);
             var arguments = new[] { ptr }
                 .Concat(node.Arguments.Select(GenerateExpression))
                 .ToArray();
@@ -640,8 +682,8 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMValueRef GenerateThisExpression(BoundThisExpression node)
         {
             var thisp = _symbols[_this];
-            return thisp;
-            //return _builder.BuildLoad(thisp);
+            //return thisp;
+            return _builder.BuildLoad(thisp);
         }
 
         private LLVMValueRef GeneratePropertyExpression(BoundPropertyExpression node)
@@ -687,10 +729,11 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateAssignmentExpression(BoundAssignmentExpression node)
         {
-            var target = GenerateExpression(node.Target);
+            var t = GenerateLValue(node.Target);
+
             var value = GenerateExpression(node.Expression);
 
-            _builder.BuildStore(value, target);
+            _builder.BuildStore(value, t);
             return value;
             throw new NotImplementedException();
             //var variable = node.Variable;

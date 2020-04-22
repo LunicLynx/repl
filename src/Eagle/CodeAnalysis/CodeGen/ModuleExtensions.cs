@@ -12,7 +12,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             var targetTriple = Statics.GetDefaultTargetTriple();
             mod.Target = targetTriple;
 
-            var target = LLVMTargetRef.Targets.SingleOrDefault(t => t.Name == targetTriple);
+            var target = LLVMTargetRef.Targets.SingleOrDefault(t => t.Name == "x86-64");
             if (target == null)
             {
                 return false;
@@ -26,7 +26,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             var dataLayout = targetMachine.CreateTargetDataLayout();
             mod.DataLayout = dataLayout;
 
-            if (!targetMachine.TryEmitToFile(mod, filename, LLVMCodeGenFileType.LLVMAssemblyFile, out error))
+            if (!targetMachine.TryEmitToFile(mod, filename, LLVMCodeGenFileType.LLVMObjectFile, out error))
             {
                 return false;
             }

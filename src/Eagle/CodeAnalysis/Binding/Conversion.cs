@@ -22,7 +22,7 @@
         public static Conversion Classify(TypeSymbol from, TypeSymbol to)
         {
             if (from == TypeSymbol.String && to == TypeSymbol.Char.MakePointer())
-                return Identity;
+                return Explicit;
 
             if (from == to)
                 return Identity;
