@@ -1107,6 +1107,7 @@ namespace Eagle.CodeAnalysis.Binding
             var variableType = type ?? initializer.Type;
             var variable = BindVariableDeclaration(syntax.IdentifierToken, isReadOnly, variableType);
             var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType);
+
             return new BoundVariableDeclaration(variable, convertedInitializer);
         }
 

@@ -16,8 +16,9 @@ entry:
   %6 = add i64 %4, %5
   %length = alloca i64
   store i64 %6, i64* %length
-  %7 = add i64* %length, i64 1
-  %8 = call i8* @malloc(i64* %7)
+  %length1 = load i64, i64* %length
+  %7 = add i64 %length1, 1
+  %8 = call i8* @malloc(i64 %7)
   %result = alloca i8*
   store i8* %8, i8** %result
   %i = alloca i64
@@ -28,55 +29,72 @@ entry:
   br label %Label1
 
 Label2:                                           ; preds = %Label1
-  %10 = getelementptr i8*, i8** %result, i64* %i
-  %11 = call i8 @"<>Get_Item"(i8** %2, i64* %i)
-  store i8 %11, i8** %10
+  %result2 = load i8*, i8** %result
+  %i3 = load i64, i64* %i
+  %10 = getelementptr i8, i8* %result2, i64 %i3
+  %i4 = load i64, i64* %i
+  %11 = call i8 @"<>Get_Item"(i8** %2, i64 %i4)
+  store i8 %11, i8* %10
   br label %continue1
 
 continue1:                                        ; preds = %Label2
-  %12 = add i64* %i, i64 1
-  store i64* %12, i64* %i
+  %i5 = load i64, i64* %i
+  %i6 = load i64, i64* %i
+  %12 = add i64 %i6, 1
+  store i64 %12, i64 %i5
   br label %Label1
 
 Label1:                                           ; preds = %continue1, %entry
-  %13 = icmp sle i64* %i, %upperBound
+  %i7 = load i64, i64* %i
+  %upperBound8 = load i64, i64* %upperBound
+  %13 = icmp sle i64 %i7, %upperBound8
   br i1 %13, label %Label2, label %14
 
 14:                                               ; preds = %Label1
   br label %break1
 
 break1:                                           ; preds = %14
-  %i1 = alloca i64
-  store i64 0, i64* %i1
+  %i9 = alloca i64
+  store i64 0, i64* %i9
   %15 = call i64 @"<>Get_Length"(i8** %3)
-  %upperBound2 = alloca i64
-  store i64 %15, i64* %upperBound2
+  %upperBound10 = alloca i64
+  store i64 %15, i64* %upperBound10
   br label %Label3
 
 Label4:                                           ; preds = %Label3
+  %result11 = load i8*, i8** %result
   %16 = call i64 @"<>Get_Length"(i8** %2)
-  %17 = add i64 %16, i64* %i1
-  %18 = getelementptr i8*, i8** %result, i64 %17
-  %19 = call i8 @"<>Get_Item"(i8** %3, i64* %i1)
-  store i8 %19, i8** %18
+  %i12 = load i64, i64* %i9
+  %17 = add i64 %16, %i12
+  %18 = getelementptr i8, i8* %result11, i64 %17
+  %i13 = load i64, i64* %i9
+  %19 = call i8 @"<>Get_Item"(i8** %3, i64 %i13)
+  store i8 %19, i8* %18
   br label %continue2
 
 continue2:                                        ; preds = %Label4
-  %20 = add i64* %i1, i64 1
-  store i64* %20, i64* %i1
+  %i14 = load i64, i64* %i9
+  %i15 = load i64, i64* %i9
+  %20 = add i64 %i15, 1
+  store i64 %20, i64 %i14
   br label %Label3
 
 Label3:                                           ; preds = %continue2, %break1
-  %21 = icmp sle i64* %i1, %upperBound2
+  %i16 = load i64, i64* %i9
+  %upperBound17 = load i64, i64* %upperBound10
+  %21 = icmp sle i64 %i16, %upperBound17
   br i1 %21, label %Label4, label %22
 
 22:                                               ; preds = %Label3
   br label %break2
 
 break2:                                           ; preds = %22
-  %23 = getelementptr i8*, i8** %result, i64* %length
-  store i8 0, i8** %23
-  %24 = bitcast i8** %result to void*
+  %result18 = load i8*, i8** %result
+  %length19 = load i64, i64* %length
+  %23 = getelementptr i8, i8* %result18, i64 %length19
+  store i8 0, i8* %23
+  %result20 = load i8*, i8** %result
+  %24 = bitcast i8* %result20 to void*
   %25 = bitcast void* %24 to i8*
   ret i8* %25
 }
@@ -87,7 +105,8 @@ entry:
   %0 = call i8* @Input()
   %name = alloca i8*
   store i8* %0, i8** %name
-  ret i8** %name
+  %name1 = load i8*, i8** %name
+  ret i8* %name1
 }
 
 declare void @Print(i8*)
@@ -104,12 +123,10 @@ entry:
   store i8** %0, i8*** %2
   %3 = alloca i64
   store i64 %1, i64* %3
-
   %4 = load i8**, i8*** %2
-  %5 = bitcast i8** %4 to i8*
-  
-  %6 = getelementptr i8, i8* %5, i64* %3
-  ret i8* %6
+  %index = load i64, i64* %3
+  %5 = call i8 @"<>Get_Item"(i8** %4, i64 %index)
+  ret i8 %5
 }
 
 define i64 @"<>Get_Length"(i8**) {
@@ -119,26 +136,29 @@ entry:
   %l = alloca i64
   store i64 0, i64* %l
   %2 = load i8**, i8*** %1
-  %3 = bitcast i8** %2 to i8*
   %self = alloca i8*
-  store i8* %3, i8** %self
+  store i8** %2, i8** %self
   br label %continue1
 
 Label5:                                           ; preds = %continue1
-  %4 = add i64* %l, i64 1
-  store i64* %4, i64* %l
+  %l1 = load i64, i64* %l
+  %l2 = load i64, i64* %l
+  %3 = add i64 %l2, 1
+  store i64 %3, i64 %l1
   br label %continue1
 
 continue1:                                        ; preds = %Label5, %entry
-  %5 = getelementptr i8*, i8** %self, i64* %l
-  %6 = icmp ne i8** %5, i8 0
-  br i1 %6, label %Label5, label %7
+  %l3 = load i64, i64* %l
+  %4 = call i8 @"<>Get_Item"(i8** %self, i64 %l3)
+  %5 = icmp ne i8 %4, 0
+  br i1 %5, label %Label5, label %6
 
-7:                                                ; preds = %continue1
+6:                                                ; preds = %continue1
   br label %break1
 
-break1:                                           ; preds = %7
-  ret i64* %l
+break1:                                           ; preds = %6
+  %l4 = load i64, i64* %l
+  ret i64 %l4
 }
 
 declare i8* @String(i8**)
@@ -148,112 +168,35 @@ entry:
   %0 = call i8* @GetName()
   %name = alloca i8*
   store i8* %0, i8** %name
-  %1 = call i8* @Concat([7 x i8]* @0, i8** %name)
+  %name1 = load i8*, i8** %name
+  %1 = call i8* @Concat([7 x i8]* @0, i8* %name1)
   %2 = call i8* @Concat(i8* %1, [2 x i8]* @1)
   call void @Print(i8* %2)
 }
-Both operands to a binary operator are not of the same type!
-  %7 = add i64* %length, i64 1
+Store operand must be a pointer.
+  store i64 %12, i64 %i5
+Store operand must be a pointer.
+  store i64 %20, i64 %i14
 Call parameter type does not match function signature!
-  %7 = add i64* %length, i64 1
- i64  %8 = call i8* @malloc(i64* %7)
-GEP indexes must be integers
-  %10 = getelementptr i8*, i8** %result, i64* %i
-Call parameter type does not match function signature!
-  %i = alloca i64
- i64  %11 = call i8 @"<>Get_Item"(i8** %2, i64* %i)
-Stored value type does not match pointer operand type!
-  store i8 %11, i8** %10
- i8*Both operands to a binary operator are not of the same type!
-  %12 = add i64* %i, i64 1
-Stored value type does not match pointer operand type!
-  store i64* %12, i64* %i
- i64Both operands to a binary operator are not of the same type!
-  %17 = add i64 %16, i64* %i1
-Call parameter type does not match function signature!
-  %i1 = alloca i64
- i64  %19 = call i8 @"<>Get_Item"(i8** %3, i64* %i1)
-Stored value type does not match pointer operand type!
-  store i8 %19, i8** %18
- i8*Both operands to a binary operator are not of the same type!
-  %20 = add i64* %i1, i64 1
-Stored value type does not match pointer operand type!
-  store i64* %20, i64* %i1
- i64GEP indexes must be integers
-  %23 = getelementptr i8*, i8** %result, i64* %length
-Stored value type does not match pointer operand type!
-  store i8 0, i8** %23
- i8*Call parameter type does not match function signature!
 [18 x i8]* @2
  i8*  call void @Print([18 x i8]* @2)
-Function return type does not match operand type of return inst!
-  ret i8** %name
- i8*GEP indexes must be integers
-  %6 = getelementptr i8, i8* %5, i64* %3
-Function return type does not match operand type of return inst!
-  ret i8* %6
- i8Both operands to a binary operator are not of the same type!
-  %4 = add i64* %l, i64 1
 Stored value type does not match pointer operand type!
-  store i64* %4, i64* %l
- i64GEP indexes must be integers
-  %5 = getelementptr i8*, i8** %self, i64* %l
-Both operands to ICmp instruction are not of the same type!
-  %6 = icmp ne i8** %5, i8 0
-Function return type does not match operand type of return inst!
-  ret i64* %l
- i64Basic Block in function 'Main' does not have terminator!
+  store i8** %2, i8** %self
+ i8*Store operand must be a pointer.
+  store i64 %3, i64 %l1
+Basic Block in function 'Main' does not have terminator!
 label %entry
-Issues:Both operands to a binary operator are not of the same type!
-  %7 = add i64* %length, i64 1
+Issues:Store operand must be a pointer.
+  store i64 %12, i64 %i5
+Store operand must be a pointer.
+  store i64 %20, i64 %i14
 Call parameter type does not match function signature!
-  %7 = add i64* %length, i64 1
- i64  %8 = call i8* @malloc(i64* %7)
-GEP indexes must be integers
-  %10 = getelementptr i8*, i8** %result, i64* %i
-Call parameter type does not match function signature!
-  %i = alloca i64
- i64  %11 = call i8 @"<>Get_Item"(i8** %2, i64* %i)
-Stored value type does not match pointer operand type!
-  store i8 %11, i8** %10
- i8*Both operands to a binary operator are not of the same type!
-  %12 = add i64* %i, i64 1
-Stored value type does not match pointer operand type!
-  store i64* %12, i64* %i
- i64Both operands to a binary operator are not of the same type!
-  %17 = add i64 %16, i64* %i1
-Call parameter type does not match function signature!
-  %i1 = alloca i64
- i64  %19 = call i8 @"<>Get_Item"(i8** %3, i64* %i1)
-Stored value type does not match pointer operand type!
-  store i8 %19, i8** %18
- i8*Both operands to a binary operator are not of the same type!
-  %20 = add i64* %i1, i64 1
-Stored value type does not match pointer operand type!
-  store i64* %20, i64* %i1
- i64GEP indexes must be integers
-  %23 = getelementptr i8*, i8** %result, i64* %length
-Stored value type does not match pointer operand type!
-  store i8 0, i8** %23
- i8*Call parameter type does not match function signature!
 [18 x i8]* @2
  i8*  call void @Print([18 x i8]* @2)
-Function return type does not match operand type of return inst!
-  ret i8** %name
- i8*GEP indexes must be integers
-  %6 = getelementptr i8, i8* %5, i64* %3
-Function return type does not match operand type of return inst!
-  ret i8* %6
- i8Both operands to a binary operator are not of the same type!
-  %4 = add i64* %l, i64 1
 Stored value type does not match pointer operand type!
-  store i64* %4, i64* %l
- i64GEP indexes must be integers
-  %5 = getelementptr i8*, i8** %self, i64* %l
-Both operands to ICmp instruction are not of the same type!
-  %6 = icmp ne i8** %5, i8 0
-Function return type does not match operand type of return inst!
-  ret i64* %l
- i64Basic Block in function 'Main' does not have terminator!
+  store i8** %2, i8** %self
+ i8*Store operand must be a pointer.
+  store i64 %3, i64 %l1
+Basic Block in function 'Main' does not have terminator!
 label %entry
 
