@@ -5,6 +5,7 @@
 // 3. interfaces and impl
 // 4. iterators
 // 5. generics
+// ?. error handling without exceptions
 
 extern GetCurrenctDirectory(): Path;
 extern RunProcess(command: string);
