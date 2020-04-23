@@ -8,17 +8,18 @@ using System.Runtime.InteropServices;
 using Eagle.CodeAnalysis.Binding;
 using LLVMSharp.Interop;
 
-
 namespace Eagle.CodeAnalysis.CodeGen
 {
-
-
-
-
     public class CodeGenerator
     {
         private readonly BoundProgram _program;
         private readonly BoundGlobalScope _globalScope;
+
+        private LLVMBuilderRef _builder;
+        private LLVMModuleRef _mod;
+
+        private readonly Dictionary<Symbol, LLVMValueRef> _symbols = new Dictionary<Symbol, LLVMValueRef>();
+        private readonly Dictionary<Symbol, LLVMTypeRef> _types = new Dictionary<Symbol, LLVMTypeRef>();
 
         public CodeGenerator(BoundProgram program, BoundGlobalScope globalScope)
         {
@@ -26,18 +27,10 @@ namespace Eagle.CodeAnalysis.CodeGen
             _globalScope = globalScope;
         }
 
-        private LLVMBuilderRef _builder;
-        private LLVMModuleRef _mod;
-
-        private Dictionary<Symbol, LLVMValueRef> _symbols = new Dictionary<Symbol, LLVMValueRef>();
-        private Dictionary<Symbol, LLVMTypeRef> _types = new Dictionary<Symbol, LLVMTypeRef>();
-
-        public void Generate()
+        public void Generate(string outputPath)
         {
             _mod = LLVMModuleRef.CreateWithName("MyMod");
             _builder = _mod.Context.CreateBuilder();
-
-
 
             var types = _globalScope.Symbols.OfType<TypeSymbol>();
 
@@ -88,6 +81,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             var invokables = _globalScope.Symbols.OfType<IInvokableSymbol>()
                 .Concat(s)
                 .Concat(new[] { entry })
+                .Distinct()
                 .ToArray();
 
             foreach (var invokable in invokables)
@@ -112,14 +106,14 @@ namespace Eagle.CodeAnalysis.CodeGen
                 _symbols[(Symbol)invokable] = f;
             }
 
-            var a2 = _program.Functions.Select(x => x.Value.ToString()).ToArray();
-            var array = _program.Functions.Select(x => x.Value.GetType()).ToArray();
-            var strings = _program.Functions.Select(f =>
-            {
-                var writer = new StringWriter();
-                ControlFlowGraph.Create(f.Value).WriteTo(writer);
-                return writer.ToString();
-            }).ToArray();
+            //var a2 = _program.Functions.Select(x => x.Value.ToString()).ToArray();
+            //var array = _program.Functions.Select(x => x.Value.GetType()).ToArray();
+            //var strings = _program.Functions.Select(f =>
+            //{
+            //    var writer = new StringWriter();
+            //    ControlFlowGraph.Create(f.Value).WriteTo(writer);
+            //    return writer.ToString();
+            //}).ToArray();
 
             foreach (var (symbol, body) in _program.Functions)
             {
@@ -167,10 +161,20 @@ namespace Eagle.CodeAnalysis.CodeGen
                     _builder.BuildRetVoid();
             }
 
-            _mod.Dump();
+            //_mod.Dump();
 
             if (!_mod.TryVerify(LLVMVerifierFailureAction.LLVMPrintMessageAction, out var message))
+            {
+                _mod.Dump();
                 ; //Console.WriteLine("Issues:" + message);
+            }
+
+
+            var outFileLl = Path.Combine(outputPath, "hello.ll");
+            if (!_mod.TryPrintToFile(outFileLl, out message))
+            {
+
+            }
 
             LLVM.LinkInMCJIT();
 
@@ -197,8 +201,10 @@ namespace Eagle.CodeAnalysis.CodeGen
             //     main();
             // }
 
+            var outFile = Path.Combine(outputPath, "hello.exe");
+
             Process.Start("C:\\Program Files\\LLVM\\bin\\clang++.exe",
-                "C:\\Users\\Florian\\Source\\repos\\repl\\samples\\hello\\core.cpp -Xlinker demo.obj").WaitForExit();
+                $"C:\\Users\\Florian\\Source\\repos\\repl\\core\\core.cpp -Xlinker demo.obj -o {outFile}").WaitForExit();
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

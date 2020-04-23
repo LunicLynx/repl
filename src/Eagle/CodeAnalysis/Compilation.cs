@@ -116,22 +116,22 @@ namespace Eagle.CodeAnalysis
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
         }
 
-        public void EmitBinary()
+        public ImmutableArray<Diagnostic> EmitBinary(string outputPath)
         {
             var parseDiagnostics = SyntaxTrees.SelectMany(st => st.Diagnostics);
 
             var diagnostics = parseDiagnostics.Concat(GlobalScope.Diagnostics).ToImmutableArray();
             if (diagnostics.Any())
-                return;
+                return diagnostics;
 
             var program = GetProgram();
             if (program.Diagnostics.Any())
-                return;
+                return program.Diagnostics;
 
             var generator = new CodeGen.CodeGenerator(program, GlobalScope);
-            generator.Generate();
+            generator.Generate(outputPath);
 
-            
+            return ImmutableArray<Diagnostic>.Empty;
         }
 
         public void EmitTree(TextWriter writer)

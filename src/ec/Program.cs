@@ -23,6 +23,7 @@ namespace Eagle
             var hasErrors = false;
 
             // TODO load core.e into syntax tree
+            syntaxTrees.Add(SyntaxTree.Load("C:\\Users\\Florian\\Source\\repos\\repl\\core\\core.e"));
 
             foreach (var path in paths)
             {
@@ -41,20 +42,12 @@ namespace Eagle
 
             var compilation = Compilation.Create(syntaxTrees.ToArray());
 
-            //var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
-
-            compilation.EmitBinary();
-
-            //if (!result.Diagnostics.Any())
-            //{
-            //    if (result.Value != null)
-            //        Console.WriteLine(result.Value);
-            //}
-            //else
-            //{
-            //    Console.Error.WriteDiagnostics(result.Diagnostics);
-            //    return 1;
-            //}
+            var diagnostics = compilation.EmitBinary("C:\\Users\\Florian\\Source\\repos\\repl\\samples\\hello");
+            if (diagnostics.Any())
+            {
+                Console.Error.WriteDiagnostics(diagnostics);
+                return 1;
+            }
 
             return 0;
         }

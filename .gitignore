@@ -262,3 +262,6 @@ __pycache__/
 
 # no antlr artifacts
 .antlr/
+
+samples/**/*.exe
+samples/**/*.ll
