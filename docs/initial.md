@@ -5,6 +5,10 @@ It syntax and style is heavily influence by C# while borrowing ideas from rust a
 
 The biggest differences to C# are, that eagle is compiled ahead of time and does not have a garbage collector.
 
+Some aspects are comparable to C# while following a different philosophy.
+For example prefix operations are changed to suffix ones to reduce the need of using parenthesis.
+
+While C# and C++ have concepts of classes and structs, eagle only has objects for object oriented constructs.
 
 # build system
 
