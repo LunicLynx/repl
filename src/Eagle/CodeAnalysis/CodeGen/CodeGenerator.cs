@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -182,19 +183,22 @@ namespace Eagle.CodeAnalysis.CodeGen
             var options = LLVMMCJITCompilerOptions.Create();
             options.NoFramePointerElim = 1;
 
-            if (!_mod.TryCreateMCJITCompiler(out var engine, ref options, out var error))
-            {
-                Console.WriteLine($"Error: {error}");
-            }
+            // if (!_mod.TryCreateMCJITCompiler(out var engine, ref options, out var error))
+            // {
+            //     Console.WriteLine($"Error: {error}");
+            // }
 
-            _mod.TryEmitObj("demo.obj", out error);
+            _mod.TryEmitObj("demo.obj", out var error);
 
-            using (engine)
-            {
-                var main =
-                    (Main)Marshal.GetDelegateForFunctionPointer(engine.GetPointerToGlobal(_symbols[entry]), typeof(Main));
-                main();
-            }
+            // using (engine)
+            // {
+            //     var main =
+            //         (Main)Marshal.GetDelegateForFunctionPointer(engine.GetPointerToGlobal(_symbols[entry]), typeof(Main));
+            //     main();
+            // }
+
+            Process.Start("C:\\Program Files\\LLVM\\bin\\clang++.exe",
+                "C:\\Users\\Florian\\Source\\repos\\repl\\samples\\hello\\core.cpp -Xlinker demo.obj").WaitForExit();
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

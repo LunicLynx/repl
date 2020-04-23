@@ -1,14 +1,20 @@
 #include <iostream>
+#include <string>
 
 typedef const char* string;
+
+std::string input;
 
 extern "C" {
     void Main();
 
     string Input(){
         auto result = new char[1000];
-        std::cin >> result;
-        return result;
+        std::getline(std::cin, input);
+
+        // TODO this is not a good way
+        // but it works for now
+        return input.c_str();
     }
 
     void Print(string s) {

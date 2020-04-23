@@ -130,6 +130,8 @@ namespace Eagle.CodeAnalysis
 
             var generator = new CodeGen.CodeGenerator(program, GlobalScope);
             generator.Generate();
+
+            
         }
 
         public void EmitTree(TextWriter writer)

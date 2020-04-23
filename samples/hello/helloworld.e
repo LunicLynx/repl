@@ -1,1 +1,5 @@
-Print("Hello " + "Flo" + "!");
+
+loop {
+    let name = GetName();
+    Print("Hello " + name + "!");
+}

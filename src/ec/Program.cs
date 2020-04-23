@@ -22,6 +22,8 @@ namespace Eagle
             var syntaxTrees = new List<SyntaxTree>();
             var hasErrors = false;
 
+            // TODO load core.e into syntax tree
+
             foreach (var path in paths)
             {
                 if (!File.Exists(path))
