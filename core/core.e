@@ -10,8 +10,21 @@ object String {
     _length: int;
 
     // private
-    ctor(buffer: char*) {
-        _buffer = buffer;
+    ctor() {}
+
+    ctor(str: char*) {
+        var l = 0;
+
+        // get length
+        while str[l] != '\0'
+            l = l + 1;
+            
+        _length = l;
+        _buffer = malloc(_length);
+
+        for i = 0 to _length {
+            _buffer[i] = str[i];
+        }     
     }
 
     dtor() {
@@ -21,7 +34,6 @@ object String {
     [index: int] : char {
         get {
             return _buffer[index];
-            // return (*this).(char*)[index];
         }
     }
 
@@ -29,38 +41,40 @@ object String {
     Length :int {
         get {
             return _length;
-            // var l = 0;
-            // let self = (*this).(char*);
-            // while self[l] != '\0'
-            //     l = l + 1;
-            // return l;
         }
     }
 
     // static -> no this pointer
-    static Concat(a: string&, b: string&) : string {
+    static Concat(&a: string, &b: string) : string {
 
-        var length = a.Length + b.Length
+        let length = a._length + b._length;
 
-        var result  = malloc(length + 1);
+        let buffer  = malloc(length);
 
         // move a's content into the result
-        for i = 0 to a.Length {
-            result[i] = a[i];
+        for i = 0 to a._length {
+            buffer[i] = a[i];
         }
 
         // move b's content into the result
-        for i = 0 to b.Length {
-            result[a.Length + i] = b[i];
+        for i = 0 to b._length {
+            buffer[a._length + i] = b[i];
         }
 
-        result[length] = '\0';
+        let result = string();
 
-        return result.(any).(string);
-    }
+        result._buffer = buffer;
+        result._length = length;
 
-    static FromCharPtr(str: char*) {
-        
+// what happens here?
+// memcpy?
+
+
+// the return type is allocated in the callee
+// an a pointer is given as parameter
+// we need demo c++ code for this
+
+        return result;
+        // result is not owned anymore so we don't call the destructor here
     }
 }
-

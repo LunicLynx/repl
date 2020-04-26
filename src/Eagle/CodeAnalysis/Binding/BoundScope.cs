@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace Eagle.CodeAnalysis.Binding
 {
     public class BoundScope : IScope
     {
         public IScope Parent { get; }
-        private readonly Dictionary<string, Symbol> _symbols = new Dictionary<string, Symbol>();
+        private readonly List<Symbol> _symbols = new List<Symbol>();
 
         public BoundScope(IScope parent)
         {
@@ -15,27 +16,50 @@ namespace Eagle.CodeAnalysis.Binding
 
         public bool TryDeclare(Symbol symbol)
         {
-            if (_symbols.ContainsKey(symbol.Name))
-                return false;
+            // types with same name can only be declared once
+            // aliases with same name can only be declared once
+            // functions with same name and same parameters can only be declared once
+            // variables can be redeclared
 
-            _symbols.Add(symbol.Name, symbol);
+            if (!(symbol is VariableSymbol))
+            {
+                var existingSymbols = _symbols.Where(s => s.Name == symbol.Name).ToList();
+                if (existingSymbols.Any())
+                {
+                    // only if it is a function symbol we allow the same name twice
+                    if (!(symbol is FunctionSymbol functionSymbol))
+                        return false;
+
+                    // if any existing is not a function then this cannot be declared
+                    if (existingSymbols.Any(e => e.GetType() != typeof(FunctionSymbol)))
+                        return false;
+
+                    // if all functions have different parameters we can declare it
+                    var functions = existingSymbols.Cast<FunctionSymbol>();
+                    return functions.All(f => !functionSymbol.Parameters.SequenceEqual(f.Parameters));
+                }
+            }
+
+            _symbols.Add(symbol);
             return true;
         }
 
-        public bool TryLookup(string name, out Symbol symbol)
+        public bool TryLookup(SymbolKind[] kinds, string name, out Symbol[] symbols)
         {
-            if (_symbols.TryGetValue(name, out symbol))
+            var allKinds = !kinds.Any();
+            symbols = _symbols.Where(m => m.Name == name && (allKinds || kinds.Contains(m.Kind))).ToArray();
+            if (symbols.Any())
                 return true;
 
             if (Parent == null)
                 return false;
 
-            return Parent.TryLookup(name, out symbol);
+            return Parent.TryLookup(kinds, name, out symbols);
         }
 
         public ImmutableArray<Symbol> GetDeclaredSymbols()
         {
-            return _symbols.Values.ToImmutableArray();
+            return _symbols.ToImmutableArray();
         }
     }
 }

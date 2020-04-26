@@ -26,6 +26,7 @@ namespace Eagle.CodeAnalysis
         public TypeSymbol ElementType { get; }
         public int Dimensions { get; }
         public bool IsPointer { get; }
+        public bool IsReference { get; }
         public bool IsArray { get; }
 
         public override SymbolKind Kind => SymbolKind.Type;
@@ -64,11 +65,12 @@ namespace Eagle.CodeAnalysis
             : this(name, ImmutableArray<TypeSymbol>.Empty, ImmutableArray<MemberSymbol>.Empty) { }
 
 
-        private TypeSymbol(TypeSymbol elementType, bool pointer)
+        private TypeSymbol(TypeSymbol elementType, bool pointer, bool isReference)
             : base(null)
         {
             ElementType = elementType;
             IsPointer = pointer;
+            IsReference = isReference;
         }
 
         private TypeSymbol(TypeSymbol elementType, int dimensions)
@@ -94,7 +96,12 @@ namespace Eagle.CodeAnalysis
 
         public TypeSymbol MakePointer()
         {
-            return new TypeSymbol(this, true);
+            return new TypeSymbol(this, true, false);
+        }
+
+        public TypeSymbol? MakeReference()
+        {
+            return new TypeSymbol(this, false, true);
         }
 
         public TypeSymbol MakeArray(int dimensions)
@@ -137,5 +144,7 @@ namespace Eagle.CodeAnalysis
         {
             return (_name != null ? _name.GetHashCode() : 0);
         }
+
+
     }
 }

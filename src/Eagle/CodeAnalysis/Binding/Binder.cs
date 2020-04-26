@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Eagle.CodeAnalysis.Lowering;
 using Eagle.CodeAnalysis.Syntax;
@@ -65,7 +66,7 @@ namespace Eagle.CodeAnalysis.Binding
 
                 var binder2 = new Binder(isScript, scope, function);
 
-                BoundBlockStatement s = null;
+                BoundBlockStatement s;
                 if (body is ExpressionBodySyntax e)
                 {
                     var expr = binder.BindExpression(e.Expression, function.Type);
@@ -288,7 +289,7 @@ namespace Eagle.CodeAnalysis.Binding
         {
             // TODO move this to the type binding phase
             // 
-            var symbol = GetSymbol<TypeSymbol>(syntax.IdentifierToken);
+            var symbol = (TypeSymbol)GetSymbol(new[] { SymbolKind.Type }, syntax.IdentifierToken);
 
             if (syntax.BaseType != null)
             {
@@ -354,11 +355,9 @@ namespace Eagle.CodeAnalysis.Binding
 
             var parameters = LookupParameterList(syntax.Parameters);
 
-            TypeSymbol type = null;
-            if (syntax.TypeClause != null)
-                type = BindTypeClause(syntax.TypeClause);
-            MethodSymbol getter = null;
-            MethodSymbol setter = null;
+            var type = BindTypeClause(syntax.TypeClause);
+            MethodSymbol? getter = null;
+            MethodSymbol? setter = null;
 
             var name = "Item";
             if (syntax.Body is ExpressionBodySyntax e)
@@ -383,7 +382,7 @@ namespace Eagle.CodeAnalysis.Binding
                 }
             }
 
-            var property = new IndexerSymbol(declaringType, type, getter, setter);
+            var property = new IndexerSymbol(declaringType, type, parameters, getter, setter);
             DeclareSymbol(property, syntax.Location, name);
         }
 
@@ -468,7 +467,8 @@ namespace Eagle.CodeAnalysis.Binding
         {
             var declaringType = ((TypeScope)_scope).Type;
             var type = BindTypeClause(syntax.TypeClause);
-            var field = new FieldSymbol(declaringType, syntax.IdentifierToken.Text, type);
+            var index = declaringType.Members.OfType<FieldSymbol>().Count();
+            var field = new FieldSymbol(declaringType, syntax.IdentifierToken.Text, type, index);
             DeclareSymbol(field, syntax.IdentifierToken);
         }
 
@@ -974,6 +974,7 @@ namespace Eagle.CodeAnalysis.Binding
             return parameters.ToImmutable();
         }
 
+        [return: NotNullIfNotNull("syntax")]
         private TypeSymbol? BindTypeClause(TypeClauseSyntax? syntax)
         {
             if (syntax == null)
@@ -981,13 +982,21 @@ namespace Eagle.CodeAnalysis.Binding
 
             var type = LookupType(syntax.Type);
             if (type == null)
+            {
                 Diagnostics.ReportUndefinedType(syntax.Type.Location, syntax.Type.ToString());
+                return TypeSymbol.Error;
+            }
 
             return type;
         }
 
         private TypeSymbol? LookupType(SyntaxNode syntax)
         {
+            if (syntax is ReferenceTypeSyntax r)
+            {
+                return LookupType(r.Type)?.MakeReference();
+            }
+
             if (syntax is PointerTypeSyntax p)
             {
                 return LookupType(p.Type)?.MakePointer();
@@ -996,7 +1005,7 @@ namespace Eagle.CodeAnalysis.Binding
             if (syntax is TypeSyntax t)
             {
                 var typeIdentifierToken = t.TypeOrIdentifierToken;
-                var type = GetSymbol<AliasSymbol, TypeSymbol>(typeIdentifierToken) ?? TypeSymbol.Int;
+                var type = GetSymbol(new[] { SymbolKind.Alias, SymbolKind.Type }, typeIdentifierToken) ?? TypeSymbol.Int;
 
                 while (type is AliasSymbol a)
                     type = a.Type;
@@ -1425,7 +1434,7 @@ namespace Eagle.CodeAnalysis.Binding
                 return new BoundErrorExpression();
             }
 
-            var symbol = GetSymbol(n.IdentifierToken);
+            var symbol = GetSymbol(new []{SymbolKind.Method, SymbolKind.Type, SymbolKind.Function}, n.IdentifierToken);
 
             if (symbol is FunctionSymbol function)
             {
@@ -1512,67 +1521,74 @@ namespace Eagle.CodeAnalysis.Binding
             return BindExpression(syntax.Expression, allowTypes);
         }
 
-        private T? GetSymbol<T>(Token identifierToken) where T : Symbol
+        //private T? GetSymbol<T>(Token identifierToken) where T : Symbol
+        //{
+        //    return (T?)GetSymbol(new[] { typeof(T) }, identifierToken);
+        //}
+
+        //private Symbol? GetSymbol<T1, T2>(Token identifierToken)
+        //    where T1 : Symbol
+        //    where T2 : Symbol
+        //{
+        //    return GetSymbol(new[] { typeof(T1), typeof(T2) }, identifierToken);
+        //}
+
+        //private bool TryGetSymbol<T>(Token identifierToken, out T? symbol)
+        //    where T : Symbol
+        //{
+        //    symbol = default;
+        //    if (!TryGetSymbol(new[] { typeof(T) }, identifierToken, out var s)) return false;
+        //    symbol = (T)s;
+        //    return true;
+        //}
+
+        //private bool TryGetTypeSymbol(Token identifierToken, out TypeSymbol type)
+        //{
+        //    type = null;
+        //    var b = TryGetSymbol<AliasSymbol, TypeSymbol>(identifierToken, out var symbol);
+        //    if (!b) return false;
+
+        //    while (symbol is AliasSymbol a)
+        //        symbol = a.Type;
+
+        //    type = (TypeSymbol)symbol;
+        //    return true;
+        //}
+
+        //private bool TryGetSymbol<T1, T2>(Token identifierToken, out Symbol symbol)
+        //    where T1 : Symbol
+        //    where T2 : Symbol
+        //{
+        //    return TryGetSymbol(new[] { typeof(T1), typeof(T2) }, identifierToken, out symbol);
+        //}
+
+        //private bool TryGetSymbol(SymbolKind[] allowedTypes, Token identifierToken, [NotNullWhen(true)] out Symbol? symbol)
+        //{
+        //    symbol = null;
+        //    var name = identifierToken.Text;
+        //    if (!_scope.TryLookup(allowedTypes, name, out var symbols)) return false;
+        //    symbol = symbols.First();
+        //    return allowedTypes.Contains(symbol.Kind);
+        //}
+
+        private Symbol? GetSymbol(SymbolKind[] allowedTypes, Token identifierToken)
         {
-            return (T?)GetSymbol(new[] { typeof(T) }, identifierToken);
-        }
+            var name = GetName(identifierToken);
+            if (!_scope.TryLookup(allowedTypes, name, out var symbols))
+            {
+                return null;
+            }
 
-        private Symbol? GetSymbol<T1, T2>(Token identifierToken)
-            where T1 : Symbol
-            where T2 : Symbol
-        {
-            return GetSymbol(new[] { typeof(T1), typeof(T2) }, identifierToken);
-        }
-
-        private bool TryGetSymbol<T>(Token identifierToken, out T? symbol)
-            where T : Symbol
-        {
-            symbol = default;
-            if (!TryGetSymbol(new[] { typeof(T) }, identifierToken, out var s)) return false;
-            symbol = (T)s;
-            return true;
-        }
-
-        private bool TryGetTypeSymbol(Token identifierToken, out TypeSymbol type)
-        {
-            type = null;
-            var b = TryGetSymbol<AliasSymbol, TypeSymbol>(identifierToken, out var symbol);
-            if (!b) return false;
-
-            while (symbol is AliasSymbol a)
-                symbol = a.Type;
-
-            type = (TypeSymbol)symbol;
-            return true;
-        }
-
-        private bool TryGetSymbol<T1, T2>(Token identifierToken, out Symbol symbol)
-            where T1 : Symbol
-            where T2 : Symbol
-        {
-            return TryGetSymbol(new[] { typeof(T1), typeof(T2) }, identifierToken, out symbol);
-        }
-
-        private bool TryGetSymbol(Type[] allowedTypes, Token identifierToken, out Symbol symbol)
-        {
-            var name = identifierToken.Text;
-            if (!_scope.TryLookup(name, out symbol)) return false;
-            var type = symbol.GetType();
-            return allowedTypes.Any(a => a.IsAssignableFrom(type));
-        }
-
-        private Symbol? GetSymbol(Type[] allowedTypes, Token identifierToken)
-        {
-            var symbol = GetSymbol(identifierToken);
+            var symbol = symbols.First();
+                //GetSymbol(identifierToken);
             if (symbol == null)
             {
                 return null;
             }
 
-            var type = symbol.GetType();
-            if (!allowedTypes.Any(a => a.IsAssignableFrom(type)))
+            if (!allowedTypes.Contains(symbol.Kind))
             {
-                Diagnostics.ReportUnexpectedSymbol(identifierToken.Location, symbol.GetType().Name, allowedTypes.Select(t => t.Name).ToArray());
+                Diagnostics.ReportUnexpectedSymbol(identifierToken.Location, symbol.GetType().Name, allowedTypes.Select(t => t.ToString()).ToArray());
                 return null;
             }
 
@@ -1589,13 +1605,13 @@ namespace Eagle.CodeAnalysis.Binding
                 return null;
             }
 
-            if (!_scope.TryLookup(name, out var symbol))
+            if (!_scope.TryLookup(Array.Empty<SymbolKind>(), name, out var symbols))
             {
                 Diagnostics.ReportUndefinedName(identifierToken.Location, name);
                 return null;
             }
 
-            return symbol;
+            return symbols.First();
         }
 
         private static string GetName(Token token)
@@ -1645,7 +1661,7 @@ namespace Eagle.CodeAnalysis.Binding
             if (syntax.IdentifierToken.IsMissing)
                 return new BoundErrorExpression();
 
-            var symbol = GetSymbol<Symbol>(syntax.IdentifierToken);
+            var symbol = GetSymbol(syntax.IdentifierToken);
 
             while (symbol is AliasSymbol a)
                 symbol = a.Type;
@@ -1655,7 +1671,7 @@ namespace Eagle.CodeAnalysis.Binding
                 case VariableSymbol v: return new BoundVariableExpression(v);
                 case TypeSymbol t when allowTypes: return new BoundTypeExpression(t);
                 case ConstSymbol c: return new BoundConstExpression(c);
-                case FieldSymbol f: return new BoundFieldExpression(null, f);
+                case FieldSymbol f: return new BoundFieldExpression(new BoundThisExpression(f.DeclaringType), f);
                 //case FunctionGroup fg: return new 
                 case FunctionSymbol f: return new BoundFunctionExpression(f);
                 case null: return new BoundErrorExpression();
@@ -1680,6 +1696,10 @@ namespace Eagle.CodeAnalysis.Binding
                     break;
                 case BoundArrayIndexExpression i:
                     type = i.Type;
+                    break;
+                case BoundFieldExpression f:
+                    // todo check for readonly field
+                    type = f.Type;
                     break;
                 case BoundErrorExpression _: break;
                 case BoundLiteralExpression _: break;
@@ -1772,8 +1792,12 @@ namespace Eagle.CodeAnalysis.Binding
 
             if (boundOperator.Kind == BoundBinaryOperatorKind.Concatenation)
             {
-                _scope.TryLookup("Concat", out var con);
-                return new BoundFunctionCallExpression((FunctionSymbol)con, ImmutableArray.Create(left, right));
+                if (!_scope.TryLookup(new []{SymbolKind.Method}, "Concat", out var con))
+                {
+                    Diagnostics.ReportMissingExpectedFunction(syntax.OperatorToken.Location, "Concat");
+                    return new BoundErrorExpression();
+                }
+                return new BoundMethodCallExpression(null, (MethodSymbol)con.First(), ImmutableArray.Create(left, right));
             }
 
             return new BoundBinaryExpression(left, boundOperator, right);

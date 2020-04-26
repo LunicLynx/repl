@@ -90,6 +90,7 @@
         StringLiteral,
         CharacterLiteral,
 
-        Identifier
+        Identifier,
+        StaticKeyword
     }
 }

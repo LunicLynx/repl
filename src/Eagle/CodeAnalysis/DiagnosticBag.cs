@@ -259,5 +259,11 @@ namespace Eagle.CodeAnalysis
             var message = "Cannot read set only indexer.";
             Report(location, message);
         }
+
+        public void ReportMissingExpectedFunction(TextLocation location, string functionName)
+        {
+            var message = $"The expect function '{functionName}' was not found!";
+            Report(location, message);
+        }
     }
 }

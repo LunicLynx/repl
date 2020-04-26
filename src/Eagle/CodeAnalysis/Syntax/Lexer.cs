@@ -30,6 +30,7 @@ namespace Eagle.CodeAnalysis.Syntax
             {"ctor", TokenKind.CtorKeyword},
             {"get", TokenKind.GetKeyword},
             {"set", TokenKind.SetKeyword},
+            {"static", TokenKind.StaticKeyword },
 
             {"void", TokenKind.VoidKeyword},
             {"any", TokenKind.AnyKeyword},

@@ -49,3 +49,51 @@ run -> build the project and run it
 
 build -> build the project
 
+
+# things that have to be done before this are
+
+
+## variables
+
+// readonly variables
+let a = 5;
+a = 6; // error
+
+// mutable variables
+
+var a = 5;
+a = 6; // ok
+
+// redefinition
+let a = 5;
+var a = 6; // ok
+
+// references
+
+var x = 5;
+var &y = x; 
+y = 6; 
+Assert(x, 6);
+
+// parameters
+
+Print(&str: string)
+{
+
+}
+
+let s = string("Hello");
+Print(s);
+
+
+// copy
+works for all the simple type
+
+
+
+// 1. alloc and destroy
+// 2. enums
+// 3. interfaces and impl
+// 4. iterators
+// 5. generics
+// ?. error handling without exceptions

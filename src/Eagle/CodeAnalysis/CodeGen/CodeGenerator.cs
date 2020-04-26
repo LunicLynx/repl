@@ -36,9 +36,9 @@ namespace Eagle.CodeAnalysis.CodeGen
 
             foreach (var type in types)
             {
-                if (type == TypeSymbol.String) continue;
+                //if (type == TypeSymbol.String) continue;
 
-                var fields = _globalScope.Symbols.OfType<FieldSymbol>().Where(f => f.DeclaringType == type).ToList();
+                var fields = type.Members.OfType<FieldSymbol>().ToList();
                 var elements = fields.Select(f => GetXType(f.Type)).ToArray();
                 var str = LLVMTypeRef.CreateStruct(elements, false);
                 _types[type] = str;
@@ -650,23 +650,32 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateConstructorCallExpression(BoundConstructorCallExpression node)
         {
-            throw new NotImplementedException();
+            // if we call a constructor
+            // the data for the type actually resides on the stack of the callee
+            // so the pattern should be something like
+            // 1. allocate heap space
+            // 2. call ctor with mutable reference
+            var type = node.Type;
+            var t = _types[type];
+
+            var ptr = _builder.BuildAlloca(t);
+
+            // steal from method invoke
+
+            //var ptr = GenerateLValue(node.Target);
+            var arguments = new[] { ptr }
+                .Concat(node.Arguments.Select(GenerateExpression))
+                .ToArray();
+            var function = _symbols[node.Constructor];
+            return _builder.BuildCall(function, arguments);
         }
 
         private LLVMValueRef GenerateFieldExpression(BoundFieldExpression node)
         {
-            var index = 0; //_context.FieldIndicies[node.Field];
-            LLVMValueRef target;
-            if (node.Target != null)
-            {
-                target = GenerateExpression(node.Target);
-            }
-            else
-            {
-                target = _builder.InsertBlock.Parent.Params[0];
-            }
-
-            return _builder.BuildGEP(target, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)index) });
+            var index = node.Field.Index;
+            var ptr = GenerateExpression(node.Target);
+            var t = ptr.TypeOf;
+            return _builder.BuildGEP(ptr, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)index) });
         }
 
         private LLVMValueRef GenerateLValue(BoundExpression expression)
