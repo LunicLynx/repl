@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using LLVMSharp.Interop;
 
 namespace LlvmSandbox
@@ -48,6 +51,8 @@ namespace LlvmSandbox
             LLVM.InitializeX86AsmPrinter();
 
 
+
+
             var options = LLVMMCJITCompilerOptions.Create();
             options.NoFramePointerElim = 1;
 
@@ -55,6 +60,8 @@ namespace LlvmSandbox
             {
                 Console.WriteLine($"Error: {error}");
             }
+
+            Emit(mod);
 
             using (engine)
             {
@@ -73,13 +80,32 @@ namespace LlvmSandbox
                 //    Console.WriteLine("error writing bitcode to file, skipping");
                 //}
 
-                var entryFunction = (Entry) Marshal.GetDelegateForFunctionPointer(engine.GetPointerToGlobal(entry), typeof(Entry));
+                var entryFunction = (Entry)Marshal.GetDelegateForFunctionPointer(engine.GetPointerToGlobal(entry), typeof(Entry));
+                Debugger.Break();
                 entryFunction();
 
                 //LLVM.DumpModule(mod);
             }
 
             Console.ReadLine();
+        }
+
+        private static void Emit(LLVMModuleRef mod)
+        {
+            var targetTriple = LLVMTargetRef.DefaultTriple;
+            mod.Target = targetTriple;
+
+            var target = LLVMTargetRef.Targets.SingleOrDefault(t => t.Name == "x86-64");
+
+            var targetMachine = target.CreateTargetMachine(targetTriple, "generic", "",
+                LLVMCodeGenOptLevel.LLVMCodeGenLevelNone,
+                LLVMRelocMode.LLVMRelocDefault,
+                LLVMCodeModel.LLVMCodeModelDefault);
+
+            var dataLayout = targetMachine.CreateTargetDataLayout();
+            mod.DataLayout = dataLayout;
+
+            targetMachine.TryEmitToFile(mod, "file.asm", LLVMCodeGenFileType.LLVMAssemblyFile, out var error);
         }
 
         private static LLVMValueRef AddClass(LLVMModuleRef mod)
@@ -175,6 +201,7 @@ namespace LlvmSandbox
                 LLVMTypeRef.Int32,
             }, false);
 
+
             // create a function
             // Point Add(Point, Point)
             var fnType = LLVMTypeRef.CreateFunction(_strct, new[] { _strct, _strct });
@@ -198,42 +225,56 @@ namespace LlvmSandbox
                 builder.BuildStore(paraA, pa);
                 builder.BuildStore(paraB, pb);
 
+                var zero64 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0);
+                var one64 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0);
+                var two64 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0);
+                var three64 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0);
+                var four64 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0);
+
+                var zero32 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0);
+                var one32 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0);
+                var two32 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0);
+                var three32 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0);
+                var four32 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0);
+
                 // build add
-                var pax = builder.BuildGEP(pa, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0) });
+                var pax = builder.BuildGEP(pa, new[] { zero64, zero32 });
                 var ax = builder.BuildLoad(pax);
-                var pbx = builder.BuildGEP(pb, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0) });
+                var pbx = builder.BuildGEP(pb, new[] { zero64, zero32 });
                 var bx = builder.BuildLoad(pbx);
                 var rx = builder.BuildAdd(ax, bx);
-                var prx = builder.BuildGEP(pr, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0) });
+                var prx = builder.BuildGEP(pr, new[] { zero64, zero32 });
                 builder.BuildStore(rx, prx);
 
-                var pay = builder.BuildGEP(pa, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 1) });
+                var pay = builder.BuildGEP(pa, new[] { zero64, one32 });
                 var ay = builder.BuildLoad(pay);
-                var pby = builder.BuildGEP(pb, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 1) });
+                var pby = builder.BuildGEP(pb, new[] { zero64, one32 });
                 var by = builder.BuildLoad(pby);
                 var ry = builder.BuildAdd(ay, by);
-                var pry = builder.BuildGEP(pr, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0) });
+                var pry = builder.BuildGEP(pr, new[] { zero64, one32 });
                 builder.BuildStore(ry, pry);
 
-                var paz = builder.BuildGEP(pa, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 2) });
+                var paz = builder.BuildGEP(pa, new[] { zero64, two32 });
                 var az = builder.BuildLoad(paz);
-                var pbz = builder.BuildGEP(pb, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 2) });
+                var pbz = builder.BuildGEP(pb, new[] { zero64, two32 });
                 var bz = builder.BuildLoad(pbz);
                 var rz = builder.BuildAdd(az, bz);
-                var prz = builder.BuildGEP(pr, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0) });
+                var prz = builder.BuildGEP(pr, new[] { zero64, two32 });
                 builder.BuildStore(rz, prz);
 
-                var paw = builder.BuildGEP(pa, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 3) });
+                var paw = builder.BuildGEP(pa, new[] { zero64, three32 });
                 var aw = builder.BuildLoad(paw);
-                var pbw = builder.BuildGEP(pb, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 3) });
+                var pbw = builder.BuildGEP(pb, new[] { zero64, three32 });
                 var bw = builder.BuildLoad(pbw);
                 var rw = builder.BuildAdd(aw, bw);
-                var prw = builder.BuildGEP(pr, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0) });
+                var prw = builder.BuildGEP(pr, new[] { zero64, three32 });
                 builder.BuildStore(rw, prw);
 
                 // for now just return the first argument
                 var r = builder.BuildLoad(pr);
                 builder.BuildRet(r);
+
+                
             }
         }
 
@@ -252,22 +293,24 @@ namespace LlvmSandbox
                 var ps2 = builder.BuildAlloca(_strct);
                 var pr = builder.BuildAlloca(_strct);
 
-                var ps1x = builder.BuildGEP(ps1, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0) });
+                var zero64 = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0);
+
+                var ps1x = builder.BuildGEP(ps1, new[] { zero64, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0) });
                 builder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 1), ps1x);
-                var ps1y = builder.BuildGEP(ps1, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 1) });
+                var ps1y = builder.BuildGEP(ps1, new[] { zero64, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 1) });
                 builder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 2), ps1y);
-                var ps1z = builder.BuildGEP(ps1, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 2) });
+                var ps1z = builder.BuildGEP(ps1, new[] { zero64, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 2) });
                 builder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 3), ps1z);
-                var ps1w = builder.BuildGEP(ps1, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 3) });
+                var ps1w = builder.BuildGEP(ps1, new[] { zero64, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 3) });
                 builder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 4), ps1w);
 
-                var ps2x = builder.BuildGEP(ps2, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0) });
+                var ps2x = builder.BuildGEP(ps2, new[] { zero64, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0) });
                 builder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 1), ps2x);
-                var ps2y = builder.BuildGEP(ps2, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 1) });
+                var ps2y = builder.BuildGEP(ps2, new[] { zero64, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 1) });
                 builder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 2), ps2y);
-                var ps2z = builder.BuildGEP(ps2, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 2) });
+                var ps2z = builder.BuildGEP(ps2, new[] { zero64, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 2) });
                 builder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 3), ps2z);
-                var ps2w = builder.BuildGEP(ps2, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 3) });
+                var ps2w = builder.BuildGEP(ps2, new[] { zero64, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 3) });
                 builder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 4), ps2w);
 
 

@@ -13,6 +13,7 @@ fn main() {
         w: 4,
     };
 
+    let pr = addr(&p, &p2);
     let p3 = add(p, p2);
 }
 
@@ -23,6 +24,20 @@ struct Point {
     w: i32
 }
 
+fn addr(a: &Point, b: &Point) -> Point {
+    return Point {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
+        w: a.w + b.w
+    };
+}
+
 fn add(a: Point, b: Point) -> Point {
-    return a;
+    return Point {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
+        w: a.w + b.w
+    };
 }
