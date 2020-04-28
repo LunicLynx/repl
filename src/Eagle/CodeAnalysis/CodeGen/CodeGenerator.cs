@@ -440,6 +440,8 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMTypeRef CreateMethodType(MethodSymbol method, LLVMTypeRef owner)
         {
+            if(method.IsStatic)
+
             var returnType = GetXType(method.Type);
             var parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }.Concat(method.Parameters.Select(p => GetXType(p.Type))).ToArray();
             return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
@@ -673,7 +675,8 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMValueRef GenerateFieldExpression(BoundFieldExpression node)
         {
             var index = node.Field.Index;
-            var ptr = GenerateExpression(node.Target);
+            //var ptr = GenerateExpression(node.Target);
+            var ptr = GenerateLValue(node.Target);
             var t = ptr.TypeOf;
             return _builder.BuildGEP(ptr, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)index) });
         }
@@ -682,6 +685,8 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             return expression switch
             {
+                BoundFieldExpression t => GenerateFieldExpression(t),
+                BoundThisExpression t => _symbols[_this],
                 BoundVariableExpression v => _symbols[v.Variable],
                 BoundArrayIndexExpression a => GenerateArrayIndexExpression(a, true),
                 _ => throw new InvalidOperationException("invalid l value")
@@ -804,7 +809,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.Int) return LLVMTypeRef.Int64;
             if (type == TypeSymbol.UInt) return LLVMTypeRef.Int64;
             if (type == TypeSymbol.Any) return LLVMTypeRef.CreatePointer(LLVMTypeRef.Void, 0);
-            if (type.IsPointer) return LLVMTypeRef.CreatePointer(GetXType(type.ElementType), 0);
+            if (type.IsPointer || type.IsReference) return LLVMTypeRef.CreatePointer(GetXType(type.ElementType), 0);
             if (type.IsArray) return LLVMTypeRef.CreatePointer(GetXType(type.ElementType), 0);
             throw new Exception("Unsupported type");
         }

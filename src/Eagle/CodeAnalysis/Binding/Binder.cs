@@ -1792,15 +1792,60 @@ namespace Eagle.CodeAnalysis.Binding
 
             if (boundOperator.Kind == BoundBinaryOperatorKind.Concatenation)
             {
-                if (!_scope.TryLookup(new []{SymbolKind.Method}, "Concat", out var con))
+                if (!TryResolveMethod("String.Concat", new []{ TypeSymbol.String.MakeReference(), TypeSymbol.String.MakeReference() }, out var method))
                 {
                     Diagnostics.ReportMissingExpectedFunction(syntax.OperatorToken.Location, "Concat");
                     return new BoundErrorExpression();
                 }
-                return new BoundMethodCallExpression(null, (MethodSymbol)con.First(), ImmutableArray.Create(left, right));
+                return new BoundMethodCallExpression(null, method, ImmutableArray.Create(left, right));
             }
 
             return new BoundBinaryExpression(left, boundOperator, right);
+        }
+
+        private bool TryResolve(string name, out Symbol[] symbols)
+        {
+            symbols = Array.Empty<Symbol>();
+            var parts = name.Split(".");
+            var part = parts[0];
+
+            var found = _scope.TryLookup(Array.Empty<SymbolKind>(), part, out symbols);
+
+            if (parts.Length == 1)
+                return found;
+
+            if (symbols.Length == 1)
+            {
+                var i = 1;
+                var symbol = symbols[0];
+                while (i < parts.Length && symbol is TypeSymbol t)
+                {
+                    part = parts[i];
+                    i++;
+                    var x = t.Members
+                        .Where(m => m.Name == part)
+                        .Cast<MethodSymbol>()
+                        .ToArray();
+                    if (x.Length == 0)
+                        return false;
+                    symbols = x;
+                    symbol = symbols.Length > 0 ? symbols[0] : null;
+                }
+            }
+
+            return true;
+        }
+
+        private bool TryResolveMethod(string name, TypeSymbol[] argTypes, [NotNullWhen(true)]out MethodSymbol? method)
+        {
+            method = null;
+            if (!TryResolve(name, out var symbols))
+                return false;
+
+            method = symbols.OfType<MethodSymbol>()
+                .SingleOrDefault(m => m.Parameters.Select(p => p.Type).SequenceEqual(argTypes));
+
+            return true;
         }
     }
 }

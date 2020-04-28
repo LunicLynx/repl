@@ -250,7 +250,11 @@ namespace Eagle.CodeAnalysis.Binding
 
         protected virtual BoundExpression RewriteMethodCallExpression(BoundMethodCallExpression node)
         {
-            var target = RewriteExpression(node.Target);
+            BoundExpression? target = null;
+            if(node.Target != null)
+            {
+                target = RewriteExpression(node.Target);
+            }
 
             var changed = false;
             var result = ImmutableArray.CreateBuilder<BoundExpression>();

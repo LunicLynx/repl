@@ -86,6 +86,9 @@ namespace Eagle.CodeAnalysis
             if (IsPointer)
                 return ElementType + "*";
 
+            if (IsReference)
+                return ElementType + "&";
+
             if (IsArray)
                 return ElementType + "[" + new string(',', Dimensions - 1) + "]";
 
@@ -99,7 +102,7 @@ namespace Eagle.CodeAnalysis
             return new TypeSymbol(this, true, false);
         }
 
-        public TypeSymbol? MakeReference()
+        public TypeSymbol MakeReference()
         {
             return new TypeSymbol(this, false, true);
         }
