@@ -265,5 +265,11 @@ namespace Eagle.CodeAnalysis
             var message = $"The expect function '{functionName}' was not found!";
             Report(location, message);
         }
+
+        public void TypeHasNoIndexer(TextLocation location, TypeSymbol type)
+        {
+            var message = $"Type '{type}' does not have an indexer.";
+            Report(location, message);
+        }
     }
 }

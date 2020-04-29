@@ -17,7 +17,7 @@ namespace Eagle.CodeAnalysis.Binding
         private readonly Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)> _loopStack = new Stack<(BoundLabel BreakLabel, BoundLabel ContinueLabel)>();
         private int _labelCounter;
         private IScope _scope;
-        private readonly Dictionary<IInvokableSymbol, (TextLocation, IScope, SyntaxNode)> _stuff = new Dictionary<IInvokableSymbol, (TextLocation, IScope, SyntaxNode)>();
+        private readonly Dictionary<IInvokableSymbol, (TextLocation, IScope, SyntaxNode?)> _invokableBodies = new Dictionary<IInvokableSymbol, (TextLocation, IScope, SyntaxNode?)>();
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
@@ -59,17 +59,24 @@ namespace Eagle.CodeAnalysis.Binding
             var diagnostics2 = ImmutableArray.CreateBuilder<Diagnostic>();
 
             // 3. bind statements
-            foreach (var kv in binder._stuff)
+            foreach (var (invokable, (location, scope, body)) in binder._invokableBodies)
             {
-                var (location, scope, body) = kv.Value;
-                var function = kv.Key;
+                if (invokable is ConstructorSymbol && body == null)
+                {
+                    // emit default constructor
+                    functionBodies.Add(invokable, new BoundBlockStatement(
+                        ImmutableArray.Create<BoundStatement>(new BoundReturnStatement(null))));
+                    continue;
+                }
+                //var (location, scope, body) = kv.Value;
+                //var function = kv.Key;
 
-                var binder2 = new Binder(isScript, scope, function);
+                var binder2 = new Binder(isScript, scope, invokable);
 
                 BoundBlockStatement s;
                 if (body is ExpressionBodySyntax e)
                 {
-                    var expr = binder.BindExpression(e.Expression, function.Type);
+                    var expr = binder2.BindExpression(e.Expression, invokable.Type);
                     var r = new BoundReturnStatement(expr);
                     s = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(r));
                 }
@@ -84,18 +91,27 @@ namespace Eagle.CodeAnalysis.Binding
 
                 var loweredBody = Lowerer.Lower(s);
 
-                if (function.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
-                    binder.Diagnostics.ReportAllPathsMustReturn(location);
+                if (invokable.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
+                    binder2.Diagnostics.ReportAllPathsMustReturn(location);
 
-                functionBodies.Add(function, loweredBody);
+                functionBodies.Add(invokable, loweredBody);
 
-                diagnostics2.AddRange(binder.Diagnostics);
+                diagnostics2.AddRange(binder2.Diagnostics);
             }
 
-            if (mainFunction != null && gbs.Any())
+            if (mainFunction != null && !binder._invokableBodies.ContainsKey(mainFunction))
             {
-                var body = Lowerer.Lower(new BoundBlockStatement(gbs));
-                functionBodies.Add(mainFunction, body);
+                if (gbs.Any())
+                {
+                    // maybe we should check that main doesn't have a body yet
+                    var body = Lowerer.Lower(new BoundBlockStatement(gbs));
+                    functionBodies.Add(mainFunction, body);
+                }
+                else
+                {
+                    var body = Lowerer.Lower(new BoundBlockStatement(ImmutableArray<BoundStatement>.Empty));
+                    functionBodies.Add(mainFunction, body);
+                }
             }
             else if (scriptFunction != null)
             {
@@ -118,10 +134,12 @@ namespace Eagle.CodeAnalysis.Binding
 
             var diagnostics = binder.Diagnostics.ToImmutableArray();
 
+            var immutableArray = diagnostics2.ToImmutable();
+
+            diagnostics = diagnostics.AddRange(immutableArray);
+
             if (previous != null)
                 diagnostics = diagnostics.InsertRange(0, previous.Diagnostics);
-
-            // TODO concat diagnostics2
 
             return new BoundGlobalScope(previous, diagnostics, mainFunction, scriptFunction, binder._scope.GetDeclaredSymbols(), functionBodies.ToImmutable());
         }
@@ -181,24 +199,26 @@ namespace Eagle.CodeAnalysis.Binding
                 {
                     if (mainFunction.Type != TypeSymbol.Void || mainFunction.Parameters.Any())
                     {
-                        var (location, _, _) = _stuff[mainFunction];
+                        var (location, _, _) = _invokableBodies[mainFunction];
                         Diagnostics.ReportMainMustHaveCorrectSignature(location);
                     }
                 }
 
-                if (globalStatements.Any())
+                if (mainFunction == null)
                 {
-                    if (mainFunction != null)
+                    mainFunction = new FunctionSymbol("Main", ImmutableArray<ParameterSymbol>.Empty,
+                        TypeSymbol.Void);
+                }
+                else
+                {
+                    if (globalStatements.Any())
                     {
-                        var (location, _, _) = _stuff[mainFunction];
+
+                        var (location, _, _) = _invokableBodies[mainFunction];
                         Diagnostics.ReportCannotMixMainAndGlobalStatements(location);
 
                         foreach (var globalStatement in firstGlobalStatementPerSyntaxTree)
                             Diagnostics.ReportCannotMixMainAndGlobalStatements(globalStatement.Location);
-                    }
-                    else
-                    {
-                        mainFunction = new FunctionSymbol("Main", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
                     }
                 }
             }
@@ -304,7 +324,6 @@ namespace Eagle.CodeAnalysis.Binding
                 symbol.BaseType = baseType;
             }
 
-
             // start binding members
             _scope = new TypeScope(_scope, symbol);
 
@@ -316,8 +335,10 @@ namespace Eagle.CodeAnalysis.Binding
             var hasConstructor = symbol.Members.OfType<ConstructorSymbol>().Any();
             if (!hasConstructor)
             {
-                var constructorSymbol = new ConstructorSymbol(symbol, ImmutableArray<ParameterSymbol>.Empty);
-                DeclareSymbol(constructorSymbol, syntax.IdentifierToken);
+                // default constructor
+                var constructor = new ConstructorSymbol(symbol, ImmutableArray<ParameterSymbol>.Empty);
+                DeclareSymbol(constructor, syntax.IdentifierToken);
+                _invokableBodies[constructor] = (syntax.IdentifierToken.Location, _scope, null);
             }
 
             _scope = _scope.Parent;
@@ -363,7 +384,7 @@ namespace Eagle.CodeAnalysis.Binding
             if (syntax.Body is ExpressionBodySyntax e)
             {
                 getter = new MethodSymbol(declaringType, type, "<>Get_" + name, parameters);
-                _stuff[getter] = (syntax.Location, _scope, e);
+                _invokableBodies[getter] = (syntax.Location, _scope, e);
             }
             else
             {
@@ -372,13 +393,13 @@ namespace Eagle.CodeAnalysis.Binding
                 if (body.GetterClause != null)
                 {
                     getter = new MethodSymbol(declaringType, type, "<>Get_" + name, parameters);
-                    _stuff[getter] = (body.GetterClause.GetKeyword.Location, _scope, body.GetterClause.Body);
+                    _invokableBodies[getter] = (body.GetterClause.GetKeyword.Location, _scope, body.GetterClause.Body);
                 }
 
                 if (body.SetterClause != null)
                 {
                     setter = new MethodSymbol(declaringType, TypeSymbol.Void, "<>Set_" + name, parameters.Add(new ParameterSymbol("value", type, 0)));
-                    _stuff[setter] = (body.SetterClause.SetKeyword.Location, _scope, body.SetterClause.Body);
+                    _invokableBodies[setter] = (body.SetterClause.SetKeyword.Location, _scope, body.SetterClause.Body);
                 }
             }
 
@@ -398,7 +419,7 @@ namespace Eagle.CodeAnalysis.Binding
             if (syntax.Body is ExpressionBodySyntax e)
             {
                 getter = new MethodSymbol(declaringType, type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
-                _stuff[getter] = (syntax.IdentifierToken.Location, _scope, e);
+                _invokableBodies[getter] = (syntax.IdentifierToken.Location, _scope, e);
             }
             else
             {
@@ -407,13 +428,13 @@ namespace Eagle.CodeAnalysis.Binding
                 if (body.GetterClause != null)
                 {
                     getter = new MethodSymbol(declaringType, type, "<>Get_" + syntax.IdentifierToken.Text, ImmutableArray<ParameterSymbol>.Empty);
-                    _stuff[getter] = (body.GetterClause.GetKeyword.Location, _scope, body.GetterClause.Body);
+                    _invokableBodies[getter] = (body.GetterClause.GetKeyword.Location, _scope, body.GetterClause.Body);
                 }
 
                 if (body.SetterClause != null)
                 {
                     setter = new MethodSymbol(declaringType, TypeSymbol.Void, "<>Set_" + syntax.IdentifierToken.Text, ImmutableArray.Create<ParameterSymbol>(new ParameterSymbol("value", type, 0)));
-                    _stuff[setter] = (body.SetterClause.SetKeyword.Location, _scope, body.SetterClause.Body);
+                    _invokableBodies[setter] = (body.SetterClause.SetKeyword.Location, _scope, body.SetterClause.Body);
                 }
             }
 
@@ -427,10 +448,13 @@ namespace Eagle.CodeAnalysis.Binding
             var parameters = LookupParameterList(syntax.Parameters);
             var constructor = new ConstructorSymbol(declaringType, parameters);
             DeclareSymbol(constructor, syntax.IdentifierToken);
+            _invokableBodies[constructor] = (syntax.IdentifierToken.Location, _scope, syntax.Body);
         }
 
         private void BindMethodDeclaration(MethodDeclarationSyntax syntax)
         {
+            var isStatic = syntax.Modifiers.Any(m => m.Kind == TokenKind.StaticKeyword);
+
             var declaringType = ((TypeScope)_scope).Type;
 
             var parameters = LookupParameterList(syntax.Parameters);
@@ -439,9 +463,9 @@ namespace Eagle.CodeAnalysis.Binding
 
             var name = syntax.IdentifierToken.Text;
 
-            var method = new MethodSymbol(declaringType, type, name, parameters);
+            var method = new MethodSymbol(declaringType, type, name, parameters, isStatic);
 
-            _stuff[method] = (syntax.IdentifierToken.Location, _scope, syntax.Body);
+            _invokableBodies[method] = (syntax.IdentifierToken.Location, _scope, syntax.Body);
 
             DeclareSymbol(method, syntax.IdentifierToken);
         }
@@ -458,7 +482,7 @@ namespace Eagle.CodeAnalysis.Binding
             var location = syntax.IdentifierToken.Location;
             var body = syntax.Body;
 
-            _stuff[function] = (location, _scope, body);
+            _invokableBodies[function] = (location, _scope, body);
 
             DeclareSymbol(function, syntax.IdentifierToken);
         }
@@ -1281,7 +1305,11 @@ namespace Eagle.CodeAnalysis.Binding
             else
             {
                 var indexer = target.Type.Members.OfType<IndexerSymbol>().FirstOrDefault();
-                if (indexer == null) return new BoundErrorExpression();
+                if (indexer == null)
+                {
+                    Diagnostics.TypeHasNoIndexer(syntax.Location, target.Type);
+                    return new BoundErrorExpression();
+                }
 
                 return new BoundIndexerExpression(target, indexer, arguments.ToImmutable());
             }
@@ -1434,7 +1462,7 @@ namespace Eagle.CodeAnalysis.Binding
                 return new BoundErrorExpression();
             }
 
-            var symbol = GetSymbol(new []{SymbolKind.Method, SymbolKind.Type, SymbolKind.Function}, n.IdentifierToken);
+            var symbol = GetSymbol(new[] { SymbolKind.Method, SymbolKind.Type, SymbolKind.Function }, n.IdentifierToken);
 
             if (symbol is FunctionSymbol function)
             {
@@ -1580,7 +1608,7 @@ namespace Eagle.CodeAnalysis.Binding
             }
 
             var symbol = symbols.First();
-                //GetSymbol(identifierToken);
+            //GetSymbol(identifierToken);
             if (symbol == null)
             {
                 return null;
@@ -1671,7 +1699,7 @@ namespace Eagle.CodeAnalysis.Binding
                 case VariableSymbol v: return new BoundVariableExpression(v);
                 case TypeSymbol t when allowTypes: return new BoundTypeExpression(t);
                 case ConstSymbol c: return new BoundConstExpression(c);
-                case FieldSymbol f: return new BoundFieldExpression(new BoundThisExpression(f.DeclaringType), f);
+                case FieldSymbol f: return new BoundFieldExpression(new BoundThisExpression(f.DeclaringType.MakePointer()), f);
                 //case FunctionGroup fg: return new 
                 case FunctionSymbol f: return new BoundFunctionExpression(f);
                 case null: return new BoundErrorExpression();
@@ -1792,7 +1820,7 @@ namespace Eagle.CodeAnalysis.Binding
 
             if (boundOperator.Kind == BoundBinaryOperatorKind.Concatenation)
             {
-                if (!TryResolveMethod("String.Concat", new []{ TypeSymbol.String.MakeReference(), TypeSymbol.String.MakeReference() }, out var method))
+                if (!TryResolveMethod("String.Concat", new[] { TypeSymbol.String.MakeReference(), TypeSymbol.String.MakeReference() }, out var method))
                 {
                     Diagnostics.ReportMissingExpectedFunction(syntax.OperatorToken.Location, "Concat");
                     return new BoundErrorExpression();
@@ -1836,7 +1864,7 @@ namespace Eagle.CodeAnalysis.Binding
             return true;
         }
 
-        private bool TryResolveMethod(string name, TypeSymbol[] argTypes, [NotNullWhen(true)]out MethodSymbol? method)
+        private bool TryResolveMethod(string name, TypeSymbol[] argTypes, [NotNullWhen(true)] out MethodSymbol? method)
         {
             method = null;
             if (!TryResolve(name, out var symbols))

@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Eagle.CodeAnalysis;
 using Eagle.CodeAnalysis.Syntax;
+using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace Eagle.Tests.CodeAnalysis

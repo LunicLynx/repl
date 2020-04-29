@@ -352,7 +352,7 @@ namespace Eagle.CodeAnalysis.Syntax
         {
             var (identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, returnTypeAnnotation) = ParsePrototype();
             var body = ParseBlockStatement();
-            return new MethodDeclarationSyntax(SyntaxTree, identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, returnTypeAnnotation, body, modifiers);
+            return new MethodDeclarationSyntax(SyntaxTree, modifiers, identifierToken, openParenthesisToken, parameterList, closeParenthesisToken, returnTypeAnnotation, body);
         }
 
         private MemberSyntax ParseExternDeclaration()

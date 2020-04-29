@@ -1,10 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
+using System.Xml.Xsl;
 using Eagle.CodeAnalysis.Binding;
+using Eagle.CodeAnalysis.CodeGen;
 using Eagle.CodeAnalysis.Syntax;
+using LLVMSharp.Interop;
 using ReflectionBindingFlags = System.Reflection.BindingFlags;
 
 namespace Eagle.CodeAnalysis
@@ -129,10 +134,60 @@ namespace Eagle.CodeAnalysis
                 return program.Diagnostics;
 
             var generator = new CodeGen.CodeGenerator(program, GlobalScope);
-            generator.Generate(outputPath);
+            using var context = LLVMContextRef.Create();
+            using var mod = context.CreateModuleWithName("MyMod");
+            generator.Generate(mod);
+
+            //_mod.Dump();
+
+            if (!mod.TryVerify(LLVMVerifierFailureAction.LLVMPrintMessageAction, out var message))
+            {
+                mod.Dump();
+                ; //Console.WriteLine("Issues:" + message);
+            }
+
+
+            var outFileLl = Path.Combine(outputPath, "hello.ll");
+            if (!mod.TryPrintToFile(outFileLl, out message))
+            {
+
+            }
+
+            LLVM.LinkInMCJIT();
+
+            LLVM.InitializeX86TargetMC();
+            LLVM.InitializeX86Target();
+            LLVM.InitializeX86TargetInfo();
+            LLVM.InitializeX86AsmParser();
+            LLVM.InitializeX86AsmPrinter();
+
+            var options = LLVMMCJITCompilerOptions.Create();
+            options.NoFramePointerElim = 1;
+
+            // if (!_mod.TryCreateMCJITCompiler(out var engine, ref options, out var error))
+            // {
+            //     Console.WriteLine($"Error: {error}");
+            // }
+
+            mod.TryEmitObj("demo.obj", out var error);
+
+            // using (engine)
+            // {
+            //     var main =
+            //         (Main)Marshal.GetDelegateForFunctionPointer(engine.GetPointerToGlobal(_symbols[entry]), typeof(Main));
+            //     main();
+            // }
+
+            var outFile = Path.Combine(outputPath, "hello.exe");
+
+            Process.Start("C:\\Program Files\\LLVM\\bin\\clang++.exe",
+                $"C:\\Users\\Florian\\Source\\repos\\repl\\core\\core.cpp -Xlinker demo.obj -o {outFile}").WaitForExit();
 
             return ImmutableArray<Diagnostic>.Empty;
         }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void Main();
 
         public void EmitTree(TextWriter writer)
         {

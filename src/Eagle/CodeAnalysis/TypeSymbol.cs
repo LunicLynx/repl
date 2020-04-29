@@ -122,6 +122,10 @@ namespace Eagle.CodeAnalysis
                 return a.ElementType == b.ElementType;
             if (a.IsPointer || b.IsPointer)
                 return false;
+            if (a.IsReference && b.IsReference)
+                return a.ElementType == b.ElementType;
+            if (a.IsReference || b.IsReference)
+                return false;
             return ReferenceEquals(a, b);
         }
 

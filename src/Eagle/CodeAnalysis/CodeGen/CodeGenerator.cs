@@ -1,17 +1,83 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using Eagle.CodeAnalysis.Binding;
+﻿using Eagle.CodeAnalysis.Binding;
 using LLVMSharp.Interop;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Eagle.CodeAnalysis.CodeGen
 {
     public class CodeGenerator
     {
+        private static LLVMTypeRef _i1 = LLVMTypeRef.Int1;
+        private static LLVMTypeRef _i8 = LLVMTypeRef.Int8;
+        private static LLVMTypeRef _i16 = LLVMTypeRef.Int16;
+        private static LLVMTypeRef _i32 = LLVMTypeRef.Int32;
+        private static LLVMTypeRef _i64 = LLVMTypeRef.Int64;
+
+        private static LLVMTypeRef _pi8 = LLVMTypeRef.CreatePointer(_i8, 0);
+
+        private static LLVMTypeRef _void = LLVMTypeRef.Void;
+
+
+        // memcpy
+        private static LLVMTypeRef _llvmMemcpyP0I8P0I8I32Type = LLVMTypeRef.CreateFunction(_void, new[] { _pi8, _pi8, _i32, _i1 });
+        private static LLVMTypeRef _llvmMemcpyP0I8P0I8I64Type = LLVMTypeRef.CreateFunction(_void, new[] { _pi8, _pi8, _i64, _i1 });
+
+        // memset
+        private static LLVMTypeRef _llvmMemsetP0I8I64Type = LLVMTypeRef.CreateFunction(_void, new[] { _pi8, _i8, _i64, _i1 });
+
+        // create a type that is bigger than 64 bits to eliminate optimization as
+        // register. At least this happens in clang++ not sure what the reason is.
+
+        // struct Point(i32,i32,i32,i32)
+        //private static LLVMTypeRef _struct = LLVMTypeRef.CreateStruct(new[] { _i32, _i32, _i32, _i32, }, false);
+        //private static LLVMTypeRef _pstruct = LLVMTypeRef.CreatePointer(_struct, 0);
+
+        private static LLVMValueRef _false = LLVMValueRef.CreateConstInt(_i1, 0);
+        private static LLVMValueRef _true = LLVMValueRef.CreateConstInt(_i1, 1);
+
+        private static LLVMValueRef _n0i8 = LLVMValueRef.CreateConstInt(_i8, 0);
+        private static LLVMValueRef _n1i8 = LLVMValueRef.CreateConstInt(_i8, 0);
+        private static LLVMValueRef _n2i8 = LLVMValueRef.CreateConstInt(_i8, 0);
+        private static LLVMValueRef _n3i8 = LLVMValueRef.CreateConstInt(_i8, 0);
+        private static LLVMValueRef _n4i8 = LLVMValueRef.CreateConstInt(_i8, 0);
+
+        private static LLVMValueRef _n0i16 = LLVMValueRef.CreateConstInt(_i16, 0);
+        private static LLVMValueRef _n1i16 = LLVMValueRef.CreateConstInt(_i16, 0);
+        private static LLVMValueRef _n2i16 = LLVMValueRef.CreateConstInt(_i16, 0);
+        private static LLVMValueRef _n3i16 = LLVMValueRef.CreateConstInt(_i16, 0);
+        private static LLVMValueRef _n4i16 = LLVMValueRef.CreateConstInt(_i16, 0);
+
+
+        private static LLVMValueRef _n0i32 = LLVMValueRef.CreateConstInt(_i32, 0);
+        private static LLVMValueRef _n1i32 = LLVMValueRef.CreateConstInt(_i32, 0);
+        private static LLVMValueRef _n2i32 = LLVMValueRef.CreateConstInt(_i32, 0);
+        private static LLVMValueRef _n3i32 = LLVMValueRef.CreateConstInt(_i32, 0);
+        private static LLVMValueRef _n4i32 = LLVMValueRef.CreateConstInt(_i32, 0);
+
+        private static LLVMValueRef _n0i64 = LLVMValueRef.CreateConstInt(_i64, 0);
+        private static LLVMValueRef _n1i64 = LLVMValueRef.CreateConstInt(_i64, 0);
+        private static LLVMValueRef _n2i64 = LLVMValueRef.CreateConstInt(_i64, 0);
+        private static LLVMValueRef _n3i64 = LLVMValueRef.CreateConstInt(_i64, 0);
+        private static LLVMValueRef _n4i64 = LLVMValueRef.CreateConstInt(_i64, 0);
+        private static LLVMValueRef _n16I64 = LLVMValueRef.CreateConstInt(_i64, 16);
+
+
+
+
+        private LLVMValueRef? _llvmMemcpyP0I8P0I8I32;
+        private LLVMValueRef LlvmMemcpyP0I8P0I8I32 =>
+            _llvmMemcpyP0I8P0I8I32 ??= _mod.AddFunction("llvm.memcpy.p0i8.p0i8.i32", _llvmMemcpyP0I8P0I8I64Type);
+
+        private LLVMValueRef? _llvmMemcpyP0I8P0I8I64;
+        private LLVMValueRef LlvmMemcpyP0I8P0I8I64 =>
+            _llvmMemcpyP0I8P0I8I64 ??= _mod.AddFunction("llvm.memcpy.p0i8.p0i8.i64", _llvmMemcpyP0I8P0I8I64Type);
+
+        private LLVMValueRef? _llvmMemsetP0I8I64;
+        private LLVMValueRef LlvmMemsetP0I8I64 =>
+            _llvmMemsetP0I8I64 ??= _mod.AddFunction("llvm.memset.p0i8.i64", _llvmMemsetP0I8I64Type);
+
+
         private readonly BoundProgram _program;
         private readonly BoundGlobalScope _globalScope;
 
@@ -27,9 +93,9 @@ namespace Eagle.CodeAnalysis.CodeGen
             _globalScope = globalScope;
         }
 
-        public void Generate(string outputPath)
+        public void Generate(LLVMModuleRef mod)
         {
-            _mod = LLVMModuleRef.CreateWithName("MyMod");
+            _mod = mod;
             _builder = _mod.Context.CreateBuilder();
 
             var types = _globalScope.Symbols.OfType<TypeSymbol>();
@@ -40,7 +106,9 @@ namespace Eagle.CodeAnalysis.CodeGen
 
                 var fields = type.Members.OfType<FieldSymbol>().ToList();
                 var elements = fields.Select(f => GetXType(f.Type)).ToArray();
-                var str = LLVMTypeRef.CreateStruct(elements, false);
+                //var str = LLVMTypeRef.CreateStruct(elements, false);
+                var str = _mod.Context.CreateNamedStruct(type.Name);
+                str.StructSetBody(elements, false);
                 _types[type] = str;
             }
 
@@ -77,7 +145,7 @@ namespace Eagle.CodeAnalysis.CodeGen
                 }
             }
 
-            var entry = _program.MainFunction ?? _program.ScriptFunction;
+            var entry = _program.MainFunction ?? _program.ScriptFunction!;
             var invokables = _globalScope.Symbols.OfType<IInvokableSymbol>()
                 .Concat(s)
                 .Concat(new[] { entry })
@@ -127,16 +195,16 @@ namespace Eagle.CodeAnalysis.CodeGen
                 var newBody = (BoundBlockStatement)rewriter.RewriteStatement(body);
 
                 var offset = 0;
-                var k = symbol switch
+                var thisParameterInfo = symbol switch
                 {
-                    MethodSymbol ms => (true, ms.DeclaringType),
-                    ConstructorSymbol cs => (true, cs.Type),
+                    MethodSymbol ms => (HasThis: !ms.IsStatic, DeclaringType: ms.DeclaringType),
+                    ConstructorSymbol cs => (HasThis: true, DeclaringType: cs.Type),
                     _ => (false, null)
                 };
 
-                if (k.Item1)
+                if (thisParameterInfo.HasThis)
                 {
-                    _this = new LocalVariableSymbol("this", true, k.Item2);
+                    _this = new LocalVariableSymbol("this", true, thisParameterInfo.DeclaringType!);
                     var self = f.Params[0];
                     var selfp = _builder.BuildAlloca(self.TypeOf);
                     _builder.BuildStore(self, selfp);
@@ -147,11 +215,18 @@ namespace Eagle.CodeAnalysis.CodeGen
 
                 foreach (var (index, parameter) in symbol.Parameters.Select((p, i) => (i, p)))
                 {
-                    // generate allocations for all parameters
                     var para = f.Params[offset + index];
-                    var p = _builder.BuildAlloca(para.TypeOf);
-                    _builder.BuildStore(para, p);
-                    _symbols[parameter] = p;
+                    if (parameter.Type.SpecialType != SpecialType.None)
+                    {
+                        // generate allocations for all parameters
+                        var p = _builder.BuildAlloca(para.TypeOf);
+                        _builder.BuildStore(para, p);
+                        _symbols[parameter] = p;
+                    }
+                    else
+                    {
+                        _symbols[parameter] = para;
+                    }
                 }
 
                 GenerateStatement(newBody);
@@ -161,54 +236,10 @@ namespace Eagle.CodeAnalysis.CodeGen
                     _builder.BuildRetVoid();
             }
 
-            //_mod.Dump();
-
-            if (!_mod.TryVerify(LLVMVerifierFailureAction.LLVMPrintMessageAction, out var message))
-            {
-                _mod.Dump();
-                ; //Console.WriteLine("Issues:" + message);
-            }
-
-
-            var outFileLl = Path.Combine(outputPath, "hello.ll");
-            if (!_mod.TryPrintToFile(outFileLl, out message))
-            {
-
-            }
-
-            LLVM.LinkInMCJIT();
-
-            LLVM.InitializeX86TargetMC();
-            LLVM.InitializeX86Target();
-            LLVM.InitializeX86TargetInfo();
-            LLVM.InitializeX86AsmParser();
-            LLVM.InitializeX86AsmPrinter();
-
-            var options = LLVMMCJITCompilerOptions.Create();
-            options.NoFramePointerElim = 1;
-
-            // if (!_mod.TryCreateMCJITCompiler(out var engine, ref options, out var error))
-            // {
-            //     Console.WriteLine($"Error: {error}");
-            // }
-
-            _mod.TryEmitObj("demo.obj", out var error);
-
-            // using (engine)
-            // {
-            //     var main =
-            //         (Main)Marshal.GetDelegateForFunctionPointer(engine.GetPointerToGlobal(_symbols[entry]), typeof(Main));
-            //     main();
-            // }
-
-            var outFile = Path.Combine(outputPath, "hello.exe");
-
-            Process.Start("C:\\Program Files\\LLVM\\bin\\clang++.exe",
-                $"C:\\Users\\Florian\\Source\\repos\\repl\\core\\core.cpp -Xlinker demo.obj -o {outFile}").WaitForExit();
+            _builder.Dispose();
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void Main();
+
 
         //private LLVMTypeRef GetFieldType(BoundFieldDeclaration node)
         //{
@@ -329,9 +360,17 @@ namespace Eagle.CodeAnalysis.CodeGen
 
             if (type == TypeSymbol.String)
             {
-                var str = _builder.BuildGlobalString((string)nodeValue);
+
+                //_mod.Context.
+                var t = GetXType(type);
+                var s = (string)nodeValue;
+                var str = _builder.BuildGlobalString(s);
                 var strType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+
                 value = _builder.BuildBitCast(str, strType);
+
+                value = LLVMValueRef.CreateConstStruct(
+                    new[] { value, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)s.Length) }, false);
             }
 
             if (type == TypeSymbol.Char) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, (char)nodeValue);
@@ -434,24 +473,43 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMTypeRef CreateFunctionType(FunctionSymbol function)
         {
             var returnType = GetXType(function.Type);
-            var parameterTypes = function.Parameters.Select(p => GetXType(p.Type)).ToArray();
-            return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
+
+            var parameterTypes = new List<LLVMTypeRef>();
+            foreach (var parameter in function.Parameters)
+            {
+                if (parameter.Type.SpecialType == SpecialType.None)
+                {
+                    parameterTypes.Add(LLVMTypeRef.CreatePointer(GetXType(parameter.Type), 0));
+                }
+                else
+                {
+                    parameterTypes.Add(GetXType(parameter.Type));
+                }
+            }
+
+            return LLVMTypeRef.CreateFunction(returnType, parameterTypes.ToArray());
         }
 
         private LLVMTypeRef CreateMethodType(MethodSymbol method, LLVMTypeRef owner)
         {
-            if(method.IsStatic)
-
             var returnType = GetXType(method.Type);
-            var parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }.Concat(method.Parameters.Select(p => GetXType(p.Type))).ToArray();
+            var parameterTypes = method.Parameters.Select(p => GetXType(p.Type)).ToArray();
+
+            // if not static prepend this parameter
+            if (!method.IsStatic)
+            {
+                parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }
+                    .Concat(parameterTypes).ToArray();
+            }
+
             return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
         }
 
         private LLVMTypeRef CreateConstructorType(ConstructorSymbol constructor, LLVMTypeRef owner)
         {
-            var returnType = GetXType(constructor.Type);
+            //var returnType = GetXType(constructor.Type);
             var parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }.Concat(constructor.Parameters.Select(p => GetXType(p.Type))).ToArray();
-            return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
+            return LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, parameterTypes);
         }
 
         private void GenerateLabelStatement(BoundLabelStatement node)
@@ -644,7 +702,7 @@ namespace Eagle.CodeAnalysis.CodeGen
                 //return v;
             }).ToArray();
 
-            var p = _builder.BuildGEP(targetp, indexes);
+            var p = _builder.BuildInBoundsGEP(targetp, indexes);
             if (getPointer) return p;
             var v = _builder.BuildLoad(p);
             return v;
@@ -678,7 +736,13 @@ namespace Eagle.CodeAnalysis.CodeGen
             //var ptr = GenerateExpression(node.Target);
             var ptr = GenerateLValue(node.Target);
             var t = ptr.TypeOf;
-            return _builder.BuildGEP(ptr, new[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)index) });
+            return _builder.BuildGEP(ptr, new[]
+            {
+                //LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)0),
+                LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)0),
+                LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)0),
+                LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)index)
+            });
         }
 
         private LLVMValueRef GenerateLValue(BoundExpression expression)
@@ -695,10 +759,16 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateMethodCallExpression(BoundMethodCallExpression node)
         {
-            var ptr = GenerateLValue(node.Target);
-            var arguments = new[] { ptr }
-                .Concat(node.Arguments.Select(GenerateExpression))
-                .ToArray();
+            var arguments = node.Arguments.Select(GenerateExpression).ToArray();
+
+            if (!node.Method.IsStatic)
+            {
+                var ptr = GenerateLValue(node.Target);
+                arguments = new[] { ptr }
+                    .Concat(arguments)
+                    .ToArray();
+            }
+
             var function = _symbols[node.Method];
             return _builder.BuildCall(function, arguments);
         }
@@ -739,8 +809,61 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMValueRef GenerateFunctionCallExpression(BoundFunctionCallExpression node)
         {
             var function = _symbols[node.Function];
-            var args = node.Arguments.Select(GenerateExpression).ToArray();
-            return _builder.BuildCall(function, args);
+
+            var args = new List<LLVMValueRef>();
+            foreach (var (parameter, index) in node.Function.Parameters.Select((p, i) => (p, i)))
+            {
+                var argument = node.Arguments[index];
+                LLVMValueRef value;
+
+                // TODO get diff between types
+                if (parameter.Type.IsReference)
+                {
+                    value = GenerateLValue(argument);
+                }
+                else if (parameter.Type == argument.Type && (
+                    parameter.Type.IsPointer ||
+                    parameter.Type == TypeSymbol.Int))
+                {
+                    value = GenerateExpression(argument);
+                }
+                else
+                {
+                    value = GenerateExpression(argument);
+                    var argType = GetXType(argument.Type);
+                    // store it
+                    var ptr = _builder.BuildAlloca(argType);
+                    value = ptr;
+                    ptr = _builder.BuildBitCast(ptr, _pi8);
+                    _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { ptr });
+                }
+
+                args.Add(value);
+            }
+
+
+            //var args = node.Arguments.Select(GenerateExpression).ToArray();
+            // calling convention
+
+            // for each complex element do x if reference else do y
+            // not complex just push the value
+            // if return value is complex convert to pointer and 
+            // etc.
+
+            if (node.Function.Type == TypeSymbol.String)
+            {
+                // void return
+                var returnType = GetXType(node.Function.Type);
+                var pReturn = _builder.BuildAlloca(returnType);
+
+                args = new[] { pReturn }.Concat(args).ToList();
+            }
+            else
+            {
+                // normal return type
+            }
+
+            return _builder.BuildCall(function, args.ToArray());
         }
 
         private LLVMValueRef GenerateVariableExpression(BoundVariableExpression node)
@@ -748,7 +871,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             var variable = node.Variable;
             //return _symbols[variable];
             _symbols.TryGetValue(variable, out var ptr);
-            return _builder.BuildLoad(ptr, variable.Name);
+            return _builder.BuildLoad(ptr);
         }
 
         private LLVMValueRef GenerateAssignmentExpression(BoundAssignmentExpression node)

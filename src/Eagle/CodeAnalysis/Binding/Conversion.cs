@@ -21,11 +21,17 @@
 
         public static Conversion Classify(TypeSymbol from, TypeSymbol to)
         {
-            if (from == TypeSymbol.String && to == TypeSymbol.Char.MakePointer())
-                return Explicit;
-
             if (from == to)
                 return Identity;
+
+            if (to.IsReference && from == to.ElementType)
+                return Identity;
+
+            if (from.IsPointer && to.IsPointer)
+                return Explicit;
+
+            if (from == TypeSymbol.String && to == TypeSymbol.Char.MakePointer())
+                return Explicit;
 
             if (from != TypeSymbol.Void && to == TypeSymbol.Any)
             {

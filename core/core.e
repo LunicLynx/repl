@@ -1,8 +1,8 @@
-extern Print(s: string);
+extern Print(s: string&);
 extern Input(): string;
 
-extern malloc(size: int): char*;
-extern free(ptr: char*);
+extern malloc(size: int): i8*;
+extern free(ptr: i8*);
 
 object String {
 
@@ -28,7 +28,7 @@ object String {
     }
 
     dtor() {
-        free(_buffer);
+        free(_buffer.(i8*));
     }
 
     [index: int] : char {
@@ -49,7 +49,7 @@ object String {
 
         let length = a._length + b._length;
 
-        let buffer  = malloc(length);
+        let buffer = malloc(length).(char*);
 
         // move a's content into the result
         for i = 0 to a._length {
