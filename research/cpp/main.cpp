@@ -15,6 +15,14 @@ public:
     Single() {
 
     }
+
+    void Act() {
+        Act();
+    }
+
+    static void StaticAct() {
+
+    }
 };
 
 struct i64_2{
@@ -163,4 +171,7 @@ int main()
     print9();
     print10();
     print12();
+
+    ps.Act();
+    Single::StaticAct();
 }

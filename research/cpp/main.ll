@@ -12,6 +12,10 @@ $"??0Single@@QEAA@XZ" = comdat any
 
 $"??0Empty@@QEAA@XZ" = comdat any
 
+$"?Act@Single@@QEAAXXZ" = comdat any
+
+$"?StaticAct@Single@@SAXXZ" = comdat any
+
 @__const.main.pa = private unnamed_addr constant %class.Point { i64 1, i64 5, i64 8, i64 3 }, align 8
 @__const.main.pb = private unnamed_addr constant %class.Point { i64 6, i64 3, i64 2, i64 4 }, align 8
 
@@ -358,6 +362,8 @@ define dso_local i32 @main() #2 {
   %41 = call dereferenceable(8) i64* @"?print9@@YAAEA_JXZ"()
   call void @"?print10@@YA?AUi64_2@@XZ"(%struct.i64_2* sret %19)
   %42 = call %struct.i64_2* @"?print12@@YAPEAUi64_2@@XZ"()
+  call void @"?Act@Single@@QEAAXXZ"(%class.Single* %6)
+  call void @"?StaticAct@Single@@SAXXZ"()
   ret i32 0
 }
 
@@ -380,9 +386,24 @@ define linkonce_odr dso_local %class.Empty* @"??0Empty@@QEAA@XZ"(%class.Empty* r
   ret %class.Empty* %3
 }
 
+; Function Attrs: noinline optnone uwtable
+define linkonce_odr dso_local void @"?Act@Single@@QEAAXXZ"(%class.Single* %0) #3 comdat align 2 {
+  %2 = alloca %class.Single*, align 8
+  store %class.Single* %0, %class.Single** %2, align 8
+  %3 = load %class.Single*, %class.Single** %2, align 8
+  call void @"?Act@Single@@QEAAXXZ"(%class.Single* %3)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define linkonce_odr dso_local void @"?StaticAct@Single@@SAXXZ"() #0 comdat align 2 {
+  ret void
+}
+
 attributes #0 = { noinline nounwind optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #1 = { argmemonly nounwind willreturn }
 attributes #2 = { noinline norecurse optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { noinline optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 
 !llvm.module.flags = !{!0, !1}
 !llvm.ident = !{!2}

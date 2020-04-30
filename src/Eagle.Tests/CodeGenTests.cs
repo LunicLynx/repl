@@ -815,31 +815,72 @@ entry:
         }
 
         [Fact]
-        public void EmitFunctionWithoutParametersAndCall()
+        public void EmitConstructor()
         {
             var source = @"
-Print() {}
-
-Main() {
-    Print();
+object MyObj { 
+    ctor() {  }
 }
+
+Main() { }
 ";
 
             var expected = @"
-define void @Print() {
+%MyObj = type {}
+
+define void @Main() {
 entry:
   ret void
 }
 
-define void @Main() {
+define void @MyObj(%MyObj*) {
 entry:
-  call void @Print()
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
   ret void
 }
 ";
 
             AssertGeneration(source, expected);
         }
+
+        [Fact]
+        public void EmitMethod()
+        {
+            var source = @"
+object MyObj { 
+    Act() {  }
+}
+
+Main() { }
+";
+
+            var expected = @"
+%MyObj = type {}
+
+define void @Main() {
+entry:
+  ret void
+}
+
+define void @Act(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+        
 
         [Fact]
         public void EmitFunctionAddAndCall()

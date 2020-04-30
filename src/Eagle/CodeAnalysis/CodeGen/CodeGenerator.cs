@@ -226,7 +226,7 @@ namespace Eagle.CodeAnalysis.CodeGen
                 GenerateStatement(newBody);
 
                 // HACK: Should be fixed in bound model
-                if (symbol.Type == TypeSymbol.Void)
+                if (symbol.Type == TypeSymbol.Void || symbol is ConstructorSymbol)
                     _builder.BuildRetVoid();
             }
 
