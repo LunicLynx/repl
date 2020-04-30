@@ -18,20 +18,12 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private static LLVMTypeRef _void = LLVMTypeRef.Void;
 
-
         // memcpy
         private static LLVMTypeRef _llvmMemcpyP0I8P0I8I32Type = LLVMTypeRef.CreateFunction(_void, new[] { _pi8, _pi8, _i32, _i1 });
         private static LLVMTypeRef _llvmMemcpyP0I8P0I8I64Type = LLVMTypeRef.CreateFunction(_void, new[] { _pi8, _pi8, _i64, _i1 });
 
         // memset
         private static LLVMTypeRef _llvmMemsetP0I8I64Type = LLVMTypeRef.CreateFunction(_void, new[] { _pi8, _i8, _i64, _i1 });
-
-        // create a type that is bigger than 64 bits to eliminate optimization as
-        // register. At least this happens in clang++ not sure what the reason is.
-
-        // struct Point(i32,i32,i32,i32)
-        //private static LLVMTypeRef _struct = LLVMTypeRef.CreateStruct(new[] { _i32, _i32, _i32, _i32, }, false);
-        //private static LLVMTypeRef _pstruct = LLVMTypeRef.CreatePointer(_struct, 0);
 
         private static LLVMValueRef _false = LLVMValueRef.CreateConstInt(_i1, 0);
         private static LLVMValueRef _true = LLVMValueRef.CreateConstInt(_i1, 1);
@@ -61,9 +53,6 @@ namespace Eagle.CodeAnalysis.CodeGen
         private static LLVMValueRef _n3i64 = LLVMValueRef.CreateConstInt(_i64, 0);
         private static LLVMValueRef _n4i64 = LLVMValueRef.CreateConstInt(_i64, 0);
         private static LLVMValueRef _n16I64 = LLVMValueRef.CreateConstInt(_i64, 16);
-
-
-
 
         private LLVMValueRef? _llvmMemcpyP0I8P0I8I32;
         private LLVMValueRef LlvmMemcpyP0I8P0I8I32 =>
@@ -187,6 +176,8 @@ namespace Eagle.CodeAnalysis.CodeGen
             {
                 if (symbol.Extern) continue;
 
+                _invokable = symbol;
+
                 var f = _symbols[(Symbol)symbol];
                 var bb = f.AppendBasicBlock("entry");
                 _builder.PositionAtEnd(bb);
@@ -216,7 +207,10 @@ namespace Eagle.CodeAnalysis.CodeGen
                 foreach (var (index, parameter) in symbol.Parameters.Select((p, i) => (i, p)))
                 {
                     var para = f.Params[offset + index];
-                    if (parameter.Type.SpecialType != SpecialType.None)
+                    if (
+                        parameter.Type.IsPointer ||
+                        parameter.Type.IsReference ||
+                        parameter.Type.SpecialType != SpecialType.None)
                     {
                         // generate allocations for all parameters
                         var p = _builder.BuildAlloca(para.TypeOf);
@@ -238,108 +232,6 @@ namespace Eagle.CodeAnalysis.CodeGen
 
             _builder.Dispose();
         }
-
-
-
-        //private LLVMTypeRef GetFieldType(BoundFieldDeclaration node)
-        //{
-        //    _context.Types.TryGetValue(node.Field.Type, out var type);
-        //    return type;
-        //}
-
-        //private LLVMTypeRef GenerateMember(BoundMemberDeclaration node, LLVMTypeRef owner)
-        //{
-        //    switch (node)
-        //    {
-        //        case BoundMethodDeclaration m:
-        //            GenerateMethodDeclaration(m, owner);
-        //            break;
-        //        case BoundConstructorDeclaration c:
-        //            GenerateConstructorDeclaration(c, owner);
-        //            break;
-        //        default:
-        //            throw new Exception($"Unexpected member {node.GetType()}");
-        //    }
-        //    return null;
-        //}
-
-        //private void GenerateConstructorDeclaration(BoundConstructorDeclaration node, LLVMTypeRef owner)
-        //{
-        //    //node.Indexer
-
-        //    var constructor = node.Indexer;
-        //    var ft = CreateConstructorType(constructor, owner);
-        //    var f = _context.Module.AddFunction(constructor.Name, ft);
-        //    _context.Symbols[constructor] = f;
-        //    var entry = f.AppendBasicBlock("entry");
-
-        //    using (var builder = _context.Module.Context.CreateBuilder())
-        //    {
-        //        builder.PositionAtEnd(entry);
-
-        //        var c = new CodeGenerator(_context, builder);
-        //        c.GenerateStatement(node.Body);
-
-        //        builder.BuildRet(c._lastValue);
-        //    }
-        //}
-
-        //private void GenerateMethodDeclaration(BoundMethodDeclaration node, LLVMTypeRef owner)
-        //{
-        //    GenerateMethodBase(node, owner);
-        //}
-
-        //private bool TryGenerateStructDeclaration(BoundClassDeclaration node)
-        //{
-        //    if (NativeTypeNames.Names.Contains(node.Type.Name)) return true;
-
-        //    var fields = node.Members.OfType<BoundFieldDeclaration>().ToList();
-        //    var fieldTypes = fields.Select(f => (f.Field, Type: GetFieldType(f))).ToList();
-        //    if (fieldTypes.Any(ft => ft.Type == null)) return false;
-
-        //    for (var i = 0; i < fieldTypes.Count; i++)
-        //    {
-        //        var fieldType = fieldTypes[i];
-        //        _context.FieldIndicies[fieldType.Field] = i;
-        //    }
-
-        //    //var members = node.Members.Select(GenerateMember).ToList();
-        //    var structType = LLVMTypeRef.CreateStruct(fieldTypes.Select(ft => ft.Type).ToArray(), false);
-
-        //    //node.Members
-        //    //    .Except(fields)
-        //    //    .Select(x => GenerateMember(x, structType))
-        //    //    .ToList();
-
-        //    _context.Types[node.Type] = structType;
-        //    return true;
-        //}
-
-        //private void GenerateStructDeclaration(BoundClassDeclaration node)
-        //{
-        //    var fields = node.Members.OfType<BoundFieldDeclaration>().ToList();
-        //    //var fieldTypes = fields.Select(f => GenerateMember(f, null)).ToList();
-        //    //var members = node.Members.Select(GenerateMember).ToList();
-        //    //var structType = XType.Struct(fieldTypes);
-
-        //    var structType = _context.Types[node.Type];
-
-        //    node.Members
-        //        .Except(fields)
-        //        .Select(x => GenerateMember(x, structType))
-        //        .ToList();
-
-        //    _context.Types[node.Type] = structType;
-        //}
-
-        //private void GenerateConstDeclaration(BoundConstDeclaration node)
-        //{
-        //    var type = node.Const.Type;
-        //    var nodeValue = node.Value;
-        //    var value = GetAsValue(type, nodeValue);
-
-        //    _context.Symbols[node.Const] = value;
-        //}
 
         private LLVMValueRef GetAsValue(TypeSymbol type, object nodeValue)
         {
@@ -411,64 +303,29 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private void GenerateReturnStatement(BoundReturnStatement node)
         {
-            var value = node.Expression != null ? GenerateExpression(node.Expression) : null;
+            LLVMValueRef value;
+            if (node.Expression != null)
+            {
+                if (_invokable.Type.IsReference || _invokable.Type.IsPointer)
+                {
+                    value = GenerateLValue(node.Expression);
+                }
+                else
+                {
+                    value = GenerateExpression(node.Expression);
+                }
+            }
+            else
+            {
+                value = null;
+            }
+
 
             if (value != null)
                 _builder.BuildRet(value);
             else
                 _builder.BuildRetVoid();
         }
-
-        private LLVMValueRef _lastValue;
-
-        //private void GenerateExternDeclaration(BoundExternDeclaration node)
-        //{
-        //    var ft = CreateFunctionType(node.Function);
-        //    var f = _context.Module.AddFunction(ft, node.Function.Name);
-        //    _context.Symbols[node.Function] = f;
-        //}
-
-        //private void GenerateFunctionDeclaration(BoundFunctionDeclaration node)
-        //{
-        //    GenerateFunctionBase(node);
-        //}
-
-        //private void GenerateFunctionBase(BoundFunctionDeclaration node)
-        //{
-        //    var function = node.Function;
-        //    var ft = CreateFunctionType(function);
-        //    var f = _context.Module.AddFunction(function.Name, ft);
-        //    _context.Symbols[function] = f;
-        //    var entry = f.AppendBasicBlock("entry");
-
-        //    using (var builder = _context.Module.Context.CreateBuilder())
-        //    {
-        //        builder.PositionAtEnd(entry);
-
-        //        var c = new CodeGenerator(_context, builder);GenerateSt//atement(c.node.Body);
-
-        //builder.//BuildRet._lastValue);
-        //    }
-        //}
-        //
-        //pri//vate void GenerateMethodBase(BoundMethodDeclaration node, LLVMTypeRef owner)
-        //{
-        //    var function = node.Method;
-        //    var ft = CreateMethodType(function, owner);
-        //    var f = _context.Module.AddFunction(function.Name, ft);
-        //    _context.Symbols[function] = f;
-        //    var entry = f.AppendBasicBlock("entry");
-
-        //    using (var builder = _context.Module.Context.CreateBuilder())
-        //    {
-        //        builder.PositionAtEnd(entry);
-
-        //        var c = new CodeGenerator(_context, builder);
-        //        c.GenerateStatement(node.Body);
-
-        //        builder.BuildRet(c._lastValue);
-        //    }
-        //}
 
         private LLVMTypeRef CreateFunctionType(FunctionSymbol function)
         {
@@ -477,13 +334,15 @@ namespace Eagle.CodeAnalysis.CodeGen
             var parameterTypes = new List<LLVMTypeRef>();
             foreach (var parameter in function.Parameters)
             {
-                if (parameter.Type.SpecialType == SpecialType.None)
+                if (parameter.Type.IsPointer ||
+                    parameter.Type.IsReference ||
+                    parameter.Type.SpecialType != SpecialType.None)
                 {
-                    parameterTypes.Add(LLVMTypeRef.CreatePointer(GetXType(parameter.Type), 0));
+                    parameterTypes.Add(GetXType(parameter.Type));
                 }
                 else
                 {
-                    parameterTypes.Add(GetXType(parameter.Type));
+                    parameterTypes.Add(LLVMTypeRef.CreatePointer(GetXType(parameter.Type), 0));
                 }
             }
 
@@ -507,7 +366,6 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMTypeRef CreateConstructorType(ConstructorSymbol constructor, LLVMTypeRef owner)
         {
-            //var returnType = GetXType(constructor.Type);
             var parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }.Concat(constructor.Parameters.Select(p => GetXType(p.Type))).ToArray();
             return LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, parameterTypes);
         }
@@ -518,21 +376,15 @@ namespace Eagle.CodeAnalysis.CodeGen
             var target = GetOrAppend(node.Label, false);
             target.MoveAfter(currentBlock);
 
-            //var targetPhi = target.FirstInstruction;//.AsPhi();
-
             // if the current block is not completed
             // we need to branch to the target block
             // otherwise we can expect to never reach this label
             // and we can just switch to the target block for emitting
             // this happens for the else statement: a goto followed by a label
-            //if (!currentBlock.IsTerminated())
             if (currentBlock.Terminator == null)
             {
-                //targetPhi.AddIncoming(new[] { _lastValue }, new[] { currentBlock }, 1);
                 _builder.BuildBr(target);
             }
-
-            //_lastValue = targetPhi;
 
             _builder.PositionAtEnd(target);
         }
@@ -555,6 +407,7 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private readonly Dictionary<BoundLabel, LLVMBasicBlockRef> _labels = new Dictionary<BoundLabel, LLVMBasicBlockRef>();
         private LocalVariableSymbol _this;
+        private IInvokableSymbol _invokable;
 
         private LLVMBasicBlockRef GetOrAppend(BoundLabel labelSymbol, bool addPhi = false)
         {
@@ -571,16 +424,8 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private void GenerateGotoStatement(BoundGotoStatement node)
         {
-            var currentBlock = _builder.InsertBlock;
-
             var target = GetOrAppend(node.Label, false);
-            //var targetPhi = target.FirstInstruction;
-            //targetPhi.AddIncoming(new[] { _lastValue }, new[] { currentBlock }, 1);
             _builder.BuildBr(target);
-            //_lastValue = targetPhi;
-            // TODO fall through creates issues a block should only have one terminator and it should be the last instruction
-            // Do we need to reposition the builder?
-            // does dead code crash llvm ?
         }
 
         private void GenerateConditionalGotoStatement(BoundConditionalGotoStatement node)
@@ -588,9 +433,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             var fallThrough = Append();
             var target = GetOrAppend(node.Label);
 
-            var lastValue = _lastValue;
             var value = GenerateExpression(node.Condition);
-            _lastValue = lastValue;
 
             if (node.JumpIfTrue)
             {
@@ -606,31 +449,28 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private void GenerateVariableDeclaration(BoundVariableDeclaration node)
         {
-            var value = GenerateExpression(node.Initializer);
             var variable = node.Variable;
-            //if (variable.IsReadOnly)
-            //{
-            //    if (!_symbols.TryGetValue(variable, out var _))
-            //    {
-            //        _symbols[variable] = value;
-            //    }
-            //}
-            //else
-            //{
+            if (node.Initializer is BoundConstructorCallExpression c)
+            {
+                var ptr2 = GenerateExpression(node.Initializer);
+                _symbols[variable] = ptr2;
+                return;
+            }
+
+            var value = GenerateExpression(node.Initializer);
+
             if (!_symbols.TryGetValue(variable, out var ptr))
             {
                 var xType = GetXType(variable.Type);
-                ptr = _builder.BuildAlloca(xType, variable.Name);
+                ptr = _builder.BuildAlloca(xType);
                 _symbols[variable] = ptr;
             }
             _builder.BuildStore(value, ptr);
-            //}
-            _lastValue = value;
         }
 
         private void GenerateExpressionStatement(BoundExpressionStatement node)
         {
-            _lastValue = GenerateExpression(node.Expression);
+            GenerateExpression(node.Expression);
         }
 
         private LLVMValueRef GenerateExpression(BoundExpression expression)
@@ -692,16 +532,7 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMValueRef GenerateArrayIndexExpression(BoundArrayIndexExpression node, bool getPointer = false)
         {
             var targetp = GenerateExpression(node.Target);
-            //var target = _builder.BuildLoad(targetp);
-
-            var indexes = node.Arguments.Select(expression =>
-            {
-                var p = GenerateExpression(expression);
-                return p;
-                //var v = _builder.BuildLoad(p);
-                //return v;
-            }).ToArray();
-
+            var indexes = node.Arguments.Select(GenerateExpression).ToArray();
             var p = _builder.BuildInBoundsGEP(targetp, indexes);
             if (getPointer) return p;
             var v = _builder.BuildLoad(p);
@@ -722,20 +553,18 @@ namespace Eagle.CodeAnalysis.CodeGen
 
             // steal from method invoke
 
-            //var ptr = GenerateLValue(node.Target);
             var arguments = new[] { ptr }
                 .Concat(node.Arguments.Select(GenerateExpression))
                 .ToArray();
             var function = _symbols[node.Constructor];
-            return _builder.BuildCall(function, arguments);
+            _builder.BuildCall(function, arguments);
+            return ptr;
         }
 
         private LLVMValueRef GenerateFieldExpression(BoundFieldExpression node)
         {
             var index = node.Field.Index;
-            //var ptr = GenerateExpression(node.Target);
             var ptr = GenerateLValue(node.Target);
-            var t = ptr.TypeOf;
             return _builder.BuildGEP(ptr, new[]
             {
                 //LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)0),
@@ -749,6 +578,8 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             return expression switch
             {
+                BoundConstructorCallExpression c => GenerateExpression(c),
+                BoundUnaryExpression u when u.Operator.Kind == BoundUnaryOperatorKind.AddressOf => GenerateLValue(u.Operand),
                 BoundFieldExpression t => GenerateFieldExpression(t),
                 BoundThisExpression t => _symbols[_this],
                 BoundVariableExpression v => _symbols[v.Variable],
@@ -776,7 +607,6 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMValueRef GenerateThisExpression(BoundThisExpression node)
         {
             var thisp = _symbols[_this];
-            //return thisp;
             return _builder.BuildLoad(thisp);
         }
 
@@ -827,15 +657,20 @@ namespace Eagle.CodeAnalysis.CodeGen
                 {
                     value = GenerateExpression(argument);
                 }
+                // if it is not a temporary value make a copy
+                else if (argument is BoundVariableExpression)
+                {
+                    var argType = GetXType(argument.Type);
+                    var tptr = _builder.BuildAlloca(argType);
+                    var sptr = GenerateLValue(argument);
+                    var ctptr = _builder.BuildBitCast(tptr, _pi8);
+                    var csptr = _builder.BuildBitCast(sptr, _pi8);
+                    _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { ctptr, csptr });
+                    value = tptr;
+                }
                 else
                 {
-                    value = GenerateExpression(argument);
-                    var argType = GetXType(argument.Type);
-                    // store it
-                    var ptr = _builder.BuildAlloca(argType);
-                    value = ptr;
-                    ptr = _builder.BuildBitCast(ptr, _pi8);
-                    _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { ptr });
+                    value = GenerateLValue(argument);
                 }
 
                 args.Add(value);
@@ -882,15 +717,6 @@ namespace Eagle.CodeAnalysis.CodeGen
 
             _builder.BuildStore(value, t);
             return value;
-            throw new NotImplementedException();
-            //var variable = node.Variable;
-            //if (!_symbols.TryGetValue(variable, out var ptr))
-            //    throw new Exception("variable does not exist");
-
-            //var value = GenerateExpression(node.Expression);
-            //_builder.Store(value, ptr);
-
-            //return value;
         }
 
 
@@ -981,6 +807,9 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateUnaryExpression(BoundUnaryExpression node)
         {
+            if (node.Operator.Kind == BoundUnaryOperatorKind.AddressOf)
+                return GenerateLValue(node.Operand);
+
             var operand = GenerateExpression(node.Operand);
             switch (node.Operator.Kind)
             {
@@ -999,10 +828,6 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var type = node.Type;
             var value = node.Value;
-
-            //if (type == _stringType)
-            //    //return Value.String((string)value);
-            //    return _builder.BuildGlobalStringPtr((string)value);
             return GetAsValue(type, value);
         }
     }

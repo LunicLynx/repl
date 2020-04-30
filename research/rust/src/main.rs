@@ -1,5 +1,6 @@
 fn main() {
     //println!("Hello, world!");
+
     let p = Point {
         x: 1,
         y: 2,

@@ -1,8 +1,18 @@
 typedef long long i64;
 
-class empty {
+class Empty {
 public:
-    empty() {
+    Empty() {
+
+    }
+};
+
+class Single {
+private: 
+    i64 value;
+
+public:
+    Single() {
 
     }
 };
@@ -11,6 +21,8 @@ struct i64_2{
     i64 a;
     i64 b;
 };
+
+void print() {}
 
 void print1(i64 number){
 
@@ -34,6 +46,34 @@ void print5(i64_2& strct){
 
 void print6(i64_2* strct){
     
+}
+
+i64 print7() {
+    return 0LL;
+}
+
+i64* print8() {
+    i64 x = 0LL;
+    return &x;
+}
+
+i64& print9() {
+    i64 x = 0LL;
+    return x;
+}
+
+i64_2 print10(){
+    return i64_2();
+}
+
+i64_2& print11(){
+    auto x = i64_2();
+    return x;
+}
+
+i64_2* print12(){
+    auto x = i64_2();
+    return &x;
 }
 
 i64 add1(i64 a, i64 b)
@@ -99,11 +139,28 @@ int main()
     auto x2 = add2(a, b);
     auto x3 = add3(&a, &b);
 
+    auto ps = Single();
+    auto px = Point();
     auto pa = Point { 1LL, 5LL, 8LL, 3LL };
     auto pb = Point { 6LL, 3LL, 2LL, 4LL };
     auto px1 = padd1(pa, pb);
     auto px2 = padd2(pa, pb);
     auto px3 = padd3(&pa, &pb);
 
-    auto e = empty();
+    auto e = Empty();
+    auto sa = i64_2();
+
+    print();
+    print1(0LL);
+    print2(a);
+    print3(&a);
+    print4(i64_2());
+    print4(sa);
+    print5(sa);
+    print6(&sa);
+    print7();
+    print8();
+    print9();
+    print10();
+    print12();
 }
