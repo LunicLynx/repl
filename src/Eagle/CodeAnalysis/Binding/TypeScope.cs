@@ -9,10 +9,10 @@ namespace Eagle.CodeAnalysis.Binding
 {
     public class TypeScope : IScope
     {
-        public IScope Parent { get; }
+        public IScope? Parent { get; }
         public TypeSymbol Type { get; }
 
-        public TypeScope(IScope parent, TypeSymbol type)
+        public TypeScope(IScope? parent, TypeSymbol type)
         {
             Parent = parent;
             Type = type;
@@ -59,8 +59,11 @@ namespace Eagle.CodeAnalysis.Binding
                             _ => throw new NotSupportedException()
                         };
                         return mParameters;
-                    });
-                    return param.All(p => !parameters.SequenceEqual(p));
+                    }).ToList();
+
+                    // already defined with these parameters ? 
+                    if(param.Any(p => parameters.SequenceEqual(p)))
+                        return false;
                 }
             }
 

@@ -6,7 +6,7 @@ namespace Eagle.CodeAnalysis.Binding
 {
     public interface IScope
     {
-        IScope Parent { get; }
+        IScope? Parent { get; }
 
         bool TryDeclare(Symbol symbol);
         bool TryLookup(SymbolKind[] kinds, string name, out Symbol[] symbols);

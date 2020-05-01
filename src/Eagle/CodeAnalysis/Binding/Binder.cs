@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Eagle.CodeAnalysis.Lowering;
 using Eagle.CodeAnalysis.Syntax;
 using Eagle.CodeAnalysis.Text;
@@ -64,8 +65,7 @@ namespace Eagle.CodeAnalysis.Binding
                 if (invokable is ConstructorSymbol && body == null)
                 {
                     // emit default constructor
-                    functionBodies.Add(invokable, new BoundBlockStatement(
-                        ImmutableArray.Create<BoundStatement>(new BoundReturnStatement(null))));
+                    functionBodies.Add(invokable, new BoundBlockStatement(ImmutableArray<BoundStatement>.Empty));
                     continue;
                 }
                 //var (location, scope, body) = kv.Value;
@@ -91,7 +91,7 @@ namespace Eagle.CodeAnalysis.Binding
 
                 var loweredBody = Lowerer.Lower(s);
 
-                if (invokable.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
+                if (!(invokable is ConstructorSymbol) && invokable.Type != TypeSymbol.Void && !ControlFlowGraph.AllPathsReturn(loweredBody))
                     binder2.Diagnostics.ReportAllPathsMustReturn(location);
 
                 functionBodies.Add(invokable, loweredBody);
@@ -1135,8 +1135,19 @@ namespace Eagle.CodeAnalysis.Binding
         private BoundStatement BindVariableDeclaration(VariableDeclarationSyntax syntax)
         {
             var isReadOnly = syntax.Keyword.Kind == TokenKind.LetKeyword;
-            var type = BindTypeClause(syntax.TypeClause);
+
             var initializer = BindExpression(syntax.Initializer);
+            
+            TypeSymbol? type;
+            if (syntax.AmpersandToken != null)
+            {
+                type = initializer.Type.MakeReference();
+            }
+            else
+            {
+                type = BindTypeClause(syntax.TypeClause);
+            }
+
             var variableType = type ?? initializer.Type;
             var variable = BindVariableDeclaration(syntax.IdentifierToken, isReadOnly, variableType);
             var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType);
@@ -1497,7 +1508,16 @@ namespace Eagle.CodeAnalysis.Binding
                 if (!TryBindArguments(syntax, method1.Name, parameters, arguments, out var boundArguments))
                     return new BoundErrorExpression();
 
-                return new BoundMethodCallExpression(null, method1, boundArguments);
+                var s = _scope;
+                while (s != null && !(s is TypeScope))
+                    s = s.Parent;
+
+                if (s == null)
+                    throw new InvalidOperationException("We should be in a type scope here.");
+
+                var typeScope = (TypeScope)s;
+                // TODO verify static context
+                return new BoundMethodCallExpression(new BoundThisExpression(typeScope.Type), method1, boundArguments);
             }
 
             if (symbol != null)

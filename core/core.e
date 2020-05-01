@@ -20,7 +20,7 @@ object String {
             l = l + 1;
             
         _length = l;
-        _buffer = malloc(_length);
+        _buffer = malloc(_length).(char*);
 
         for i = 0 to _length {
             _buffer[i] = str[i];

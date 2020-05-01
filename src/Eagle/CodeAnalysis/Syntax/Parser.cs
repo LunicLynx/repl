@@ -264,7 +264,7 @@ namespace Eagle.CodeAnalysis.Syntax
         private MemberDeclarationSyntax ParseMemberDeclaration()
         {
             var modifiers = ImmutableArray.CreateBuilder<Token>();
-            if(Current.Kind == TokenKind.StaticKeyword)
+            if (Current.Kind == TokenKind.StaticKeyword)
                 modifiers.Add(MatchToken(TokenKind.StaticKeyword));
 
             var peek = Peek(1);
@@ -559,11 +559,27 @@ namespace Eagle.CodeAnalysis.Syntax
                 : TokenKind.VarKeyword;
 
             var keyword = MatchToken(expected);
+
+            var isReference = false;
+            Token? ampersandToken = null;
+            if (Current.Kind == TokenKind.Ampersand)
+            {
+                ampersandToken = MatchToken(TokenKind.Ampersand);
+                isReference = true;
+            }
+
+            /*
+             * let& x = ...;
+             * let x : int& = ...;
+             */
+
             var identifier = MatchToken(TokenKind.Identifier);
+            if (Current.Kind == TokenKind.Colon && isReference)
+                Diagnostics.CannotSpecifyReferenceAndTypeClause(Current.Location);
             var typeClause = ParseOptionalTypeClause();
             var equalsToken = MatchToken(TokenKind.Equals);
             var initializer = ParseExpression();
-            return new VariableDeclarationSyntax(SyntaxTree, keyword, identifier, typeClause, equalsToken, initializer);
+            return new VariableDeclarationSyntax(SyntaxTree, keyword, ampersandToken, identifier, typeClause, equalsToken, initializer);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement()

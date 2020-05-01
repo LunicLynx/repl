@@ -271,5 +271,11 @@ namespace Eagle.CodeAnalysis
             var message = $"Type '{type}' does not have an indexer.";
             Report(location, message);
         }
+
+        public void CannotSpecifyReferenceAndTypeClause(TextLocation location)
+        {
+            var message = $"Cannot specify reference variable and type clause.";
+            Report(location, message);
+        }
     }
 }

@@ -139,6 +139,8 @@ Point padd3(Point* a, Point* b)
     return p;
 }
 
+
+
 int main()
 {
     auto a = 4LL, b = 7LL;
@@ -164,6 +166,7 @@ int main()
     print3(&a);
     print4(i64_2());
     print4(sa);
+    //print5(i64_2());
     print5(sa);
     print6(&sa);
     print7();
@@ -174,4 +177,12 @@ int main()
 
     ps.Act();
     Single::StaticAct();
+
+    i64_2().a;
+
+    auto y = i64_2();
+    y.a = 10;
+
+    auto& z = y;
+    z.a = 10;
 }

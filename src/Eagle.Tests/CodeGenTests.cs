@@ -423,7 +423,7 @@ entry:
 
 
         [Fact]
-        public void EmitStructEmpty()
+        public void EmitObjectEmpty()
         {
             var source = @"
 object MyObj { }
@@ -443,6 +443,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -471,6 +472,246 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitReadField()
+        {
+            var source = @"
+object MyObj { a: int; }
+
+Main() {
+    let x = MyObj()
+    x.a;
+}
+";
+
+            var expected = @"
+%MyObj = type { i64 }
+
+define void @Main() {
+entry:
+  %0 = alloca %MyObj
+  call void @MyObj(%MyObj* %0)
+  %1 = getelementptr inbounds %MyObj, %MyObj* %0, i32 0, i32 0
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        
+
+        [Fact]
+        public void EmitWriteField()
+        {
+            var source = @"
+object MyObj { a: int; }
+
+Main() {
+    let x = MyObj();
+    x.a = 10;
+}
+";
+
+            var expected = @"
+%MyObj = type { i64 }
+
+define void @Main() {
+entry:
+  %0 = alloca %MyObj
+  call void @MyObj(%MyObj* %0)
+  %1 = getelementptr inbounds %MyObj, %MyObj* %0, i32 0, i32 0
+  store i64 10, i64* %1
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitReadFieldOfReference()
+        {
+            var source = @"
+object MyObj { a: int; }
+
+Main() {
+    let x = MyObj()
+    let& y = x;
+    y.a;
+}
+";
+
+            var expected = @"
+%MyObj = type { i64 }
+
+define void @Main() {
+entry:
+  %0 = alloca %MyObj
+  call void @MyObj(%MyObj* %0)
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  %3 = getelementptr inbounds %MyObj, %MyObj* %2, i32 0, i32 0
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitWriteFieldOfReference()
+        {
+            var source = @"
+object MyObj { a: int; }
+
+Main() {
+    let x = MyObj()
+    let& y = x;
+    y.a = 23;
+}
+";
+
+            var expected = @"
+%MyObj = type { i64 }
+
+define void @Main() {
+entry:
+  %0 = alloca %MyObj
+  call void @MyObj(%MyObj* %0)
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  %3 = getelementptr inbounds %MyObj, %MyObj* %2, i32 0, i32 0
+  store i64 23, i64* %3
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitReadFieldFromMethod()
+        {
+            var source = @"
+object MyObj {
+  a: int;
+  Act() {
+    a;
+  }
+}
+
+Main() {}
+";
+
+            var expected = @"
+%MyObj = type { i64 }
+
+define void @Main() {
+entry:
+  ret void
+}
+
+define void @Act(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  %3 = getelementptr inbounds %MyObj, %MyObj* %2, i32 0, i32 0
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitWriteFieldFromMethod()
+        {
+            var source = @"
+object MyObj { 
+  a: int;
+  Act() {
+    a = 7;
+  }
+}
+
+Main() {}
+";
+
+            var expected = @"
+%MyObj = type { i64 }
+
+define void @Main() {
+entry:
+  ret void
+}
+
+define void @Act(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  %3 = getelementptr inbounds %MyObj, %MyObj* %2, i32 0, i32 0
+  store i64 7, i64* %3
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -501,6 +742,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -531,6 +773,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -567,6 +810,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -605,6 +849,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -647,6 +892,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 
@@ -689,6 +935,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -729,6 +976,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -767,6 +1015,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -807,6 +1056,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -837,6 +1087,7 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
@@ -867,6 +1118,7 @@ define void @Act(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 
@@ -874,13 +1126,100 @@ define void @MyObj(%MyObj*) {
 entry:
   %1 = alloca %MyObj*
   store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
 
             AssertGeneration(source, expected);
         }
-        
+
+        [Fact]
+        public void EmitCallMethod()
+        {
+            var source = @"
+object MyObj { 
+    Act() {  }
+}
+
+Main() { 
+  let x = MyObj();
+  x.Act();
+}
+";
+
+            var expected = @"
+%MyObj = type {}
+
+define void @Main() {
+entry:
+  %0 = alloca %MyObj
+  call void @MyObj(%MyObj* %0)
+  call void @Act(%MyObj* %0)
+  ret void
+}
+
+define void @Act(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitCallMethodFromMethod()
+        {
+            var source = @"
+object MyObj { 
+  Act() { 
+    Act();  
+  }
+}
+
+Main() { }
+";
+
+            var expected = @"
+%MyObj = type {}
+
+define void @Main() {
+entry:
+  ret void
+}
+
+define void @Act(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  call void @Act(%MyObj* %2)
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
 
         [Fact]
         public void EmitFunctionAddAndCall()

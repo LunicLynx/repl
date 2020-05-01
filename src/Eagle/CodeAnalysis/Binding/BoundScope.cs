@@ -6,10 +6,10 @@ namespace Eagle.CodeAnalysis.Binding
 {
     public class BoundScope : IScope
     {
-        public IScope Parent { get; }
+        public IScope? Parent { get; }
         private readonly List<Symbol> _symbols = new List<Symbol>();
 
-        public BoundScope(IScope parent)
+        public BoundScope(IScope? parent)
         {
             Parent = parent;
         }

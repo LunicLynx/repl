@@ -199,7 +199,8 @@ namespace Eagle.CodeAnalysis.CodeGen
                     var self = f.Params[0];
                     var selfp = _builder.BuildAlloca(self.TypeOf);
                     _builder.BuildStore(self, selfp);
-                    _symbols[_this] = selfp;
+                    var selfp1 = _builder.BuildLoad(selfp);
+                    _symbols[_this] = selfp1;
 
                     offset = 1;
                 }
@@ -450,6 +451,9 @@ namespace Eagle.CodeAnalysis.CodeGen
         private void GenerateVariableDeclaration(BoundVariableDeclaration node)
         {
             var variable = node.Variable;
+
+            
+
             if (node.Initializer is BoundConstructorCallExpression c)
             {
                 var ptr2 = GenerateExpression(node.Initializer);
@@ -457,7 +461,15 @@ namespace Eagle.CodeAnalysis.CodeGen
                 return;
             }
 
-            var value = GenerateExpression(node.Initializer);
+            LLVMValueRef value;
+            if (variable.Type.IsReference)
+            {
+                value = GenerateLValue(node.Initializer);
+            }
+            else
+            {
+                value = GenerateExpression(node.Initializer);
+            }
 
             if (!_symbols.TryGetValue(variable, out var ptr))
             {
@@ -565,10 +577,8 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var index = node.Field.Index;
             var ptr = GenerateLValue(node.Target);
-            return _builder.BuildGEP(ptr, new[]
+            return _builder.BuildInBoundsGEP(ptr, new[]
             {
-                //LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)0),
-                LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)0),
                 LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)0),
                 LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)index)
             });
@@ -582,8 +592,9 @@ namespace Eagle.CodeAnalysis.CodeGen
                 BoundUnaryExpression u when u.Operator.Kind == BoundUnaryOperatorKind.AddressOf => GenerateLValue(u.Operand),
                 BoundFieldExpression t => GenerateFieldExpression(t),
                 BoundThisExpression t => _symbols[_this],
-                BoundVariableExpression v => _symbols[v.Variable],
+                BoundVariableExpression v => v.Variable.Type.IsReference ? GenerateExpression(v) : _symbols[v.Variable],
                 BoundArrayIndexExpression a => GenerateArrayIndexExpression(a, true),
+                BoundMethodCallExpression m => GenerateExpression(m),
                 _ => throw new InvalidOperationException("invalid l value")
             };
         }
