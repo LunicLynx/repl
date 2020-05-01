@@ -16,6 +16,8 @@ $"?Act@Single@@QEAAXXZ" = comdat any
 
 $"?StaticAct@Single@@SAXXZ" = comdat any
 
+$"?Create@Single@@QEAA?AV1@AEBV1@@Z" = comdat any
+
 @__const.main.pa = private unnamed_addr constant %class.Point { i64 1, i64 5, i64 8, i64 3 }, align 8
 @__const.main.pb = private unnamed_addr constant %class.Point { i64 6, i64 3, i64 2, i64 4 }, align 8
 
@@ -52,6 +54,20 @@ define dso_local void @"?print4@@YAXUi64_2@@@Z"(%struct.i64_2* %0) #0 {
 
 ; Function Attrs: noinline nounwind optnone uwtable
 define dso_local void @"?print5@@YAXAEAUi64_2@@@Z"(%struct.i64_2* dereferenceable(16) %0) #0 {
+  %2 = alloca %struct.i64_2*, align 8
+  store %struct.i64_2* %0, %struct.i64_2** %2, align 8
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @"?print5_1@@YAXAEBUi64_2@@@Z"(%struct.i64_2* dereferenceable(16) %0) #0 {
+  %2 = alloca %struct.i64_2*, align 8
+  store %struct.i64_2* %0, %struct.i64_2** %2, align 8
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @"?print5_2@@YAX$$QEAUi64_2@@@Z"(%struct.i64_2* dereferenceable(16) %0) #0 {
   %2 = alloca %struct.i64_2*, align 8
   store %struct.i64_2* %0, %struct.i64_2** %2, align 8
   ret void
@@ -95,6 +111,23 @@ define dso_local void @"?print10@@YA?AUi64_2@@XZ"(%struct.i64_2* noalias sret %0
 
 ; Function Attrs: argmemonly nounwind willreturn
 declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+
+; Function Attrs: noinline optnone uwtable
+define dso_local void @"?print10_2@@YA?AVSingle@@XZ"(%class.Single* noalias sret %0) #2 {
+  %2 = alloca i8*, align 8
+  %3 = bitcast %class.Single* %0 to i8*
+  store i8* %3, i8** %2, align 8
+  %4 = call %class.Single* @"??0Single@@QEAA@XZ"(%class.Single* %0)
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define linkonce_odr dso_local %class.Single* @"??0Single@@QEAA@XZ"(%class.Single* returned %0) unnamed_addr #0 comdat align 2 {
+  %2 = alloca %class.Single*, align 8
+  store %class.Single* %0, %class.Single** %2, align 8
+  %3 = load %class.Single*, %class.Single** %2, align 8
+  ret %class.Single* %3
+}
 
 ; Function Attrs: noinline nounwind optnone uwtable
 define dso_local dereferenceable(16) %struct.i64_2* @"?print11@@YAAEAUi64_2@@XZ"() #0 {
@@ -294,7 +327,7 @@ define dso_local void @"?padd3@@YA?AVPoint@@PEAV1@0@Z"(%class.Point* noalias sre
 }
 
 ; Function Attrs: noinline norecurse optnone uwtable
-define dso_local i32 @main() #2 {
+define dso_local i32 @main() #3 {
   %1 = alloca i64, align 8
   %2 = alloca i64, align 8
   %3 = alloca i64, align 8
@@ -316,77 +349,87 @@ define dso_local i32 @main() #2 {
   %19 = alloca %struct.i64_2, align 8
   %20 = alloca %struct.i64_2, align 8
   %21 = alloca %struct.i64_2, align 8
-  %22 = alloca %struct.i64_2*, align 8
+  %22 = alloca %class.Single, align 8
+  %23 = alloca %struct.i64_2, align 8
+  %24 = alloca %struct.i64_2, align 8
+  %25 = alloca %struct.i64_2*, align 8
+  %26 = alloca %class.Single, align 8
+  %27 = alloca %class.Single, align 8
+  %28 = alloca %class.Single, align 8
   store i64 4, i64* %1, align 8
   store i64 7, i64* %2, align 8
-  %23 = call i64 @"?add1@@YA_J_J0@Z"(i64 5, i64 6)
-  %24 = load i64, i64* %2, align 8
-  %25 = load i64, i64* %1, align 8
-  %26 = call i64 @"?add1@@YA_J_J0@Z"(i64 %25, i64 %24)
-  store i64 %26, i64* %3, align 8
-  %27 = call i64 @"?add2@@YA_JAEA_J0@Z"(i64* dereferenceable(8) %1, i64* dereferenceable(8) %2)
-  store i64 %27, i64* %4, align 8
-  %28 = call i64 @"?add3@@YA_JPEA_J0@Z"(i64* %1, i64* %2)
-  store i64 %28, i64* %5, align 8
-  %29 = call %class.Single* @"??0Single@@QEAA@XZ"(%class.Single* %6)
-  %30 = bitcast %class.Point* %7 to i8*
-  call void @llvm.memset.p0i8.i64(i8* align 8 %30, i8 0, i64 32, i1 false)
-  %31 = bitcast %class.Point* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %31, i8* align 8 bitcast (%class.Point* @__const.main.pa to i8*), i64 32, i1 false)
-  %32 = bitcast %class.Point* %9 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %32, i8* align 8 bitcast (%class.Point* @__const.main.pb to i8*), i64 32, i1 false)
-  %33 = bitcast %class.Point* %11 to i8*
-  %34 = bitcast %class.Point* %9 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %33, i8* align 8 %34, i64 32, i1 false)
-  %35 = bitcast %class.Point* %12 to i8*
-  %36 = bitcast %class.Point* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %35, i8* align 8 %36, i64 32, i1 false)
+  %29 = call i64 @"?add1@@YA_J_J0@Z"(i64 5, i64 6)
+  %30 = load i64, i64* %2, align 8
+  %31 = load i64, i64* %1, align 8
+  %32 = call i64 @"?add1@@YA_J_J0@Z"(i64 %31, i64 %30)
+  store i64 %32, i64* %3, align 8
+  %33 = call i64 @"?add2@@YA_JAEA_J0@Z"(i64* dereferenceable(8) %1, i64* dereferenceable(8) %2)
+  store i64 %33, i64* %4, align 8
+  %34 = call i64 @"?add3@@YA_JPEA_J0@Z"(i64* %1, i64* %2)
+  store i64 %34, i64* %5, align 8
+  %35 = call %class.Single* @"??0Single@@QEAA@XZ"(%class.Single* %6)
+  %36 = bitcast %class.Point* %7 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %36, i8 0, i64 32, i1 false)
+  %37 = bitcast %class.Point* %8 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %37, i8* align 8 bitcast (%class.Point* @__const.main.pa to i8*), i64 32, i1 false)
+  %38 = bitcast %class.Point* %9 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %38, i8* align 8 bitcast (%class.Point* @__const.main.pb to i8*), i64 32, i1 false)
+  %39 = bitcast %class.Point* %11 to i8*
+  %40 = bitcast %class.Point* %9 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %39, i8* align 8 %40, i64 32, i1 false)
+  %41 = bitcast %class.Point* %12 to i8*
+  %42 = bitcast %class.Point* %8 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %41, i8* align 8 %42, i64 32, i1 false)
   call void @"?padd1@@YA?AVPoint@@V1@0@Z"(%class.Point* sret %10, %class.Point* %12, %class.Point* %11)
   call void @"?padd2@@YA?AVPoint@@AEAV1@0@Z"(%class.Point* sret %13, %class.Point* dereferenceable(32) %8, %class.Point* dereferenceable(32) %9)
   call void @"?padd3@@YA?AVPoint@@PEAV1@0@Z"(%class.Point* sret %14, %class.Point* %8, %class.Point* %9)
-  %37 = call %class.Empty* @"??0Empty@@QEAA@XZ"(%class.Empty* %15)
-  %38 = bitcast %struct.i64_2* %16 to i8*
-  call void @llvm.memset.p0i8.i64(i8* align 8 %38, i8 0, i64 16, i1 false)
+  %43 = call %class.Empty* @"??0Empty@@QEAA@XZ"(%class.Empty* %15)
+  %44 = bitcast %struct.i64_2* %16 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %44, i8 0, i64 16, i1 false)
   call void @"?print@@YAXXZ"()
   call void @"?print1@@YAX_J@Z"(i64 0)
   call void @"?print2@@YAXAEA_J@Z"(i64* dereferenceable(8) %1)
   call void @"?print3@@YAXPEA_J@Z"(i64* %1)
-  %39 = bitcast %struct.i64_2* %17 to i8*
-  call void @llvm.memset.p0i8.i64(i8* align 8 %39, i8 0, i64 16, i1 false)
+  %45 = bitcast %struct.i64_2* %17 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %45, i8 0, i64 16, i1 false)
   call void @"?print4@@YAXUi64_2@@@Z"(%struct.i64_2* %17)
-  %40 = bitcast %struct.i64_2* %18 to i8*
-  %41 = bitcast %struct.i64_2* %16 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %40, i8* align 8 %41, i64 16, i1 false)
+  %46 = bitcast %struct.i64_2* %18 to i8*
+  %47 = bitcast %struct.i64_2* %16 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %46, i8* align 8 %47, i64 16, i1 false)
   call void @"?print4@@YAXUi64_2@@@Z"(%struct.i64_2* %18)
+  %48 = bitcast %struct.i64_2* %19 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %48, i8 0, i64 16, i1 false)
+  call void @"?print5_1@@YAXAEBUi64_2@@@Z"(%struct.i64_2* dereferenceable(16) %19)
+  call void @"?print5_1@@YAXAEBUi64_2@@@Z"(%struct.i64_2* dereferenceable(16) %16)
+  %49 = bitcast %struct.i64_2* %20 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %49, i8 0, i64 16, i1 false)
+  call void @"?print5_2@@YAX$$QEAUi64_2@@@Z"(%struct.i64_2* dereferenceable(16) %20)
   call void @"?print5@@YAXAEAUi64_2@@@Z"(%struct.i64_2* dereferenceable(16) %16)
   call void @"?print6@@YAXPEAUi64_2@@@Z"(%struct.i64_2* %16)
-  %42 = call i64 @"?print7@@YA_JXZ"()
-  %43 = call i64* @"?print8@@YAPEA_JXZ"()
-  %44 = call dereferenceable(8) i64* @"?print9@@YAAEA_JXZ"()
-  call void @"?print10@@YA?AUi64_2@@XZ"(%struct.i64_2* sret %19)
-  %45 = call %struct.i64_2* @"?print12@@YAPEAUi64_2@@XZ"()
+  %50 = call i64 @"?print7@@YA_JXZ"()
+  %51 = call i64* @"?print8@@YAPEA_JXZ"()
+  %52 = call dereferenceable(8) i64* @"?print9@@YAAEA_JXZ"()
+  call void @"?print10@@YA?AUi64_2@@XZ"(%struct.i64_2* sret %21)
+  call void @"?print10_2@@YA?AVSingle@@XZ"(%class.Single* sret %22)
+  %53 = call dereferenceable(16) %struct.i64_2* @"?print11@@YAAEAUi64_2@@XZ"()
+  %54 = call %struct.i64_2* @"?print12@@YAPEAUi64_2@@XZ"()
   call void @"?Act@Single@@QEAAXXZ"(%class.Single* %6)
   call void @"?StaticAct@Single@@SAXXZ"()
-  %46 = bitcast %struct.i64_2* %20 to i8*
-  call void @llvm.memset.p0i8.i64(i8* align 8 %46, i8 0, i64 16, i1 false)
-  %47 = getelementptr inbounds %struct.i64_2, %struct.i64_2* %20, i32 0, i32 0
-  %48 = bitcast %struct.i64_2* %21 to i8*
-  call void @llvm.memset.p0i8.i64(i8* align 8 %48, i8 0, i64 16, i1 false)
-  %49 = getelementptr inbounds %struct.i64_2, %struct.i64_2* %21, i32 0, i32 0
-  store i64 10, i64* %49, align 8
-  store %struct.i64_2* %21, %struct.i64_2** %22, align 8
-  %50 = load %struct.i64_2*, %struct.i64_2** %22, align 8
-  %51 = getelementptr inbounds %struct.i64_2, %struct.i64_2* %50, i32 0, i32 0
-  store i64 10, i64* %51, align 8
+  %55 = bitcast %struct.i64_2* %23 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %55, i8 0, i64 16, i1 false)
+  %56 = getelementptr inbounds %struct.i64_2, %struct.i64_2* %23, i32 0, i32 0
+  %57 = bitcast %struct.i64_2* %24 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %57, i8 0, i64 16, i1 false)
+  %58 = getelementptr inbounds %struct.i64_2, %struct.i64_2* %24, i32 0, i32 0
+  store i64 10, i64* %58, align 8
+  store %struct.i64_2* %24, %struct.i64_2** %25, align 8
+  %59 = load %struct.i64_2*, %struct.i64_2** %25, align 8
+  %60 = getelementptr inbounds %struct.i64_2, %struct.i64_2* %59, i32 0, i32 0
+  store i64 10, i64* %60, align 8
+  %61 = call %class.Single* @"??0Single@@QEAA@XZ"(%class.Single* %26)
+  %62 = call %class.Single* @"??0Single@@QEAA@XZ"(%class.Single* %28)
+  call void @"?Create@Single@@QEAA?AV1@AEBV1@@Z"(%class.Single* %26, %class.Single* sret %27, %class.Single* dereferenceable(8) %28)
   ret i32 0
-}
-
-; Function Attrs: noinline nounwind optnone uwtable
-define linkonce_odr dso_local %class.Single* @"??0Single@@QEAA@XZ"(%class.Single* returned %0) unnamed_addr #0 comdat align 2 {
-  %2 = alloca %class.Single*, align 8
-  store %class.Single* %0, %class.Single** %2, align 8
-  %3 = load %class.Single*, %class.Single** %2, align 8
-  ret %class.Single* %3
 }
 
 ; Function Attrs: argmemonly nounwind willreturn
@@ -401,7 +444,7 @@ define linkonce_odr dso_local %class.Empty* @"??0Empty@@QEAA@XZ"(%class.Empty* r
 }
 
 ; Function Attrs: noinline optnone uwtable
-define linkonce_odr dso_local void @"?Act@Single@@QEAAXXZ"(%class.Single* %0) #3 comdat align 2 {
+define linkonce_odr dso_local void @"?Act@Single@@QEAAXXZ"(%class.Single* %0) #2 comdat align 2 {
   %2 = alloca %class.Single*, align 8
   store %class.Single* %0, %class.Single** %2, align 8
   %3 = load %class.Single*, %class.Single** %2, align 8
@@ -414,10 +457,24 @@ define linkonce_odr dso_local void @"?StaticAct@Single@@SAXXZ"() #0 comdat align
   ret void
 }
 
+; Function Attrs: noinline nounwind optnone uwtable
+define linkonce_odr dso_local void @"?Create@Single@@QEAA?AV1@AEBV1@@Z"(%class.Single* %0, %class.Single* noalias sret %1, %class.Single* dereferenceable(8) %2) #0 comdat align 2 {
+  %4 = alloca i8*, align 8
+  %5 = alloca %class.Single*, align 8
+  %6 = alloca %class.Single*, align 8
+  %7 = bitcast %class.Single* %1 to i8*
+  store i8* %7, i8** %4, align 8
+  store %class.Single* %2, %class.Single** %5, align 8
+  store %class.Single* %0, %class.Single** %6, align 8
+  %8 = load %class.Single*, %class.Single** %6, align 8
+  %9 = call %class.Single* @"??0Single@@QEAA@XZ"(%class.Single* %1)
+  ret void
+}
+
 attributes #0 = { noinline nounwind optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #1 = { argmemonly nounwind willreturn }
-attributes #2 = { noinline norecurse optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #3 = { noinline optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { noinline optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { noinline norecurse optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 
 !llvm.module.flags = !{!0, !1}
 !llvm.ident = !{!2}

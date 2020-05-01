@@ -205,6 +205,14 @@ namespace Eagle.CodeAnalysis.CodeGen
                     offset = 1;
                 }
 
+                if (!(symbol is ConstructorSymbol) &&
+                    !symbol.Type.IsPointer && !symbol.Type.IsReference &&
+                    (symbol.Type.SpecialType == SpecialType.None || symbol.Type.SpecialType == SpecialType.String))
+                {
+                    _returnParam = f.Params[offset];
+                    offset++;
+                }
+
                 foreach (var (index, parameter) in symbol.Parameters.Select((p, i) => (i, p)))
                 {
                     var para = f.Params[offset + index];
@@ -313,7 +321,16 @@ namespace Eagle.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    value = GenerateExpression(node.Expression);
+                    if (_invokable.Type.SpecialType == SpecialType.None ||
+                        _invokable.Type.SpecialType == SpecialType.String)
+                    {
+                        value = null;
+                        GenerateExpression(node.Expression, _returnParam);
+                    }
+                    else
+                    {
+                        value = GenerateExpression(node.Expression);
+                    }
                 }
             }
             else
@@ -333,6 +350,17 @@ namespace Eagle.CodeAnalysis.CodeGen
             var returnType = GetXType(function.Type);
 
             var parameterTypes = new List<LLVMTypeRef>();
+
+            // if return type is byValue of complex type
+            // promote to parameter as pointer
+            if (!function.Type.IsPointer &&
+                !function.Type.IsReference &&
+                (function.Type.SpecialType == SpecialType.None || function.Type.SpecialType == SpecialType.String))
+            {
+                parameterTypes.Add(LLVMTypeRef.CreatePointer(returnType, 0));
+                returnType = LLVMTypeRef.Void;
+            }
+
             foreach (var parameter in function.Parameters)
             {
                 if (parameter.Type.IsPointer ||
@@ -409,6 +437,7 @@ namespace Eagle.CodeAnalysis.CodeGen
         private readonly Dictionary<BoundLabel, LLVMBasicBlockRef> _labels = new Dictionary<BoundLabel, LLVMBasicBlockRef>();
         private LocalVariableSymbol _this;
         private IInvokableSymbol _invokable;
+        private LLVMValueRef _returnParam;
 
         private LLVMBasicBlockRef GetOrAppend(BoundLabel labelSymbol, bool addPhi = false)
         {
@@ -452,7 +481,7 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var variable = node.Variable;
 
-            
+
 
             if (node.Initializer is BoundConstructorCallExpression c)
             {
@@ -485,7 +514,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             GenerateExpression(node.Expression);
         }
 
-        private LLVMValueRef GenerateExpression(BoundExpression expression)
+        private LLVMValueRef GenerateExpression(BoundExpression expression, LLVMValueRef? storage = null)
         {
             switch (expression)
             {
@@ -516,7 +545,7 @@ namespace Eagle.CodeAnalysis.CodeGen
                 case BoundFieldExpression f:
                     return GenerateFieldExpression(f);
                 case BoundConstructorCallExpression c:
-                    return GenerateConstructorCallExpression(c);
+                    return GenerateConstructorCallExpression(c, storage);
                 case BoundArrayIndexExpression a:
                     return GenerateArrayIndexExpression(a);
                 case BoundNewArrayExpression n:
@@ -537,36 +566,44 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMValueRef GenerateNewArrayExpression(BoundNewArrayExpression node)
         {
             var type = GetXType(node.Type);
-            var args = node.Arguments.Select(GenerateExpression).ToArray();
+            var args = node.Arguments.Select(a => GenerateExpression(a)).ToArray();
             return _builder.BuildArrayAlloca(type, args[0]);
         }
 
         private LLVMValueRef GenerateArrayIndexExpression(BoundArrayIndexExpression node, bool getPointer = false)
         {
             var targetp = GenerateExpression(node.Target);
-            var indexes = node.Arguments.Select(GenerateExpression).ToArray();
+            var indexes = node.Arguments.Select(a => GenerateExpression(a)).ToArray();
             var p = _builder.BuildInBoundsGEP(targetp, indexes);
             if (getPointer) return p;
             var v = _builder.BuildLoad(p);
             return v;
         }
 
-        private LLVMValueRef GenerateConstructorCallExpression(BoundConstructorCallExpression node)
+        private LLVMValueRef GenerateConstructorCallExpression(BoundConstructorCallExpression node, LLVMValueRef? storage = null)
         {
-            // if we call a constructor
-            // the data for the type actually resides on the stack of the callee
-            // so the pattern should be something like
-            // 1. allocate heap space
-            // 2. call ctor with mutable reference
-            var type = node.Type;
-            var t = _types[type];
+            LLVMValueRef ptr;
+            if (storage == null)
+            {
+                // if we call a constructor
+                // the data for the type actually resides on the stack of the callee
+                // so the pattern should be something like
+                // 1. allocate heap space
+                // 2. call ctor with mutable reference
+                var type = node.Type;
+                var t = _types[type];
+                ptr = _builder.BuildAlloca(t);
+            }
+            else
+            {
+                ptr = storage.Value;
+            }
 
-            var ptr = _builder.BuildAlloca(t);
 
             // steal from method invoke
 
             var arguments = new[] { ptr }
-                .Concat(node.Arguments.Select(GenerateExpression))
+                .Concat(node.Arguments.Select(a => GenerateExpression(a)))
                 .ToArray();
             var function = _symbols[node.Constructor];
             _builder.BuildCall(function, arguments);
@@ -595,13 +632,14 @@ namespace Eagle.CodeAnalysis.CodeGen
                 BoundVariableExpression v => v.Variable.Type.IsReference ? GenerateExpression(v) : _symbols[v.Variable],
                 BoundArrayIndexExpression a => GenerateArrayIndexExpression(a, true),
                 BoundMethodCallExpression m => GenerateExpression(m),
+                BoundFunctionCallExpression f => GenerateExpression(f),
                 _ => throw new InvalidOperationException("invalid l value")
             };
         }
 
         private LLVMValueRef GenerateMethodCallExpression(BoundMethodCallExpression node)
         {
-            var arguments = node.Arguments.Select(GenerateExpression).ToArray();
+            var arguments = node.Arguments.Select(a => GenerateExpression(a)).ToArray();
 
             if (!node.Method.IsStatic)
             {

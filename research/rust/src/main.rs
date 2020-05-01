@@ -15,6 +15,11 @@ fn main() {
     };
 
     let pr = addr(&p, &p2);
+    
+
+    let p4 = addr(&addr(&p, &p2), &addr(&p, &p2));
+
+
     let p3 = add(p, p2);
 }
 

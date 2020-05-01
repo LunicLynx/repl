@@ -421,6 +421,120 @@ entry:
             AssertGeneration(source, expected);
         }
 
+        [Fact]
+        public void EmitFunctionWithObjReturn()
+        {
+            var source = @"
+object MyObj { }
+
+Print(): MyObj { return MyObj(); }
+
+Main() {}
+";
+
+            var expected = @"
+%MyObj = type {}
+
+define void @Print(%MyObj*) {
+entry:
+  call void @MyObj(%MyObj* %0)
+  ret void
+}
+
+define void @Main() {
+entry:
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+            AssertGeneration(source, expected);
+        }
+
+        // TODO not correct yet 
+        [Fact]
+        public void EmitFunctionWithRefObjReturn()
+        {
+            var source = @"
+object MyObj { }
+
+Print(): MyObj& {
+  let x = MyObj();
+  return x;
+}
+
+Main() {}
+";
+
+            var expected = @"
+%MyObj = type {}
+
+define void @Print(%MyObj*) {
+entry:
+  ret i64 0
+}
+
+define void @Main() {
+entry:
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+            AssertGeneration(source, expected);
+        }
+
+        // TODO not correct yet 
+        [Fact]
+        public void EmitFunctionWithPointerObjReturn()
+        {
+            var source = @"
+object MyObj { }
+
+Print(): MyObj* { 
+  let x = MyObj();
+  return &x;
+}
+
+Main() {}
+";
+
+            var expected = @"
+%MyObj = type {}
+
+define i64 @Print() {
+entry:
+  ret i64 0
+}
+
+define void @Main() {
+entry:
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+            AssertGeneration(source, expected);
+        }
+
 
         [Fact]
         public void EmitObjectEmpty()
@@ -952,6 +1066,53 @@ object MyObj { a: int; b: int; }
 Print(number: MyObj&) {}
 
 Main() { let x = MyObj(); Print(x); }
+";
+
+            var expected = @"
+%MyObj = type { i64, i64 }
+
+define void @Print(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  ret void
+}
+
+define void @Main() {
+entry:
+  %0 = alloca %MyObj
+  call void @MyObj(%MyObj* %0)
+  call void @Print(%MyObj* %0)
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        // TODO not correct yet 
+        [Fact]
+        public void EmitCallFunctionWithRefObjParameterWithTempValue()
+        {
+            var source = @"
+object MyObj { a: int; b: int; }
+
+Act(number: MyObj&): MyObj {
+  return MyObj();
+}
+
+Main() { 
+  let x = MyObj(); 
+  Act(Act(x));
+}
 ";
 
             var expected = @"

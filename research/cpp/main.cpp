@@ -1,3 +1,7 @@
+// #include <string>
+
+// using namespace std;
+
 typedef long long i64;
 
 class Empty {
@@ -18,6 +22,10 @@ public:
 
     void Act() {
         Act();
+    }
+
+    Single Create(const Single& arg){
+        return Single();
     }
 
     static void StaticAct() {
@@ -52,6 +60,14 @@ void print5(i64_2& strct){
     
 }
 
+void print5_1(const i64_2& strct){
+    
+}
+
+void print5_2(i64_2&& strct){
+    
+}
+
 void print6(i64_2* strct){
     
 }
@@ -74,6 +90,10 @@ i64_2 print10(){
     return i64_2();
 }
 
+Single print10_2(){
+    return Single();
+}
+
 i64_2& print11(){
     auto x = i64_2();
     return x;
@@ -83,6 +103,8 @@ i64_2* print12(){
     auto x = i64_2();
     return &x;
 }
+
+
 
 i64 add1(i64 a, i64 b)
 {
@@ -166,13 +188,19 @@ int main()
     print3(&a);
     print4(i64_2());
     print4(sa);
-    //print5(i64_2());
+    // print5(i64_2());
+    print5_1(i64_2());
+    print5_1(sa);
+    print5_2(i64_2());
+    // print5_2(sa);
     print5(sa);
     print6(&sa);
     print7();
     print8();
     print9();
     print10();
+    print10_2();
+    print11();
     print12();
 
     ps.Act();
@@ -185,4 +213,11 @@ int main()
 
     auto& z = y;
     z.a = 10;
+
+    // string s1 = "Hallo";
+    // string s2 = "Welt";
+    // auto abc = s1 + " " + s2;
+
+    auto bc = Single();
+    auto dc = bc.Create(Single());
 }
