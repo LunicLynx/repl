@@ -29,29 +29,29 @@ namespace Eagle.CodeAnalysis.CodeGen
         private static LLVMValueRef _true = LLVMValueRef.CreateConstInt(_i1, 1);
 
         private static LLVMValueRef _n0i8 = LLVMValueRef.CreateConstInt(_i8, 0);
-        private static LLVMValueRef _n1i8 = LLVMValueRef.CreateConstInt(_i8, 0);
-        private static LLVMValueRef _n2i8 = LLVMValueRef.CreateConstInt(_i8, 0);
-        private static LLVMValueRef _n3i8 = LLVMValueRef.CreateConstInt(_i8, 0);
-        private static LLVMValueRef _n4i8 = LLVMValueRef.CreateConstInt(_i8, 0);
+        private static LLVMValueRef _n1i8 = LLVMValueRef.CreateConstInt(_i8, 1);
+        private static LLVMValueRef _n2i8 = LLVMValueRef.CreateConstInt(_i8, 2);
+        private static LLVMValueRef _n3i8 = LLVMValueRef.CreateConstInt(_i8, 3);
+        private static LLVMValueRef _n4i8 = LLVMValueRef.CreateConstInt(_i8, 4);
 
         private static LLVMValueRef _n0i16 = LLVMValueRef.CreateConstInt(_i16, 0);
-        private static LLVMValueRef _n1i16 = LLVMValueRef.CreateConstInt(_i16, 0);
-        private static LLVMValueRef _n2i16 = LLVMValueRef.CreateConstInt(_i16, 0);
-        private static LLVMValueRef _n3i16 = LLVMValueRef.CreateConstInt(_i16, 0);
-        private static LLVMValueRef _n4i16 = LLVMValueRef.CreateConstInt(_i16, 0);
+        private static LLVMValueRef _n1i16 = LLVMValueRef.CreateConstInt(_i16, 1);
+        private static LLVMValueRef _n2i16 = LLVMValueRef.CreateConstInt(_i16, 2);
+        private static LLVMValueRef _n3i16 = LLVMValueRef.CreateConstInt(_i16, 3);
+        private static LLVMValueRef _n4i16 = LLVMValueRef.CreateConstInt(_i16, 4);
 
 
         private static LLVMValueRef _n0i32 = LLVMValueRef.CreateConstInt(_i32, 0);
-        private static LLVMValueRef _n1i32 = LLVMValueRef.CreateConstInt(_i32, 0);
-        private static LLVMValueRef _n2i32 = LLVMValueRef.CreateConstInt(_i32, 0);
-        private static LLVMValueRef _n3i32 = LLVMValueRef.CreateConstInt(_i32, 0);
-        private static LLVMValueRef _n4i32 = LLVMValueRef.CreateConstInt(_i32, 0);
+        private static LLVMValueRef _n1i32 = LLVMValueRef.CreateConstInt(_i32, 1);
+        private static LLVMValueRef _n2i32 = LLVMValueRef.CreateConstInt(_i32, 2);
+        private static LLVMValueRef _n3i32 = LLVMValueRef.CreateConstInt(_i32, 3);
+        private static LLVMValueRef _n4i32 = LLVMValueRef.CreateConstInt(_i32, 4);
 
         private static LLVMValueRef _n0i64 = LLVMValueRef.CreateConstInt(_i64, 0);
-        private static LLVMValueRef _n1i64 = LLVMValueRef.CreateConstInt(_i64, 0);
-        private static LLVMValueRef _n2i64 = LLVMValueRef.CreateConstInt(_i64, 0);
-        private static LLVMValueRef _n3i64 = LLVMValueRef.CreateConstInt(_i64, 0);
-        private static LLVMValueRef _n4i64 = LLVMValueRef.CreateConstInt(_i64, 0);
+        private static LLVMValueRef _n1i64 = LLVMValueRef.CreateConstInt(_i64, 1);
+        private static LLVMValueRef _n2i64 = LLVMValueRef.CreateConstInt(_i64, 2);
+        private static LLVMValueRef _n3i64 = LLVMValueRef.CreateConstInt(_i64, 3);
+        private static LLVMValueRef _n4i64 = LLVMValueRef.CreateConstInt(_i64, 4);
         private static LLVMValueRef _n16I64 = LLVMValueRef.CreateConstInt(_i64, 16);
 
         private LLVMValueRef? _llvmMemcpyP0I8P0I8I32;
@@ -263,15 +263,50 @@ namespace Eagle.CodeAnalysis.CodeGen
             {
 
                 //_mod.Context.
-                var t = GetLlvmType(type);
+                //var t = GetLlvmType(type);
                 var s = (string)nodeValue;
-                var str = _builder.BuildGlobalString(s);
-                var strType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+                //var str = _builder.BuildGlobalString(s);
+                //var strType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
 
-                value = _builder.BuildBitCast(str, strType);
+                var ssss = LLVMValueRef.CreateConstArray(_i8, new[] { _n0i8, _n1i8, _n0i8, _n1i8, _n0i8, _n1i8 });
+
+                
+                var addGlobal = _mod.AddGlobal(ssss.TypeOf, "");
+
+                //_mod.add
+
+                //_builder.BuildStore(llvmValueRef, ssss);
+                //_builder.BuildStore(addGlobal, ssss);
+                addGlobal.Linkage = LLVMLinkage.LLVMPrivateLinkage;
+                addGlobal.Initializer = ssss;
+                addGlobal.HasUnnamedAddr = true;
+                addGlobal.IsGlobalConstant = true;
+
+
+                //var p = LLVMValueRef.CreateConstInBoundsGEP(addGlobal, new[] { _n0i32 });
+                //var p = _builder.BuildInBoundsGEP(addGlobal, new[] {_n0i32});
+                var p = LLVMValueRef.CreateConstBitCast(addGlobal, _pi8);
 
                 value = LLVMValueRef.CreateConstStruct(
-                    new[] { value, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)s.Length) }, false);
+                    new[] { p, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)s.Length) }, false);
+
+                //_mod.Context.GetConstStruct(new[] {addGlobal}, true);
+
+                //_builder.glob
+                //var k = _mod.Context.GetConstStruct(new[] {ssss}, true);
+                ////ssss = LLVMValueRef.CreateConstStruct(new[] { ssss }, true);
+                ////var g = _mod.AddGlobal(ssss.TypeOf, "asdf");
+
+                ////k = LLVMValueRef.CreateConstPointerCast(k, LLVMTypeRef.CreatePointer(ssss.TypeOf, 0));
+
+
+                ////value = _builder.BuildBitCast(str, strType);
+                ////value = _builder.BuildInBoundsGEP(ssss, new[] { _n0i32 });
+                //value = LLVMValueRef.CreateConstInBoundsGEP(k, new[] { _n0i32, _n0i32, _n0i32 });
+
+                //value = LLVMValueRef.CreateConstStruct(
+                //    new[] { value, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)s.Length) }, false);
+                //value = ssss;
             }
 
             if (type == TypeSymbol.Char) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, (char)nodeValue);
@@ -633,18 +668,29 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateLValue(BoundExpression expression)
         {
-            return expression switch
+            switch (expression)
             {
-                BoundConstructorCallExpression c => GenerateExpression(c),
-                BoundUnaryExpression u when u.Operator.Kind == BoundUnaryOperatorKind.AddressOf => GenerateLValue(u.Operand),
-                BoundFieldExpression t => GenerateFieldExpression(t),
-                BoundThisExpression t => _symbols[_this],
-                BoundVariableExpression v => v.Variable.Type.IsReference ? GenerateExpression(v) : _symbols[v.Variable],
-                BoundArrayIndexExpression a => GenerateArrayIndexExpression(a, true),
-                BoundMethodCallExpression m => GenerateExpression(m),
-                BoundFunctionCallExpression f => GenerateExpression(f),
-                _ => throw new InvalidOperationException("invalid l value")
-            };
+                case BoundConstructorCallExpression c:
+                    return GenerateExpression(c);
+                case BoundUnaryExpression u when u.Operator.Kind == BoundUnaryOperatorKind.AddressOf:
+                    return GenerateLValue(u.Operand);
+                case BoundFieldExpression t:
+                    return GenerateFieldExpression(t);
+                case BoundThisExpression t:
+                    return _symbols[_this];
+                case BoundVariableExpression v:
+                    return v.Variable.Type.IsReference ? GenerateExpression(v) : _symbols[v.Variable];
+                case BoundArrayIndexExpression a:
+                    return GenerateArrayIndexExpression(a, true);
+                case BoundMethodCallExpression m:
+                    return GenerateExpression(m);
+                case BoundFunctionCallExpression f:
+                    return GenerateExpression(f);
+                case BoundLiteralExpression l:
+                    return GenerateExpression(l);
+                default:
+                    throw new InvalidOperationException("invalid l value");
+            }
         }
 
         private LLVMValueRef GenerateMethodCallExpression(BoundMethodCallExpression node)

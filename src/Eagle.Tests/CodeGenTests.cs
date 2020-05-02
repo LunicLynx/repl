@@ -1463,6 +1463,27 @@ entry:
         }
 
         [Fact]
+        public void EmitString()
+        {
+            var source = @"
+Main() {
+    ""Hello World!"";
+}
+";
+
+            var expected = @"
+@0 = private unnamed_addr constant [13 x i8] c""Hello World!\00"", align 1
+
+define void @Main() {
+entry:
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
         public void EmitFunctionAddAndCall()
         {
             var source = @"

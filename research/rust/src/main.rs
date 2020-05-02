@@ -1,5 +1,12 @@
+static x : Point = Point {
+    x: 1,
+        y: 2,
+        z: 3,
+        w: 4,
+};
+
 fn main() {
-    //println!("Hello, world!");
+    println!("Hello, world!");
 
     let p = Point {
         x: 1,
@@ -15,6 +22,7 @@ fn main() {
     };
 
     let pr = addr(&p, &p2);
+    let pr = addr(&p, &x);
     
 
     let p4 = addr(&addr(&p, &p2), &addr(&p, &p2));
