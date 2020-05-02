@@ -457,7 +457,6 @@ entry:
             AssertGeneration(source, expected);
         }
 
-        // TODO not correct yet 
         [Fact]
         public void EmitFunctionWithRefObjReturn()
         {
@@ -475,9 +474,11 @@ Main() {}
             var expected = @"
 %MyObj = type {}
 
-define void @Print(%MyObj*) {
+define %MyObj* @Print() {
 entry:
-  ret i64 0
+  %0 = alloca %MyObj
+  call void @MyObj(%MyObj* %0)
+  ret %MyObj* %0
 }
 
 define void @Main() {
@@ -496,7 +497,6 @@ entry:
             AssertGeneration(source, expected);
         }
 
-        // TODO not correct yet 
         [Fact]
         public void EmitFunctionWithPointerObjReturn()
         {
@@ -514,9 +514,11 @@ Main() {}
             var expected = @"
 %MyObj = type {}
 
-define i64 @Print() {
+define %MyObj* @Print() {
 entry:
-  ret i64 0
+  %0 = alloca %MyObj
+  call void @MyObj(%MyObj* %0)
+  ret %MyObj* %0
 }
 
 define void @Main() {
@@ -1098,7 +1100,6 @@ entry:
             AssertGeneration(source, expected);
         }
 
-        // TODO not correct yet 
         [Fact]
         public void EmitCallFunctionWithRefObjParameterWithTempValue()
         {
@@ -1118,10 +1119,11 @@ Main() {
             var expected = @"
 %MyObj = type { i64, i64 }
 
-define void @Print(%MyObj*) {
+define void @Act(%MyObj*, %MyObj*) {
 entry:
-  %1 = alloca %MyObj*
-  store %MyObj* %0, %MyObj** %1
+  %2 = alloca %MyObj*
+  store %MyObj* %1, %MyObj** %2
+  call void @MyObj(%MyObj* %0)
   ret void
 }
 
@@ -1129,7 +1131,10 @@ define void @Main() {
 entry:
   %0 = alloca %MyObj
   call void @MyObj(%MyObj* %0)
-  call void @Print(%MyObj* %0)
+  %1 = alloca %MyObj
+  call void @Act(%MyObj* %1, %MyObj* %0)
+  %2 = alloca %MyObj
+  call void @Act(%MyObj* %2, %MyObj* %1)
   ret void
 }
 

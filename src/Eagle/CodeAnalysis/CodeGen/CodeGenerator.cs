@@ -733,21 +733,29 @@ namespace Eagle.CodeAnalysis.CodeGen
             // not complex just push the value
             // if return value is complex convert to pointer and 
             // etc.
-
-            if (node.Function.Type == TypeSymbol.String)
+            var complex = false;
+            LLVMValueRef pReturn = null;
+            if (node.Function.Type.SpecialType == SpecialType.String ||
+                node.Function.Type.SpecialType == SpecialType.None)
             {
                 // void return
                 var returnType = GetXType(node.Function.Type);
-                var pReturn = _builder.BuildAlloca(returnType);
+                pReturn = _builder.BuildAlloca(returnType);
 
                 args = new[] { pReturn }.Concat(args).ToList();
+                complex = true;
             }
             else
             {
                 // normal return type
             }
 
-            return _builder.BuildCall(function, args.ToArray());
+            var r = _builder.BuildCall(function, args.ToArray());
+
+            if (complex)
+                r = pReturn;
+
+            return r;
         }
 
         private LLVMValueRef GenerateVariableExpression(BoundVariableExpression node)
