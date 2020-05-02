@@ -113,7 +113,8 @@ namespace Eagle.CodeAnalysis.CodeGen
                 var fields = type.Members.OfType<FieldSymbol>().ToList();
                 var elements = fields.Select(f => GetLlvmType(f.Type)).ToArray();
                 //var str = LLVMTypeRef.CreateStruct(elements, false);
-                var str = _mod.Context.CreateNamedStruct(type.Name);
+
+                var str = type.Name == "String" ? StringType : _mod.Context.CreateNamedStruct(type.Name);
                 str.StructSetBody(elements, false);
                 _types[type] = str;
             }

@@ -1838,6 +1838,19 @@ namespace Eagle.CodeAnalysis.Binding
 
             if (left.Type == TypeSymbol.Error || right.Type == TypeSymbol.Error)
                 return new BoundErrorExpression();
+            
+            // handle strings extra
+            var stringReferenceType = TypeSymbol.String.MakeReference();
+            if ((left.Type == TypeSymbol.String || left.Type == stringReferenceType) &&
+               (right.Type == TypeSymbol.String || right.Type == stringReferenceType))
+            {
+                if (!TryResolveMethod("String.Concat", new[] { stringReferenceType, stringReferenceType }, out var method))
+                {
+                    Diagnostics.ReportMissingExpectedFunction(syntax.OperatorToken.Location, "Concat");
+                    return new BoundErrorExpression();
+                }
+                return new BoundMethodCallExpression(null, method, ImmutableArray.Create(left, right));
+            }
 
             var operatorToken = syntax.OperatorToken;
             var boundOperator = BoundBinaryOperator.Bind(operatorToken.Kind, left.Type, right.Type);
@@ -1845,16 +1858,6 @@ namespace Eagle.CodeAnalysis.Binding
             {
                 Diagnostics.ReportUndefinedBinaryOperator(operatorToken.Location, operatorToken.Text, left.Type, right.Type);
                 return left;
-            }
-
-            if (boundOperator.Kind == BoundBinaryOperatorKind.Concatenation)
-            {
-                if (!TryResolveMethod("String.Concat", new[] { TypeSymbol.String.MakeReference(), TypeSymbol.String.MakeReference() }, out var method))
-                {
-                    Diagnostics.ReportMissingExpectedFunction(syntax.OperatorToken.Location, "Concat");
-                    return new BoundErrorExpression();
-                }
-                return new BoundMethodCallExpression(null, method, ImmutableArray.Create(left, right));
             }
 
             return new BoundBinaryExpression(left, boundOperator, right);
