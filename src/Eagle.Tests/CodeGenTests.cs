@@ -1388,6 +1388,81 @@ entry:
         }
 
         [Fact]
+        public void EmitStaticMethod()
+        {
+            var source = @"
+object MyObj { 
+    static Act() {  }
+}
+
+Main() { }
+";
+
+            var expected = @"
+%MyObj = type {}
+
+define void @Main() {
+entry:
+  ret void
+}
+
+define void @Act() {
+entry:
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitCallStaticMethod()
+        {
+            var source = @"
+object MyObj { 
+    static Act() {  }
+}
+
+Main() {
+    MyObj.Act();
+}
+";
+
+            var expected = @"
+%MyObj = type {}
+
+define void @Main() {
+entry:
+  call void @Act()
+  ret void
+}
+
+define void @Act() {
+entry:
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
         public void EmitFunctionAddAndCall()
         {
             var source = @"

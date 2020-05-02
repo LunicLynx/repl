@@ -94,7 +94,7 @@ namespace Eagle.CodeAnalysis.CodeGen
                 //if (type == TypeSymbol.String) continue;
 
                 var fields = type.Members.OfType<FieldSymbol>().ToList();
-                var elements = fields.Select(f => GetXType(f.Type)).ToArray();
+                var elements = fields.Select(f => GetLlvmType(f.Type)).ToArray();
                 //var str = LLVMTypeRef.CreateStruct(elements, false);
                 var str = _mod.Context.CreateNamedStruct(type.Name);
                 str.StructSetBody(elements, false);
@@ -150,11 +150,11 @@ namespace Eagle.CodeAnalysis.CodeGen
                         type = CreateFunctionType(fs);
                         break;
                     case ConstructorSymbol cs:
-                        var lt = GetXType(cs.Type);
+                        var lt = GetLlvmType(cs.Type);
                         type = CreateConstructorType(cs, lt);
                         break;
                     case MethodSymbol ms:
-                        var lt1 = GetXType(ms.DeclaringType);
+                        var lt1 = GetLlvmType(ms.DeclaringType);
                         type = CreateMethodType(ms, lt1);
                         break;
                 }
@@ -263,7 +263,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             {
 
                 //_mod.Context.
-                var t = GetXType(type);
+                var t = GetLlvmType(type);
                 var s = (string)nodeValue;
                 var str = _builder.BuildGlobalString(s);
                 var strType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
@@ -347,56 +347,66 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMTypeRef CreateFunctionType(FunctionSymbol function)
         {
-            var returnType = GetXType(function.Type);
+            GetParameterAndReturnType(function, out var returnType, out var parameterTypes);
 
-            var parameterTypes = new List<LLVMTypeRef>();
+            return LLVMTypeRef.CreateFunction(returnType, parameterTypes.ToArray());
+        }
+
+        private void GetParameterAndReturnType(IInvokableSymbol function, out LLVMTypeRef returnType, out List<LLVMTypeRef> parameterTypes)
+        {
+            returnType = GetLlvmType(function.Type);
+
+            parameterTypes = new List<LLVMTypeRef>();
 
             // if return type is byValue of complex type
             // promote to parameter as pointer
-            if (!function.Type.IsPointer &&
-                !function.Type.IsReference &&
-                (function.Type.SpecialType == SpecialType.None || function.Type.SpecialType == SpecialType.String))
+            if (function.Type.IsComplex())
             {
                 parameterTypes.Add(LLVMTypeRef.CreatePointer(returnType, 0));
                 returnType = LLVMTypeRef.Void;
             }
 
+            GetParameters(function, out var parameterTypes2);
+            parameterTypes.AddRange(parameterTypes2);
+        }
+
+        private void GetParameters(IInvokableSymbol function, out List<LLVMTypeRef> parameterTypes)
+        {
+            parameterTypes = new List<LLVMTypeRef>();
             foreach (var parameter in function.Parameters)
             {
-                if (parameter.Type.IsPointer ||
-                    parameter.Type.IsReference ||
-                    parameter.Type.SpecialType != SpecialType.None)
+                if (parameter.Type.IsComplex())
                 {
-                    parameterTypes.Add(GetXType(parameter.Type));
+                    parameterTypes.Add(LLVMTypeRef.CreatePointer(GetLlvmType(parameter.Type), 0));
                 }
                 else
                 {
-                    parameterTypes.Add(LLVMTypeRef.CreatePointer(GetXType(parameter.Type), 0));
+                    parameterTypes.Add(GetLlvmType(parameter.Type));
                 }
             }
-
-            return LLVMTypeRef.CreateFunction(returnType, parameterTypes.ToArray());
         }
 
         private LLVMTypeRef CreateMethodType(MethodSymbol method, LLVMTypeRef owner)
         {
-            var returnType = GetXType(method.Type);
-            var parameterTypes = method.Parameters.Select(p => GetXType(p.Type)).ToArray();
+            //var returnType = GetXType(method.Type);
+            //var parameterTypes = method.Parameters.Select(p => GetXType(p.Type)).ToArray();
+            GetParameterAndReturnType(method, out var returnType, out var parameterTypes);
 
             // if not static prepend this parameter
             if (!method.IsStatic)
             {
                 parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }
-                    .Concat(parameterTypes).ToArray();
+                    .Concat(parameterTypes).ToList();
             }
 
-            return LLVMTypeRef.CreateFunction(returnType, parameterTypes);
+            return LLVMTypeRef.CreateFunction(returnType, parameterTypes.ToArray());
         }
 
         private LLVMTypeRef CreateConstructorType(ConstructorSymbol constructor, LLVMTypeRef owner)
         {
-            var parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }.Concat(constructor.Parameters.Select(p => GetXType(p.Type))).ToArray();
-            return LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, parameterTypes);
+            GetParameters(constructor, out var parameterTypes);
+            parameterTypes = new[] { LLVMTypeRef.CreatePointer(owner, 0) }.Concat(parameterTypes).ToList();
+            return LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, parameterTypes.ToArray());
         }
 
         private void GenerateLabelStatement(BoundLabelStatement node)
@@ -502,7 +512,7 @@ namespace Eagle.CodeAnalysis.CodeGen
 
             if (!_symbols.TryGetValue(variable, out var ptr))
             {
-                var xType = GetXType(variable.Type);
+                var xType = GetLlvmType(variable.Type);
                 ptr = _builder.BuildAlloca(xType);
                 _symbols[variable] = ptr;
             }
@@ -565,7 +575,7 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateNewArrayExpression(BoundNewArrayExpression node)
         {
-            var type = GetXType(node.Type);
+            var type = GetLlvmType(node.Type);
             var args = node.Arguments.Select(a => GenerateExpression(a)).ToArray();
             return _builder.BuildArrayAlloca(type, args[0]);
         }
@@ -673,7 +683,7 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateCastExpression(BoundConversionExpression node)
         {
-            var type = GetXType(node.Type);
+            var type = GetLlvmType(node.Type);
             var value = GenerateExpression(node.Expression);
             if (node.Type.IsPointer || node.Type.IsArray)
                 return _builder.BuildPointerCast(value, type);
@@ -709,7 +719,7 @@ namespace Eagle.CodeAnalysis.CodeGen
                 // if it is not a temporary value make a copy
                 else if (argument is BoundVariableExpression)
                 {
-                    var argType = GetXType(argument.Type);
+                    var argType = GetLlvmType(argument.Type);
                     var tptr = _builder.BuildAlloca(argType);
                     var sptr = GenerateLValue(argument);
                     var ctptr = _builder.BuildBitCast(tptr, _pi8);
@@ -733,17 +743,16 @@ namespace Eagle.CodeAnalysis.CodeGen
             // not complex just push the value
             // if return value is complex convert to pointer and 
             // etc.
-            var complex = false;
             LLVMValueRef pReturn = null;
-            if (node.Function.Type.SpecialType == SpecialType.String ||
-                node.Function.Type.SpecialType == SpecialType.None)
+            var functionType = node.Function.Type;
+            var complex = functionType.IsComplex();
+            if (complex)
             {
                 // void return
-                var returnType = GetXType(node.Function.Type);
+                var returnType = GetLlvmType(functionType);
                 pReturn = _builder.BuildAlloca(returnType);
 
                 args = new[] { pReturn }.Concat(args).ToList();
-                complex = true;
             }
             else
             {
@@ -796,7 +805,7 @@ namespace Eagle.CodeAnalysis.CodeGen
         //    [TypeSymbol.UInt] = LLVMTypeRef.Int64,
         //};
 
-        private LLVMTypeRef GetXType(TypeSymbol type)
+        private LLVMTypeRef GetLlvmType(TypeSymbol type)
         {
             if (_types.TryGetValue(type, out var x))
                 return x;
@@ -815,8 +824,8 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.Int) return LLVMTypeRef.Int64;
             if (type == TypeSymbol.UInt) return LLVMTypeRef.Int64;
             if (type == TypeSymbol.Any) return LLVMTypeRef.CreatePointer(LLVMTypeRef.Void, 0);
-            if (type.IsPointer || type.IsReference) return LLVMTypeRef.CreatePointer(GetXType(type.ElementType), 0);
-            if (type.IsArray) return LLVMTypeRef.CreatePointer(GetXType(type.ElementType), 0);
+            if (type.IsPointer || type.IsReference) return LLVMTypeRef.CreatePointer(GetLlvmType(type.ElementType), 0);
+            if (type.IsArray) return LLVMTypeRef.CreatePointer(GetLlvmType(type.ElementType), 0);
             throw new Exception("Unsupported type");
         }
 

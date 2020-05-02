@@ -120,5 +120,17 @@ namespace Eagle.CodeAnalysis
             //if (type == TypeSymbol.U8) return (false, 1);
             //throw new Exception("Non integer types are not supported");
         }
+
+        public static bool IsComplex(this TypeSymbol type)
+        {
+            return !type.IsPointer && !type.IsReference && (
+                type.SpecialType == SpecialType.String ||
+                type.SpecialType == SpecialType.None);
+        }
+
+        public static bool IsSimple(this TypeSymbol type)
+        {
+            return !type.IsComplex();
+        }
     }
 }
