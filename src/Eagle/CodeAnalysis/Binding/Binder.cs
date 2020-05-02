@@ -1137,18 +1137,27 @@ namespace Eagle.CodeAnalysis.Binding
             var isReadOnly = syntax.Keyword.Kind == TokenKind.LetKeyword;
 
             var initializer = BindExpression(syntax.Initializer);
-            
-            TypeSymbol? type;
-            if (syntax.AmpersandToken != null)
+
+            var variableType = BindTypeClause(syntax.TypeClause);
+
+            if (variableType == null)
             {
-                type = initializer.Type.MakeReference();
-            }
-            else
-            {
-                type = BindTypeClause(syntax.TypeClause);
+                variableType = initializer.Type;
+                if (syntax.AmpersandToken != null)
+                {
+                    if (!variableType.IsReference)
+                        variableType = variableType.MakeReference();
+                }
+
+                if (syntax.AmpersandToken == null)
+                {
+                    if (variableType.IsReference)
+                        variableType = variableType.ElementType;
+                }
             }
 
-            var variableType = type ?? initializer.Type;
+
+            //var variableType = type ?? initializer.Type;
             var variable = BindVariableDeclaration(syntax.IdentifierToken, isReadOnly, variableType);
             var convertedInitializer = BindConversion(syntax.Initializer.Location, initializer, variableType);
 
@@ -1794,7 +1803,7 @@ namespace Eagle.CodeAnalysis.Binding
                         .Replace(@"\t", "\t")
                         .Replace(@"\r", "\r")
                         .Replace(@"\n", "\n");
-                    type = TypeSymbol.String;
+                    type = TypeSymbol.String.MakeReference();
                     break;
             }
 

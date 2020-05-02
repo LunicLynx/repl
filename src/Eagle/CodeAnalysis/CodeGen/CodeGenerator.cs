@@ -2,7 +2,9 @@
 using LLVMSharp.Interop;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
 
 namespace Eagle.CodeAnalysis.CodeGen
 {
@@ -66,6 +68,21 @@ namespace Eagle.CodeAnalysis.CodeGen
         private LLVMValueRef LlvmMemsetP0I8I64 =>
             _llvmMemsetP0I8I64 ??= _mod.AddFunction("llvm.memset.p0i8.i64", _llvmMemsetP0I8I64Type);
 
+        private LLVMTypeRef? _stringType;
+        private LLVMTypeRef StringType
+        {
+            get
+            {
+                if (!_stringType.HasValue)
+                {
+                    var stringType = _mod.Context.CreateNamedStruct("String");
+                    stringType.StructSetBody(new[] { _pi8, _i64 }, false);
+                    _stringType = stringType;
+                }
+
+                return _stringType.Value;
+            }
+        }
 
         private readonly BoundProgram _program;
         private readonly BoundGlobalScope _globalScope;
@@ -242,6 +259,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             _builder.Dispose();
         }
 
+        private TypeSymbol _stringReference = TypeSymbol.String.MakeReference();
         private LLVMValueRef GetAsValue(TypeSymbol type, object nodeValue)
         {
             LLVMValueRef value = null;
@@ -250,66 +268,41 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.I32) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)((int)Convert.ChangeType(nodeValue, typeof(int))));
             if (type == TypeSymbol.I64) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)((long)Convert.ChangeType(nodeValue, typeof(long))));
             if (type == TypeSymbol.I8) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, (ulong)((sbyte)Convert.ChangeType(nodeValue, typeof(sbyte))));
-            //if (type == _stringType) value = LLVMValueRef.String((string)nodeValue);
             if (type == TypeSymbol.U16) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int16, ((ushort)Convert.ChangeType(nodeValue, typeof(ushort))));
             if (type == TypeSymbol.U32) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, ((uint)Convert.ChangeType(nodeValue, typeof(uint))));
             if (type == TypeSymbol.U64) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, ((ulong)Convert.ChangeType(nodeValue, typeof(ulong))));
             if (type == TypeSymbol.U8) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, ((byte)Convert.ChangeType(nodeValue, typeof(byte))));
-
             if (type == TypeSymbol.UInt) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)((long)Convert.ChangeType(nodeValue, typeof(long))));
             if (type == TypeSymbol.Int) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)((long)Convert.ChangeType(nodeValue, typeof(long))));
-
-            if (type == TypeSymbol.String)
-            {
-
-                //_mod.Context.
-                //var t = GetLlvmType(type);
-                var s = (string)nodeValue;
-                //var str = _builder.BuildGlobalString(s);
-                //var strType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
-
-                var ssss = LLVMValueRef.CreateConstArray(_i8, new[] { _n0i8, _n1i8, _n0i8, _n1i8, _n0i8, _n1i8 });
-
-                
-                var addGlobal = _mod.AddGlobal(ssss.TypeOf, "");
-
-                //_mod.add
-
-                //_builder.BuildStore(llvmValueRef, ssss);
-                //_builder.BuildStore(addGlobal, ssss);
-                addGlobal.Linkage = LLVMLinkage.LLVMPrivateLinkage;
-                addGlobal.Initializer = ssss;
-                addGlobal.HasUnnamedAddr = true;
-                addGlobal.IsGlobalConstant = true;
-
-
-                //var p = LLVMValueRef.CreateConstInBoundsGEP(addGlobal, new[] { _n0i32 });
-                //var p = _builder.BuildInBoundsGEP(addGlobal, new[] {_n0i32});
-                var p = LLVMValueRef.CreateConstBitCast(addGlobal, _pi8);
-
-                value = LLVMValueRef.CreateConstStruct(
-                    new[] { p, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)s.Length) }, false);
-
-                //_mod.Context.GetConstStruct(new[] {addGlobal}, true);
-
-                //_builder.glob
-                //var k = _mod.Context.GetConstStruct(new[] {ssss}, true);
-                ////ssss = LLVMValueRef.CreateConstStruct(new[] { ssss }, true);
-                ////var g = _mod.AddGlobal(ssss.TypeOf, "asdf");
-
-                ////k = LLVMValueRef.CreateConstPointerCast(k, LLVMTypeRef.CreatePointer(ssss.TypeOf, 0));
-
-
-                ////value = _builder.BuildBitCast(str, strType);
-                ////value = _builder.BuildInBoundsGEP(ssss, new[] { _n0i32 });
-                //value = LLVMValueRef.CreateConstInBoundsGEP(k, new[] { _n0i32, _n0i32, _n0i32 });
-
-                //value = LLVMValueRef.CreateConstStruct(
-                //    new[] { value, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)s.Length) }, false);
-                //value = ssss;
-            }
-
             if (type == TypeSymbol.Char) value = LLVMValueRef.CreateConstInt(LLVMTypeRef.Int8, (char)nodeValue);
+
+            if (type == _stringReference)
+            {
+                var str = (string)nodeValue;
+
+                var bytes = str.Select(c => LLVMValueRef.CreateConstInt(_i8, c)).ToArray();
+
+                var stringConstant = LLVMValueRef.CreateConstArray(_i8, bytes);
+                var stringGlobal = _mod.AddGlobal(stringConstant.TypeOf, "");
+
+                stringGlobal.Linkage = LLVMLinkage.LLVMPrivateLinkage;
+                stringGlobal.Initializer = stringConstant;
+                stringGlobal.HasUnnamedAddr = true;
+                stringGlobal.IsGlobalConstant = true;
+
+                var pStringGlobal = LLVMValueRef.CreateConstBitCast(stringGlobal, _pi8);
+
+                var structConstant = LLVMValueRef.CreateConstNamedStruct(StringType,
+                    new[] { pStringGlobal, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, (ulong)str.Length) });
+
+                var structGlobal = _mod.AddGlobal(structConstant.TypeOf, "");
+                structGlobal.Linkage = LLVMLinkage.LLVMLinkerPrivateLinkage;
+                structGlobal.Initializer = structConstant;
+                structGlobal.HasUnnamedAddr = true;
+                structGlobal.IsGlobalConstant = true;
+
+                value = structGlobal;
+            }
 
             if (value == null) throw new Exception("");
             return value;
@@ -526,8 +519,6 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var variable = node.Variable;
 
-
-
             if (node.Initializer is BoundConstructorCallExpression c)
             {
                 var ptr2 = GenerateExpression(node.Initializer);
@@ -536,7 +527,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             }
 
             LLVMValueRef value;
-            if (variable.Type.IsReference)
+            if (variable.Type.IsReference || variable.Type.IsComplex())
             {
                 value = GenerateLValue(node.Initializer);
             }
@@ -545,13 +536,23 @@ namespace Eagle.CodeAnalysis.CodeGen
                 value = GenerateExpression(node.Initializer);
             }
 
+            var llvmType = GetLlvmType(variable.Type);
             if (!_symbols.TryGetValue(variable, out var ptr))
             {
-                var xType = GetLlvmType(variable.Type);
-                ptr = _builder.BuildAlloca(xType);
+                ptr = _builder.BuildAlloca(llvmType);
                 _symbols[variable] = ptr;
             }
-            _builder.BuildStore(value, ptr);
+
+            if (variable.Type.IsComplex())
+            {
+                var dst = _builder.BuildBitCast(ptr, _pi8);
+                var src = _builder.BuildBitCast(value, _pi8);
+                _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { dst, src, llvmType.SizeOf, _false });
+            }
+            else
+            {
+                _builder.BuildStore(value, ptr);
+            }
         }
 
         private void GenerateExpressionStatement(BoundExpressionStatement node)
@@ -865,7 +866,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (type == TypeSymbol.U16) return LLVMTypeRef.Int16;
             if (type == TypeSymbol.U32) return LLVMTypeRef.Int32;
             if (type == TypeSymbol.U64) return LLVMTypeRef.Int64;
-            if (type == TypeSymbol.String) return LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+            if (type == TypeSymbol.String) return StringType;
             if (type == TypeSymbol.Void) return LLVMTypeRef.Void;
             if (type == TypeSymbol.Int) return LLVMTypeRef.Int64;
             if (type == TypeSymbol.UInt) return LLVMTypeRef.Int64;

@@ -29,6 +29,15 @@ fn main() {
 
 
     let p3 = add(p, p2);
+
+    let s = "Hallo welt!";
+    let s2 = s;
+    
+    println!("{}", s);
+
+    // let y = x;
+    // let z = y;
+    // let w = x;
 }
 
 struct Point {

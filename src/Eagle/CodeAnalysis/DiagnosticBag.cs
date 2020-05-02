@@ -277,5 +277,11 @@ namespace Eagle.CodeAnalysis
             var message = $"Cannot specify reference variable and type clause.";
             Report(location, message);
         }
+
+        public void ReportCannotCopyFromReference(TextLocation location)
+        {
+            var message = $"Cannot copy from reference.";
+            Report(location, message);
+        }
     }
 }

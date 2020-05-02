@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using Eagle.CodeAnalysis.Binding;
 using Eagle.CodeAnalysis.CodeGen;
 using Eagle.CodeAnalysis.Syntax;
@@ -604,7 +606,7 @@ object MyObj { a: int; }
 
 Main() {
     let x = MyObj()
-    x.a;
+    let _ = x.a;
 }
 ";
 
@@ -616,6 +618,8 @@ entry:
   %0 = alloca %MyObj
   call void @MyObj(%MyObj* %0)
   %1 = getelementptr inbounds %MyObj, %MyObj* %0, i32 0, i32 0
+  %2 = alloca i64
+  store i64* %1, i64* %2
   ret void
 }
 
@@ -631,7 +635,7 @@ entry:
             AssertGeneration(source, expected);
         }
 
-        
+
 
         [Fact]
         public void EmitWriteField()
@@ -678,7 +682,7 @@ object MyObj { a: int; }
 Main() {
     let x = MyObj()
     let& y = x;
-    y.a;
+    let _ = y.a;
 }
 ";
 
@@ -693,6 +697,8 @@ entry:
   store %MyObj* %0, %MyObj** %1
   %2 = load %MyObj*, %MyObj** %1
   %3 = getelementptr inbounds %MyObj, %MyObj* %2, i32 0, i32 0
+  %4 = alloca i64
+  store i64* %3, i64* %4
   ret void
 }
 
@@ -755,7 +761,7 @@ entry:
 object MyObj {
   a: int;
   Act() {
-    a;
+    let _ = a;
   }
 }
 
@@ -776,6 +782,8 @@ entry:
   store %MyObj* %0, %MyObj** %1
   %2 = load %MyObj*, %MyObj** %1
   %3 = getelementptr inbounds %MyObj, %MyObj* %2, i32 0, i32 0
+  %4 = alloca i64
+  store i64* %3, i64* %4
   ret void
 }
 
@@ -1467,15 +1475,20 @@ entry:
         {
             var source = @"
 Main() {
-    ""Hello World!"";
+    let& str = ""Hello World!"";
 }
 ";
 
             var expected = @"
-@0 = private unnamed_addr constant [13 x i8] c""Hello World!\00"", align 1
+%String = type { i8*, i64 }
+
+@0 = private unnamed_addr constant [12 x i8] c""Hello World!""
+@1 = private unnamed_addr constant %String { i8* getelementptr inbounds ([12 x i8], [12 x i8]* @0, i32 0, i32 0), i64 12 }
 
 define void @Main() {
 entry:
+  %0 = alloca %String*
+  store %String* @1, %String** %0
   ret void
 }
 ";
@@ -1527,6 +1540,13 @@ entry:
             var globalScope = Binder.BindGlobalScope(false, null, ImmutableArray.Create(syntaxTree));
             var program = Binder.BindProgram(false, null, globalScope);
             var generator = new CodeGenerator(program, globalScope);
+
+            var diagnostics = syntaxTree.Diagnostics
+                .AddRange(globalScope.Diagnostics)
+                .AddRange(program.Diagnostics);
+
+            if (diagnostics.Any())
+                throw new Exception(string.Join(Environment.NewLine, diagnostics));
 
             using var context = LLVMContextRef.Create();
             using var mod = context.CreateModuleWithName("Test");

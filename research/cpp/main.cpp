@@ -1,6 +1,6 @@
-// #include <string>
+#include <string>
 
-// using namespace std;
+using namespace std;
 
 typedef long long i64;
 
@@ -214,10 +214,14 @@ int main()
     auto& z = y;
     z.a = 10;
 
-    // string s1 = "Hallo";
-    // string s2 = "Welt";
-    // auto abc = s1 + " " + s2;
+    string s1 = "Hallo";
+    string s2 = "Welt";
+    auto abc = s1 + " " + s2;
 
     auto bc = Single();
     auto dc = bc.Create(Single());
+
+    auto ac = bc;
+
+    auto ac = bc;
 }
