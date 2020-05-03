@@ -58,7 +58,7 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef? _llvmMemcpyP0I8P0I8I32;
         private LLVMValueRef LlvmMemcpyP0I8P0I8I32 =>
-            _llvmMemcpyP0I8P0I8I32 ??= _mod.AddFunction("llvm.memcpy.p0i8.p0i8.i32", _llvmMemcpyP0I8P0I8I64Type);
+            _llvmMemcpyP0I8P0I8I32 ??= _mod.AddFunction("llvm.memcpy.p0i8.p0i8.i32", _llvmMemcpyP0I8P0I8I32Type);
 
         private LLVMValueRef? _llvmMemcpyP0I8P0I8I64;
         private LLVMValueRef LlvmMemcpyP0I8P0I8I64 =>
@@ -548,7 +548,10 @@ namespace Eagle.CodeAnalysis.CodeGen
             {
                 var dst = _builder.BuildBitCast(ptr, _pi8);
                 var src = _builder.BuildBitCast(value, _pi8);
-                _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { dst, src, llvmType.SizeOf, _false });
+                var llvmTypeSizeOf = llvmType.SizeOf;
+                var llvmTypeRef = llvmTypeSizeOf.TypeOf;
+                var x = LlvmMemcpyP0I8P0I8I64.Params[2].TypeOf;
+                _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { dst, src, llvmTypeSizeOf, _false });
             }
             else
             {
