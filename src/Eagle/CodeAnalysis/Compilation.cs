@@ -134,8 +134,10 @@ namespace Eagle.CodeAnalysis
                 return program.Diagnostics;
 
             var generator = new CodeGen.CodeGenerator(program, GlobalScope);
-            using var context = LLVMContextRef.Create();
-            using var mod = context.CreateModuleWithName("MyMod");
+            //using var context = LLVMContextRef.Create();
+            //using var mod = context.CreateModuleWithName("MyMod");
+            var mod = LLVMModuleRef.CreateWithName("MyMod");
+
             generator.Generate(mod);
 
             //_mod.Dump();
@@ -181,7 +183,7 @@ namespace Eagle.CodeAnalysis
             var outFile = Path.Combine(outputPath, "hello.exe");
 
             Process.Start("C:\\Program Files\\LLVM\\bin\\clang++.exe",
-                $"C:\\Users\\Florian\\Source\\repos\\repl\\core\\core.cpp -Xlinker demo.obj -o {outFile}").WaitForExit();
+                $"C:\\Users\\Florian\\Source\\repos\\repl\\core\\core.cpp --debug -Xlinker demo.obj -o {outFile}").WaitForExit();
 
             return ImmutableArray<Diagnostic>.Empty;
         }

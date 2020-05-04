@@ -104,6 +104,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             _mod = mod;
             _builder = _mod.Context.CreateBuilder();
 
+
             var types = _globalScope.Symbols.OfType<TypeSymbol>();
 
             foreach (var type in types)
@@ -197,7 +198,8 @@ namespace Eagle.CodeAnalysis.CodeGen
                 _invokable = symbol;
 
                 var f = _symbols[(Symbol)symbol];
-                var bb = f.AppendBasicBlock("entry");
+                var bb = _mod.Context.AppendBasicBlock(f, "entry");
+                //var bb = f.AppendBasicBlock("entry");
                 _builder.PositionAtEnd(bb);
 
                 var rewriter = new PreCodeGenerationTreeRewriter();
@@ -341,6 +343,30 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private void GenerateReturnStatement(BoundReturnStatement node)
         {
+            // TODO for now just copy the value
+            // not sure how to handle it otherwise
+
+            // we can only do it if we don't leave the basic block where the return is
+            // otherwise the return variable gets set in one basic block and the set value can leak onto the stack
+            // even if the method does not finish.
+            // Can this really be a problem?
+
+            /*
+             * 'int' is not really a problem, imagine string for the following example
+             *
+             * let a = 5;
+             * let b = 6;
+             * if(a > 4)
+             *   return a; // if we say a and b are actually the return parameter ptr, this would return b instead of a
+             * return b;
+             *
+             * a and b are both substituts for the return value
+             * so if we just reuse the pointer
+             *
+             * TODO try this in a cpp example
+             */
+
+
             LLVMValueRef value;
             if (node.Expression != null)
             {
@@ -520,7 +546,7 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var variable = node.Variable;
 
-            if (node.Initializer is BoundConstructorCallExpression c)
+            if (node.Initializer is IInvocation c)
             {
                 var ptr2 = GenerateExpression(node.Initializer);
                 _symbols[variable] = ptr2;
@@ -548,10 +574,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             {
                 var dst = _builder.BuildBitCast(ptr, _pi8);
                 var src = _builder.BuildBitCast(value, _pi8);
-                var llvmTypeSizeOf = llvmType.SizeOf;
-                var llvmTypeRef = llvmTypeSizeOf.TypeOf;
-                var x = LlvmMemcpyP0I8P0I8I64.Params[2].TypeOf;
-                _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { dst, src, llvmTypeSizeOf, _false });
+                _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { dst, src, llvmType.SizeOf, _false });
             }
             else
             {
@@ -660,15 +683,19 @@ namespace Eagle.CodeAnalysis.CodeGen
             return ptr;
         }
 
-        private LLVMValueRef GenerateFieldExpression(BoundFieldExpression node)
+        private LLVMValueRef GenerateFieldExpression(BoundFieldExpression node, bool getPointer = false)
         {
             var index = node.Field.Index;
             var ptr = GenerateLValue(node.Target);
-            return _builder.BuildInBoundsGEP(ptr, new[]
+            var r = _builder.BuildInBoundsGEP(ptr, new[]
             {
                 LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)0),
                 LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)index)
             });
+
+            if (getPointer)
+                return r;
+            return _builder.BuildLoad(r);
         }
 
         private LLVMValueRef GenerateLValue(BoundExpression expression)
@@ -680,7 +707,7 @@ namespace Eagle.CodeAnalysis.CodeGen
                 case BoundUnaryExpression u when u.Operator.Kind == BoundUnaryOperatorKind.AddressOf:
                     return GenerateLValue(u.Operand);
                 case BoundFieldExpression t:
-                    return GenerateFieldExpression(t);
+                    return GenerateFieldExpression(t, true);
                 case BoundThisExpression t:
                     return _symbols[_this];
                 case BoundVariableExpression v:
@@ -700,18 +727,25 @@ namespace Eagle.CodeAnalysis.CodeGen
 
         private LLVMValueRef GenerateMethodCallExpression(BoundMethodCallExpression node)
         {
-            var arguments = node.Arguments.Select(a => GenerateExpression(a)).ToArray();
+            var function = _symbols[node.Method];
+
+            //var arguments = node.Arguments.Select(a => GenerateExpression(a)).ToArray();
+            var arguments = GetArguments(node, out var pReturn, out var complex);
 
             if (!node.Method.IsStatic)
             {
                 var ptr = GenerateLValue(node.Target);
                 arguments = new[] { ptr }
                     .Concat(arguments)
-                    .ToArray();
+                    .ToList();
             }
 
-            var function = _symbols[node.Method];
-            return _builder.BuildCall(function, arguments);
+            var r = _builder.BuildCall(function, arguments.ToArray());
+
+            if (complex)
+                r = pReturn;
+
+            return r;
         }
 
         private LLVMValueRef GenerateThisExpression(BoundThisExpression node)
@@ -750,12 +784,25 @@ namespace Eagle.CodeAnalysis.CodeGen
         {
             var function = _symbols[node.Function];
 
+            var args = GetArguments(node, out var pReturn, out var complex);
+
+            var r = _builder.BuildCall(function, args.ToArray());
+
+            if (complex)
+                r = pReturn;
+
+            return r;
+        }
+
+        private List<LLVMValueRef> GetArguments(IInvocation node, out LLVMValueRef pReturn, out bool complex)
+        {
             var args = new List<LLVMValueRef>();
-            foreach (var (parameter, index) in node.Function.Parameters.Select((p, i) => (p, i)))
+            foreach (var (parameter, index) in node.Invokable.Parameters.Select((p, i) => (p, i)))
             {
                 var argument = node.Arguments[index];
                 LLVMValueRef value;
 
+                var llvmType = GetLlvmType(parameter.Type);
                 // TODO get diff between types
                 if (parameter.Type.IsReference)
                 {
@@ -768,14 +815,14 @@ namespace Eagle.CodeAnalysis.CodeGen
                     value = GenerateExpression(argument);
                 }
                 // if it is not a temporary value make a copy
-                else if (argument is BoundVariableExpression)
+                else if (argument is BoundVariableExpression /*&& !parameter.Type.IsReference*/)
                 {
                     var argType = GetLlvmType(argument.Type);
                     var tptr = _builder.BuildAlloca(argType);
                     var sptr = GenerateLValue(argument);
                     var ctptr = _builder.BuildBitCast(tptr, _pi8);
                     var csptr = _builder.BuildBitCast(sptr, _pi8);
-                    _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { ctptr, csptr });
+                    _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { ctptr, csptr, llvmType.SizeOf, _false });
                     value = tptr;
                 }
                 else
@@ -794,9 +841,9 @@ namespace Eagle.CodeAnalysis.CodeGen
             // not complex just push the value
             // if return value is complex convert to pointer and 
             // etc.
-            LLVMValueRef pReturn = null;
-            var functionType = node.Function.Type;
-            var complex = functionType.IsComplex();
+            pReturn = null;
+            var functionType = node.Invokable.Type;
+            complex = functionType.IsComplex();
             if (complex)
             {
                 // void return
@@ -810,12 +857,7 @@ namespace Eagle.CodeAnalysis.CodeGen
                 // normal return type
             }
 
-            var r = _builder.BuildCall(function, args.ToArray());
-
-            if (complex)
-                r = pReturn;
-
-            return r;
+            return args;
         }
 
         private LLVMValueRef GenerateVariableExpression(BoundVariableExpression node)

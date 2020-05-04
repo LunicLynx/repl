@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using Eagle.CodeAnalysis;
 using Eagle.CodeAnalysis.Binding;
 using Eagle.CodeAnalysis.CodeGen;
 using Eagle.CodeAnalysis.Syntax;
@@ -18,6 +19,8 @@ namespace Eagle.Tests
         public CodeGenTests(ITestOutputHelper output)
         {
             _output = output;
+
+            TypeSymbol.String.Members = TypeSymbol.String.Members.Clear();
         }
 
         [Fact]
@@ -618,8 +621,9 @@ entry:
   %0 = alloca %MyObj
   call void @MyObj(%MyObj* %0)
   %1 = getelementptr inbounds %MyObj, %MyObj* %0, i32 0, i32 0
-  %2 = alloca i64
-  store i64* %1, i64* %2
+  %2 = load i64, i64* %1
+  %3 = alloca i64
+  store i64 %2, i64* %3
   ret void
 }
 
@@ -697,8 +701,9 @@ entry:
   store %MyObj* %0, %MyObj** %1
   %2 = load %MyObj*, %MyObj** %1
   %3 = getelementptr inbounds %MyObj, %MyObj* %2, i32 0, i32 0
-  %4 = alloca i64
-  store i64* %3, i64* %4
+  %4 = load i64, i64* %3
+  %5 = alloca i64
+  store i64 %4, i64* %5
   ret void
 }
 
@@ -782,8 +787,9 @@ entry:
   store %MyObj* %0, %MyObj** %1
   %2 = load %MyObj*, %MyObj** %1
   %3 = getelementptr inbounds %MyObj, %MyObj* %2, i32 0, i32 0
-  %4 = alloca i64
-  store i64* %3, i64* %4
+  %4 = load i64, i64* %3
+  %5 = alloca i64
+  store i64 %4, i64* %5
   ret void
 }
 
@@ -1489,6 +1495,148 @@ define void @Main() {
 entry:
   %0 = alloca %String*
   store %String* @1, %String** %0
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitReturnForComplexTypesShouldReuseAllocationRecursive()
+        {
+            var source = @"
+object String { data: int; }
+
+Input(): string { return string(); }
+
+Act(): string { return Input(); }
+
+Main() {
+    Input();    
+}
+";
+
+            var expected = @"
+%String = type { i64 }
+
+define void @Input(%String*) {
+entry:
+  call void @String(%String* %0)
+  ret void
+}
+
+define void @Act(%String*) {
+entry:
+  call void @Input(%String* %0)
+  ret void
+}
+
+define void @Main() {
+entry:
+  %0 = alloca %String
+  call void @Input(%String* %0)
+  ret void
+}
+
+define void @String(%String*) {
+entry:
+  %1 = alloca %String*
+  store %String* %0, %String** %1
+  %2 = load %String*, %String** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitReturnForComplexTypesShouldReuseAllocation()
+        {
+            var source = @"
+object String { data: int; }
+
+Input(): string { return string(); }
+
+Print(s: string&) {}
+
+Main() {
+    let s = Input();
+    Print(s);
+}
+";
+
+            var expected = @"
+%String = type { i64 }
+
+define void @Input(%String*) {
+entry:
+  call void @String(%String* %0)
+  ret void
+}
+
+define void @Print(%String*) {
+entry:
+  %1 = alloca %String*
+  store %String* %0, %String** %1
+  ret void
+}
+
+define void @Main() {
+entry:
+  %0 = alloca %String
+  call void @Input(%String* %0)
+  call void @Print(%String* %0)
+  ret void
+}
+
+define void @String(%String*) {
+entry:
+  %1 = alloca %String*
+  store %String* %0, %String** %1
+  %2 = load %String*, %String** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitAssignReturnValueToVariableDontCopy()
+        {
+            var source = @"
+object String { data: int; }
+
+Input(): string { return string(); }
+
+Main() {
+    let s = Input();
+}
+";
+
+            var expected = @"
+%String = type { i64 }
+
+define void @Input(%String*) {
+entry:
+  call void @String(%String* %0)
+  ret void
+}
+
+define void @Main() {
+entry:
+  %0 = alloca %String
+  call void @Input(%String* %0)
+  ret void
+}
+
+define void @String(%String*) {
+entry:
+  %1 = alloca %String*
+  store %String* %0, %String** %1
+  %2 = load %String*, %String** %1
   ret void
 }
 ";

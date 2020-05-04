@@ -3,10 +3,18 @@ using System.Collections.Immutable;
 
 namespace Eagle.CodeAnalysis.Binding
 {
-    public class BoundFunctionCallExpression : BoundExpression
+    public interface IInvocation
+    {
+        IInvokableSymbol Invokable { get; }
+        ImmutableArray<BoundExpression> Arguments { get; }
+    }
+
+    public class BoundFunctionCallExpression : BoundExpression, IInvocation
     {
         public FunctionSymbol Function { get; }
         public ImmutableArray<BoundExpression> Arguments { get; }
+
+        IInvokableSymbol IInvocation.Invokable => Function;
 
         public BoundFunctionCallExpression(FunctionSymbol function, ImmutableArray<BoundExpression> arguments)
         {

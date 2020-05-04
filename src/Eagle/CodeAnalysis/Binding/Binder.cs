@@ -1029,7 +1029,7 @@ namespace Eagle.CodeAnalysis.Binding
             if (syntax is TypeSyntax t)
             {
                 var typeIdentifierToken = t.TypeOrIdentifierToken;
-                var type = GetSymbol(new[] { SymbolKind.Alias, SymbolKind.Type }, typeIdentifierToken) ?? TypeSymbol.Int;
+                var type = GetSymbol(new[] { SymbolKind.Alias, SymbolKind.Type }, typeIdentifierToken) ?? TypeSymbol.Error;
 
                 while (type is AliasSymbol a)
                     type = a.Type;

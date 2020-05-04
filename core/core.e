@@ -46,7 +46,9 @@ object String {
 
     // static -> no this pointer
     static Concat(a: string&, b: string&) : string {
-
+        Print("Concat");
+        Print(a);
+        Print(b);
         let length = a._length + b._length;
 
         let buffer = malloc(length).(char*);

@@ -3,11 +3,14 @@ using System.Collections.Immutable;
 
 namespace Eagle.CodeAnalysis.Binding
 {
-    public class BoundMethodCallExpression : BoundExpression
+    public class BoundMethodCallExpression : BoundExpression, IInvocation
     {
         public BoundExpression? Target { get; }
         public MethodSymbol Method { get; }
+        
         public ImmutableArray<BoundExpression> Arguments { get; }
+
+        IInvokableSymbol IInvocation.Invokable => Method;
 
         public BoundMethodCallExpression(BoundExpression? target, MethodSymbol method, ImmutableArray<BoundExpression> arguments)
         {
