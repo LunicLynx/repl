@@ -38,14 +38,16 @@ extern "C" {
         p->buffer = (char*)malloc(input.length());
         memcpy(p->buffer, input.c_str(), input.length());
         p->length = input.length();
-        print(p, sizeof(string));
-        std::cout << std::endl;
+        // print(p, sizeof(string));
+        // std::cout << std::endl;
     }
 
     void Print(string* s) {
-        print(s, sizeof(string));
+        // print(s, sizeof(string));
         auto str = std::string(s->buffer, s->length);
-        std::cout << " " << str << std::endl;
+        std::cout
+        //  << " "
+          << str << std::endl;
     }
 }
 
