@@ -600,9 +600,9 @@ namespace Eagle.CodeAnalysis.CodeGen
                 case BoundAssignmentExpression a:
                     return GenerateAssignmentExpression(a);
                 case BoundVariableExpression v:
-                    return GenerateVariableExpression(v);
+                    return GenerateVariableExpression(v, storage);
                 case BoundFunctionCallExpression i:
-                    return GenerateFunctionCallExpression(i);
+                    return GenerateFunctionCallExpression(i, storage);
                 case BoundParameterExpression p:
                     return GenerateParameterExpression(p);
                 case BoundConversionExpression c:
@@ -780,11 +780,11 @@ namespace Eagle.CodeAnalysis.CodeGen
             return _builder.InsertBlock.Parent.Params[node.Parameter.Index];
         }
 
-        private LLVMValueRef GenerateFunctionCallExpression(BoundFunctionCallExpression node)
+        private LLVMValueRef GenerateFunctionCallExpression(BoundFunctionCallExpression node, LLVMValueRef? storage = null)
         {
             var function = _symbols[node.Function];
 
-            var args = GetArguments(node, out var pReturn, out var complex);
+            var args = GetArguments(node, out var pReturn, out var complex, storage);
 
             var r = _builder.BuildCall(function, args.ToArray());
 
@@ -794,7 +794,7 @@ namespace Eagle.CodeAnalysis.CodeGen
             return r;
         }
 
-        private List<LLVMValueRef> GetArguments(IInvocation node, out LLVMValueRef pReturn, out bool complex)
+        private List<LLVMValueRef> GetArguments(IInvocation node, out LLVMValueRef pReturn, out bool complex, LLVMValueRef? storage = null)
         {
             var args = new List<LLVMValueRef>();
             foreach (var (parameter, index) in node.Invokable.Parameters.Select((p, i) => (p, i)))
@@ -803,7 +803,6 @@ namespace Eagle.CodeAnalysis.CodeGen
                 LLVMValueRef value;
 
                 var llvmType = GetLlvmType(parameter.Type);
-                // TODO get diff between types
                 if (parameter.Type.IsReference)
                 {
                     value = GenerateLValue(argument);
@@ -847,8 +846,15 @@ namespace Eagle.CodeAnalysis.CodeGen
             if (complex)
             {
                 // void return
-                var returnType = GetLlvmType(functionType);
-                pReturn = _builder.BuildAlloca(returnType);
+                if (!storage.HasValue)
+                {
+                    var returnType = GetLlvmType(functionType);
+                    pReturn = _builder.BuildAlloca(returnType);
+                }
+                else
+                {
+                    pReturn = storage.Value;
+                }
 
                 args = new[] { pReturn }.Concat(args).ToList();
             }
@@ -860,12 +866,24 @@ namespace Eagle.CodeAnalysis.CodeGen
             return args;
         }
 
-        private LLVMValueRef GenerateVariableExpression(BoundVariableExpression node)
+        private LLVMValueRef GenerateVariableExpression(BoundVariableExpression node, LLVMValueRef? storage = null)
         {
             var variable = node.Variable;
             //return _symbols[variable];
             _symbols.TryGetValue(variable, out var ptr);
-            return _builder.BuildLoad(ptr);
+
+            if (!storage.HasValue)
+            {
+                return _builder.BuildLoad(ptr);
+            }
+            else
+            {
+                var llvmType = GetLlvmType(variable.Type);
+                var dst = _builder.BuildBitCast(storage.Value, _pi8);
+                var src = _builder.BuildBitCast(ptr, _pi8);
+                _builder.BuildCall(LlvmMemcpyP0I8P0I8I64, new[] { dst, src, llvmType.SizeOf, _false });
+                return storage.Value;
+            }
         }
 
         private LLVMValueRef GenerateAssignmentExpression(BoundAssignmentExpression node)

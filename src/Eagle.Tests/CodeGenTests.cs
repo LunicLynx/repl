@@ -1013,7 +1013,7 @@ entry:
   %1 = alloca %MyObj
   %2 = bitcast %MyObj* %1 to i8*
   %3 = bitcast %MyObj* %0 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %2, i8* %3)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %2, i8* %3, i64 mul nuw (i64 ptrtoint (i64* getelementptr (i64, i64* null, i32 1) to i64), i64 2), i1 false)
   call void @Print(%MyObj* %1)
   ret void
 }
@@ -1637,6 +1637,53 @@ entry:
   %1 = alloca %String*
   store %String* %0, %String** %1
   %2 = load %String*, %String** %1
+  ret void
+}
+";
+
+            AssertGeneration(source, expected);
+        }
+
+        [Fact]
+        public void EmitAssignReturnValueToVariableDontCopy2()
+        {
+            var source = @"
+object MyObj { data: int; }
+
+Input(): MyObj { 
+  let s = MyObj(); 
+  return s;
+}
+
+Main() {
+    let s = Input();
+}
+";
+
+            var expected = @"
+%MyObj = type { i64 }
+
+define void @Input(%MyObj*) {
+entry:
+  %1 = alloca %MyObj
+  call void @MyObj(%MyObj* %1)
+  %2 = load %MyObj, %MyObj* %1 // WRONG
+  // memcpy after bit cast from %1 -> %0
+  ret void
+}
+
+define void @Main() {
+entry:
+  %0 = alloca %MyObj
+  call void @Input(%MyObj* %0)
+  ret void
+}
+
+define void @MyObj(%MyObj*) {
+entry:
+  %1 = alloca %MyObj*
+  store %MyObj* %0, %MyObj** %1
+  %2 = load %MyObj*, %MyObj** %1
   ret void
 }
 ";
