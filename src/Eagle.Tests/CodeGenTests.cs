@@ -1645,7 +1645,7 @@ entry:
         }
 
         [Fact]
-        public void EmitAssignReturnValueToVariableDontCopy2()
+        public void EmitReturnVariableFromFunctionCopy()
         {
             var source = @"
 object MyObj { data: int; }
@@ -1667,8 +1667,9 @@ define void @Input(%MyObj*) {
 entry:
   %1 = alloca %MyObj
   call void @MyObj(%MyObj* %1)
-  %2 = load %MyObj, %MyObj* %1 // WRONG
-  // memcpy after bit cast from %1 -> %0
+  %2 = bitcast %MyObj* %0 to i8*
+  %3 = bitcast %MyObj* %1 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %2, i8* %3, i64 ptrtoint (i64* getelementptr (i64, i64* null, i32 1) to i64), i1 false)
   ret void
 }
 
@@ -1686,6 +1687,11 @@ entry:
   %2 = load %MyObj*, %MyObj** %1
   ret void
 }
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1 immarg) #0
+
+attributes #0 = { argmemonly nounwind }
 ";
 
             AssertGeneration(source, expected);
