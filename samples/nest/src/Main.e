@@ -53,7 +53,7 @@ object Path {
         return p;
     }
 
-    GetFiles(searchStyle: SearchStyle, string): List<Path> {
+    GetFiles(searchStyle: SearchStyle, pattern: string): List<Path> {
 
     }
 }

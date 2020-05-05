@@ -2,7 +2,7 @@
   "profiles": {
     "ec": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\Users\\Florian\\Source\\repos\\repl\\samples\\hello"
+      "commandLineArgs": "C:\\Users\\Florian\\Source\\repos\\repl\\samples\\enums"
     }
   }
 }
